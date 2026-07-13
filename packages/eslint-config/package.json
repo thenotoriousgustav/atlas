@@ -1,0 +1,15 @@
+{
+  "name": "@atlas/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "base.mjs",
+  "exports": {
+    "./base.mjs": "./base.mjs",
+    "./next.mjs": "./next.mjs",
+    "./nest.mjs": "./nest.mjs",
+    "./base": "./base.mjs",
+    "./next": "./next.mjs",
+    "./nest": "./nest.mjs"
+  }
+}

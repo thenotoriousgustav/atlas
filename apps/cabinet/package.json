@@ -1,0 +1,37 @@
+{
+  "name": "@atlas/cabinet",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@atlas/api-client": "workspace:*",
+    "@atlas/ui": "workspace:*",
+    "@phosphor-icons/react": "^2.1.10",
+    "@tanstack/react-form": "^1.33.2",
+    "@tanstack/react-query": "^5.101.2",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@atlas/eslint-config": "workspace:*",
+    "@atlas/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.2",
+    "eslint": "^10.7.0",
+    "eslint-config-next": "^16.2.10",
+    "postcss": "^8.5.18",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "extends": "@atlas/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "prisma/**/*", "test/**/*"]
+}
