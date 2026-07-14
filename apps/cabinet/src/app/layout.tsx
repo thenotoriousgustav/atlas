@@ -1,7 +1,10 @@
 import './globals.css';
 import { Providers } from './providers';
 import React from 'react';
-import { Instrument_Serif } from 'next/font/google';
+import { Instrument_Serif, Inter } from 'next/font/google';
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
@@ -21,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body className={`${instrumentSerif.variable} bg-brand-canvas text-brand-charcoal antialiased`}>
         <Providers>{children}</Providers>
       </body>
