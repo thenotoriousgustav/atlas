@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -16,7 +17,7 @@ import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('auth')
 @Controller('v1/auth')
@@ -103,5 +104,79 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   async me(@CurrentUser() user: any) {
     return this.userService.findById(user.id);
+  }
+
+  @Get('passkey/register-options')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Generate registration options for a new Passkey' })
+  async generateRegisterOptions(
+    @CurrentUser() user: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const options = await this.authService.generatePasskeyRegistrationOptions(user.id);
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('reg_challenge', options.challenge, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      maxAge: 5 * 60 * 1000, // 5 mins
+    });
+    return options;
+  }
+
+  @Post('passkey/register-verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Verify and register a new Passkey' })
+  async verifyRegister(
+    @CurrentUser() user: any,
+    @Req() req: Request,
+    @Body() body: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const expectedChallenge = req.cookies?.reg_challenge;
+    const result = await this.authService.verifyPasskeyRegistration(
+      user.id,
+      body.response,
+      expectedChallenge,
+    );
+    res.clearCookie('reg_challenge');
+    return result;
+  }
+
+  @Get('passkey/login-options')
+  @ApiOperation({ summary: 'Generate authentication options for login' })
+  @ApiQuery({ name: 'email', required: true })
+  async generateLoginOptions(
+    @Query('email') email: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const options = await this.authService.generatePasskeyAuthenticationOptions(email);
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('login_challenge', options.challenge, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      maxAge: 5 * 60 * 1000, // 5 mins
+    });
+    return options;
+  }
+
+  @Post('passkey/login-verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify Passkey login and set auth cookies' })
+  async verifyLogin(
+    @Req() req: Request,
+    @Body() body: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const expectedChallenge = req.cookies?.login_challenge;
+    const tokens = await this.authService.verifyPasskeyAuthentication(
+      body.email,
+      body.response,
+      expectedChallenge,
+    );
+    res.clearCookie('login_challenge');
+    this.setCookies(res, tokens.accessToken, tokens.refreshToken);
+    return { user: tokens.user };
   }
 }

@@ -12,5 +12,6 @@ export * from './generated/fuel/fuel';
 export * from './generated/expenses/expenses';
 export * from './generated/reminders/reminders';
 export * from './generated/documents/documents';
+export * from './generated/fetch/fetch';
 export * from './generated/model';
 export * from './custom-instance';

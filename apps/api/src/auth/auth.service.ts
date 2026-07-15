@@ -5,6 +5,12 @@ import { UserService } from '../user/user.service';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { LoginDto } from './dto/login.dto';
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
 
 @Injectable()
 export class AuthService {
@@ -118,5 +124,148 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  async generatePasskeyRegistrationOptions(userId: string) {
+    const user = await this.userService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const credentials = await this.prisma.userCredential.findMany({
+      where: { userId },
+    });
+
+    const rpID = this.configService.get<string>('RP_ID') || 'localhost';
+
+    const options = await generateRegistrationOptions({
+      rpName: 'Atlas Platform',
+      rpID,
+      userID: Buffer.from(user.id),
+      userName: user.email,
+      userDisplayName: user.name,
+      // Exclude already registered credentials
+      excludeCredentials: credentials.map((cred) => ({
+        id: cred.credentialId,
+        type: 'public-key',
+        transports: cred.transports as any[],
+      })),
+      authenticatorSelection: {
+        residentKey: 'required',
+        userVerification: 'preferred',
+      },
+    });
+
+    return options;
+  }
+
+  async verifyPasskeyRegistration(userId: string, responseBody: any, expectedChallenge: string) {
+    const rpID = this.configService.get<string>('RP_ID') || 'localhost';
+    const origin = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+    const verification = await verifyRegistrationResponse({
+      response: responseBody,
+      expectedChallenge,
+      expectedOrigin: origin,
+      expectedRPID: rpID,
+    });
+
+    const { verified, registrationInfo } = verification;
+
+    if (!verified || !registrationInfo) {
+      throw new UnauthorizedException('Registration verification failed');
+    }
+
+    const { credential } = registrationInfo;
+    const { id, publicKey, counter, transports } = credential;
+
+    // Save public key as bytes (Buffer)
+    const publicKeyBuffer = Buffer.from(publicKey);
+
+    await this.prisma.userCredential.create({
+      data: {
+        userId,
+        credentialId: id,
+        publicKey: publicKeyBuffer,
+        counter: BigInt(counter),
+        transports: transports || [],
+      },
+    });
+
+    return { success: true };
+  }
+
+  async generatePasskeyAuthenticationOptions(email: string) {
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const credentials = await this.prisma.userCredential.findMany({
+      where: { userId: user.id },
+    });
+
+    const rpID = this.configService.get<string>('RP_ID') || 'localhost';
+
+    const options = await generateAuthenticationOptions({
+      rpID,
+      allowCredentials: credentials.map((cred) => ({
+        id: cred.credentialId,
+        type: 'public-key',
+        transports: cred.transports as any[],
+      })),
+      userVerification: 'preferred',
+    });
+
+    return options;
+  }
+
+  async verifyPasskeyAuthentication(email: string, responseBody: any, expectedChallenge: string) {
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Find the credential
+    const credential = await this.prisma.userCredential.findUnique({
+      where: { credentialId: responseBody.id },
+    });
+
+    if (!credential || credential.userId !== user.id) {
+      throw new UnauthorizedException('Credential not found or not owned by user');
+    }
+
+    const rpID = this.configService.get<string>('RP_ID') || 'localhost';
+    const origin = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+    const verification = await verifyAuthenticationResponse({
+      response: responseBody,
+      expectedChallenge,
+      expectedOrigin: origin,
+      expectedRPID: rpID,
+      credential: {
+        id: credential.credentialId,
+        publicKey: credential.publicKey,
+        counter: Number(credential.counter),
+        transports: credential.transports as any[],
+      },
+    });
+
+    const { verified, authenticationInfo } = verification;
+
+    if (!verified || !authenticationInfo) {
+      throw new UnauthorizedException('Authentication verification failed');
+    }
+
+    // Update counter
+    await this.prisma.userCredential.update({
+      where: { id: credential.id },
+      data: {
+        counter: BigInt(authenticationInfo.newCounter),
+      },
+    });
+
+    // Log the user in
+    return this.login(user);
   }
 }

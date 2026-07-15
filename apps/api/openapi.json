@@ -89,6 +89,75 @@
         ]
       }
     },
+    "/v1/auth/passkey/register-options": {
+      "get": {
+        "operationId": "AuthController_generateRegisterOptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Generate registration options for a new Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/passkey/register-verify": {
+      "post": {
+        "operationId": "AuthController_verifyRegister",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Verify and register a new Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/passkey/login-options": {
+      "get": {
+        "operationId": "AuthController_generateLoginOptions",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Generate authentication options for login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/passkey/login-verify": {
+      "post": {
+        "operationId": "AuthController_verifyLogin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Verify Passkey login and set auth cookies",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/users/profile": {
       "patch": {
         "operationId": "UserController_updateProfile",
@@ -1468,6 +1537,262 @@
           "documents"
         ]
       }
+    },
+    "/v1/fetch/extract": {
+      "post": {
+        "operationId": "FetchController_extract",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Extract media information from a social media URL",
+        "tags": [
+          "fetch"
+        ]
+      }
+    },
+    "/v1/fetch/download": {
+      "post": {
+        "operationId": "FetchController_download",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stream download the media file directly",
+        "tags": [
+          "fetch"
+        ]
+      }
+    },
+    "/v1/fetch/history": {
+      "get": {
+        "operationId": "FetchController_getHistory",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isFavorite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "collectionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get personal download history",
+        "tags": [
+          "fetch"
+        ]
+      }
+    },
+    "/v1/fetch/history/{id}": {
+      "patch": {
+        "operationId": "FetchController_updateHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHistoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update metadata for a history item (favorite, notes, collection)",
+        "tags": [
+          "fetch"
+        ]
+      },
+      "delete": {
+        "operationId": "FetchController_removeHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a history item",
+        "tags": [
+          "fetch"
+        ]
+      }
+    },
+    "/v1/fetch/collections": {
+      "get": {
+        "operationId": "FetchController_getCollections",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all download collections",
+        "tags": [
+          "fetch"
+        ]
+      },
+      "post": {
+        "operationId": "FetchController_createCollection",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCollectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new download collection",
+        "tags": [
+          "fetch"
+        ]
+      }
+    },
+    "/v1/fetch/collections/{id}": {
+      "delete": {
+        "operationId": "FetchController_removeCollection",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a collection",
+        "tags": [
+          "fetch"
+        ]
+      }
     }
   },
   "info": {
@@ -2231,6 +2556,82 @@
           "vehicleId",
           "documentType",
           "documentNumber"
+        ]
+      },
+      "ExtractUrlDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "example": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "description": "Social media URL to extract metadata from"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "DownloadMediaDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "example": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "description": "URL of the media"
+          },
+          "formatId": {
+            "type": "string",
+            "example": "137+140",
+            "description": "yt-dlp format ID to download"
+          },
+          "mediaType": {
+            "type": "string",
+            "example": "VIDEO",
+            "description": "Type of media to download (VIDEO, AUDIO)"
+          },
+          "title": {
+            "type": "string",
+            "example": "Never Gonna Give You Up",
+            "description": "Title of the media"
+          }
+        },
+        "required": [
+          "url",
+          "mediaType",
+          "title"
+        ]
+      },
+      "UpdateHistoryDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "example": "Funny meme video",
+            "description": "Personal notes"
+          },
+          "isFavorite": {
+            "type": "boolean",
+            "example": true,
+            "description": "Favorite flag status"
+          },
+          "collectionId": {
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Collection ID or null to remove"
+          }
+        }
+      },
+      "CreateCollectionDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "My Favorites",
+            "description": "Name of the collection"
+          }
+        },
+        "required": [
+          "name"
         ]
       }
     }

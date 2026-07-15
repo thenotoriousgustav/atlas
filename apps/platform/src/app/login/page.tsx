@@ -16,6 +16,8 @@ import {
 } from '@atlas/ui/components/card';
 import { useAuthControllerLogin } from '@atlas/api-client';
 import { useAuthStore } from '../../store/useAuthStore';
+import { startAuthentication } from '@simplewebauthn/browser';
+import { Fingerprint } from '@phosphor-icons/react';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -56,6 +58,70 @@ export default function LoginPage() {
       }
     },
   });
+
+  const [isPasskeyAuthenticating, setIsPasskeyAuthenticating] = useState(false);
+
+  const handlePasskeyLogin = async () => {
+    const email = form.getFieldValue('email');
+    if (!email || !email.includes('@')) {
+      setErrorMsg('Please enter your registered email address first.');
+      return;
+    }
+
+    setErrorMsg(null);
+    setIsPasskeyAuthenticating(true);
+
+    try {
+      // 1. Get authentication options
+      const optionsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/auth/passkey/login-options?email=${encodeURIComponent(email)}`,
+        {
+          credentials: 'include',
+        }
+      );
+
+      if (!optionsRes.ok) {
+        throw new Error('Failed to load passkey login options. Make sure the email is registered.');
+      }
+
+      const options = await optionsRes.json();
+
+      // 2. Trigger browser biometrics
+      const assertionJSON = await startAuthentication({ optionsJSON: options.data });
+
+      // 3. Post verification payload
+      const verifyRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/auth/passkey/login-verify`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            email,
+            response: assertionJSON,
+          }),
+        }
+      );
+
+      if (!verifyRes.ok) {
+        throw new Error('Passkey login verification failed');
+      }
+
+      const verifyData = await verifyRes.json();
+      if (verifyData?.success && verifyData?.data?.user) {
+        setUser(verifyData.data.user);
+        router.push('/');
+      } else {
+        throw new Error('Invalid authentication response');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Passkey authentication failed');
+    } finally {
+      setIsPasskeyAuthenticating(false);
+    }
+  };
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-brand-canvas p-6 select-none">
@@ -164,17 +230,30 @@ export default function LoginPage() {
                 }}
               />
 
-              <form.Subscribe selector={(state) => [state.isSubmitting]}>
-                {([isSubmitting]) => (
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full mt-2 font-semibold tracking-tight text-xs h-9 uppercase"
-                  >
-                    {isSubmitting ? 'Authenticating...' : 'Sign in'}
-                  </Button>
-                )}
-              </form.Subscribe>
+              <div className="space-y-2">
+                <form.Subscribe selector={(state) => [state.isSubmitting]}>
+                  {([isSubmitting]) => (
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isPasskeyAuthenticating}
+                      className="w-full font-semibold tracking-tight text-xs h-9 uppercase"
+                    >
+                      {isSubmitting ? 'Authenticating...' : 'Sign in'}
+                    </Button>
+                  )}
+                </form.Subscribe>
+
+                <Button
+                  type="button"
+                  onClick={handlePasskeyLogin}
+                  disabled={isPasskeyAuthenticating}
+                  variant="outline"
+                  className="w-full font-semibold tracking-tight text-xs h-9 uppercase flex items-center justify-center gap-1.5 border-brand-border text-[#111111] hover:bg-[#111111]/5"
+                >
+                  <Fingerprint className="w-4 h-4" />
+                  {isPasskeyAuthenticating ? 'Authenticating...' : 'Sign in with Passkey'}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

@@ -6,8 +6,10 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './authControllerGenerateLoginOptionsParams.js';
 export * from './bookmarksControllerFindAllParams.js';
 export * from './createBookmarkDto.js';
+export * from './createCollectionDto.js';
 export * from './createDocumentDto.js';
 export * from './createExpenseDto.js';
 export * from './createFolderDto.js';
@@ -22,7 +24,10 @@ export * from './createTransactionDto.js';
 export * from './createTransactionDtoType.js';
 export * from './createVehicleDto.js';
 export * from './documentsControllerFindAllParams.js';
+export * from './downloadMediaDto.js';
 export * from './expensesControllerFindAllParams.js';
+export * from './extractUrlDto.js';
+export * from './fetchControllerGetHistoryParams.js';
 export * from './fuelControllerFindAllParams.js';
 export * from './importBookmarksDto.js';
 export * from './loginDto.js';
@@ -37,6 +42,7 @@ export * from './transactionsControllerFindAllParams.js';
 export * from './transactionsControllerFindAllType.js';
 export * from './updateBookmarkDto.js';
 export * from './updateFolderDto.js';
+export * from './updateHistoryDto.js';
 export * from './updateReminderDto.js';
 export * from './updateReminderDtoStatus.js';
 export * from './updateSubscriptionDto.js';

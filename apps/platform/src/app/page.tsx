@@ -11,6 +11,7 @@ import {
   useSubscriptionsControllerFindAll,
   useVehiclesControllerFindAll,
   useRemindersControllerFindAll,
+  useFetchControllerGetHistory,
 } from '@atlas/api-client';
 import { useAuthStore } from '../store/useAuthStore';
 import { Button } from '@atlas/ui/components/button';
@@ -27,7 +28,11 @@ import {
   GasPump,
   Gauge,
   Wrench,
+  Download,
+  Heart,
+  Fingerprint,
 } from '@phosphor-icons/react';
+import { startRegistration } from '@simplewebauthn/browser';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +105,11 @@ export default function HomePortalPage() {
     query: { enabled: !!user },
   });
 
+  // Fetch Fetch Stats
+  const { data: fetchHistoryData } = useFetchControllerGetHistory(undefined, {
+    query: { enabled: !!user },
+  });
+
   const logoutMutation = useAuthControllerLogout();
 
   const handleLogout = async () => {
@@ -110,6 +120,50 @@ export default function HomePortalPage() {
     } catch {
       logout();
       router.push('/login');
+    }
+  };
+
+  const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
+
+  const handleRegisterPasskey = async () => {
+    setIsRegisteringPasskey(true);
+    try {
+      const optionsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/auth/passkey/register-options`,
+        {
+          credentials: 'include',
+        }
+      );
+      if (!optionsRes.ok) {
+        throw new Error('Failed to load passkey registration options');
+      }
+      const options = await optionsRes.json();
+
+      const registrationJSON = await startRegistration({ optionsJSON: options.data });
+
+      const verifyRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/auth/passkey/register-verify`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            response: registrationJSON,
+          }),
+        }
+      );
+
+      if (!verifyRes.ok) {
+        throw new Error('Passkey verification failed');
+      }
+
+      alert('Passkey successfully registered on this device!');
+    } catch (err: any) {
+      alert(`Passkey registration failed: ${err.message}`);
+    } finally {
+      setIsRegisteringPasskey(false);
     }
   };
 
@@ -146,6 +200,10 @@ export default function HomePortalPage() {
   const totalVehicles = (vehiclesData as any)?.data?.length || 0;
   const totalActiveReminders = (remindersData as any)?.data?.filter((r: any) => r.status === 'ACTIVE').length || 0;
 
+  // Calculations for Fetch
+  const totalDownloads = (fetchHistoryData as any)?.data?.length || 0;
+  const totalFavoriteDownloads = (fetchHistoryData as any)?.data?.filter((i: any) => i.isFavorite).length || 0;
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -166,7 +224,7 @@ export default function HomePortalPage() {
   return (
     <div className="min-h-[100dvh] bg-brand-canvas flex flex-col justify-between py-12 px-4 md:px-12 select-none font-mono">
       {/* Top Bar: Portal Greeting & Profile */}
-      <div className="max-w-5xl w-full mx-auto flex items-center justify-between border-b border-brand-border pb-6">
+      <div className="max-w-8xl w-full mx-auto flex items-center justify-between border-b border-brand-border pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-[#111111] animate-pulse rounded-none" />
@@ -187,6 +245,16 @@ export default function HomePortalPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleRegisterPasskey}
+            disabled={isRegisteringPasskey}
+            className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-[#111111]"
+          >
+            <Fingerprint className="w-3.5 h-3.5" />
+            {isRegisteringPasskey ? 'Registering...' : 'Setup Passkey'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleLogout}
             className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border"
           >
@@ -197,7 +265,7 @@ export default function HomePortalPage() {
       </div>
 
       {/* Main Content: Hub Grid Picker */}
-      <div className="max-w-5xl w-full mx-auto py-12 space-y-10 flex-1 flex flex-col justify-center">
+      <div className="max-w-8xl w-full mx-auto py-12 space-y-10 flex-1 flex flex-col justify-center">
         {/* Asymmetric Header */}
         <div className="space-y-3 max-w-xl">
           <div className="text-[10px] uppercase text-[#787774] tracking-widest flex items-center gap-2">
@@ -362,11 +430,61 @@ export default function HomePortalPage() {
               </div>
             </div>
           </div>
+
+          {/* Card 4: Fetch Media Downloader */}
+          <div
+            onClick={() => router.push('/fetch')}
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-[#111111] hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-10 bg-[#111111]/5 flex items-center justify-center text-[#111111]">
+                  <Download className="w-5 h-5" />
+                </div>
+                <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
+                  Module 04
+                </Badge>
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-[#111111]">
+                  Fetch
+                </h3>
+                <p className="text-xs text-[#787774]">
+                  Social media video, audio, and image downloader with metadata history.
+                </p>
+              </div>
+            </div>
+
+            {/* Live Data Summary for Fetch */}
+            <div className="border-t border-[#111111]/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-[#787774]">
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Downloads</span>
+                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                    <Download className="w-3.5 h-3.5" />
+                    {totalDownloads} items
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Favorites</span>
+                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                    <Heart className="w-3.5 h-3.5 text-[#b3261e]" />
+                    {totalFavoriteDownloads} saved
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] group-hover:bg-[#111111] group-hover:text-white group-hover:border-[#111111] transition-colors">
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Footer Details */}
-      <div className="max-w-5xl w-full mx-auto border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-[#787774] uppercase tracking-wider gap-4">
+      <div className="max-w-8xl w-full mx-auto border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-[#787774] uppercase tracking-wider gap-4">
         <span>Gustam Platform v1.0 · Personal Workspaces</span>
         <span className="flex items-center gap-1">
           <User className="w-3 h-3" />

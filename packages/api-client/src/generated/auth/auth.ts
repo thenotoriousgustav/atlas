@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuthControllerGenerateLoginOptionsParams,
   LoginDto
 } from '../model';
 
@@ -330,3 +331,312 @@ export function useAuthControllerMe<TData = Awaited<ReturnType<typeof authContro
 
 
 
+/**
+ * @summary Generate registration options for a new Passkey
+ */
+export const authControllerGenerateRegisterOptions = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/auth/passkey/register-options`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getAuthControllerGenerateRegisterOptionsQueryKey = () => {
+    return [
+    `/v1/auth/passkey/register-options`
+    ] as const;
+    }
+
+
+export const getAuthControllerGenerateRegisterOptionsQueryOptions = <TData = Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthControllerGenerateRegisterOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>> = ({ signal }) => authControllerGenerateRegisterOptions(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthControllerGenerateRegisterOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>>
+export type AuthControllerGenerateRegisterOptionsQueryError = unknown
+
+
+export function useAuthControllerGenerateRegisterOptions<TData = Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>,
+          TError,
+          Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthControllerGenerateRegisterOptions<TData = Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>,
+          TError,
+          Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthControllerGenerateRegisterOptions<TData = Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Generate registration options for a new Passkey
+ */
+
+export function useAuthControllerGenerateRegisterOptions<TData = Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateRegisterOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthControllerGenerateRegisterOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Verify and register a new Passkey
+ */
+export const authControllerVerifyRegister = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/auth/passkey/register-verify`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getAuthControllerVerifyRegisterMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerVerifyRegister>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof authControllerVerifyRegister>>, TError,void, TContext> => {
+
+const mutationKey = ['authControllerVerifyRegister'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authControllerVerifyRegister>>, void> = () => {
+
+
+          return  authControllerVerifyRegister(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthControllerVerifyRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof authControllerVerifyRegister>>>
+
+    export type AuthControllerVerifyRegisterMutationError = unknown
+
+    /**
+ * @summary Verify and register a new Passkey
+ */
+export const useAuthControllerVerifyRegister = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerVerifyRegister>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof authControllerVerifyRegister>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAuthControllerVerifyRegisterMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Generate authentication options for login
+ */
+export const authControllerGenerateLoginOptions = (
+    params: AuthControllerGenerateLoginOptionsParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/auth/passkey/login-options`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getAuthControllerGenerateLoginOptionsQueryKey = (params?: AuthControllerGenerateLoginOptionsParams,) => {
+    return [
+    `/v1/auth/passkey/login-options`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAuthControllerGenerateLoginOptionsQueryOptions = <TData = Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError = unknown>(params: AuthControllerGenerateLoginOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthControllerGenerateLoginOptionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>> = ({ signal }) => authControllerGenerateLoginOptions(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthControllerGenerateLoginOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>>
+export type AuthControllerGenerateLoginOptionsQueryError = unknown
+
+
+export function useAuthControllerGenerateLoginOptions<TData = Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError = unknown>(
+ params: AuthControllerGenerateLoginOptionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>,
+          TError,
+          Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthControllerGenerateLoginOptions<TData = Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError = unknown>(
+ params: AuthControllerGenerateLoginOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>,
+          TError,
+          Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthControllerGenerateLoginOptions<TData = Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError = unknown>(
+ params: AuthControllerGenerateLoginOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Generate authentication options for login
+ */
+
+export function useAuthControllerGenerateLoginOptions<TData = Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError = unknown>(
+ params: AuthControllerGenerateLoginOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerGenerateLoginOptions>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthControllerGenerateLoginOptionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Verify Passkey login and set auth cookies
+ */
+export const authControllerVerifyLogin = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/auth/passkey/login-verify`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getAuthControllerVerifyLoginMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerVerifyLogin>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof authControllerVerifyLogin>>, TError,void, TContext> => {
+
+const mutationKey = ['authControllerVerifyLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authControllerVerifyLogin>>, void> = () => {
+
+
+          return  authControllerVerifyLogin(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthControllerVerifyLoginMutationResult = NonNullable<Awaited<ReturnType<typeof authControllerVerifyLogin>>>
+
+    export type AuthControllerVerifyLoginMutationError = unknown
+
+    /**
+ * @summary Verify Passkey login and set auth cookies
+ */
+export const useAuthControllerVerifyLogin = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerVerifyLogin>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof authControllerVerifyLogin>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAuthControllerVerifyLoginMutationOptions(options), queryClient);
+    }
