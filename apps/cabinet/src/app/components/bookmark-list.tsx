@@ -21,7 +21,240 @@ import {
   Copy,
 } from '@phosphor-icons/react';
 import { BookmarkCard } from './bookmark-card';
-import { Masonry, MasonryItem } from '@atlas/ui/components/masonry';
+
+interface MoodboardCardProps {
+  bookmark: any;
+  onSelectTag: (tagName: string) => void;
+  onToggleFavorite: (bookmark: any) => void;
+  onToggleArchive: (bookmark: any) => void;
+  onEditBookmark: (bookmark: any) => void;
+  onDeleteBookmark: (id: string) => void;
+  onDuplicateBookmark: (bookmark: any) => void;
+  getHostname: (url: string) => string;
+  getPastelColor: (str: string) => { bg: string; text: string };
+}
+
+function MoodboardCard({
+  bookmark,
+  onSelectTag,
+  onToggleFavorite,
+  onToggleArchive,
+  onEditBookmark,
+  onDeleteBookmark,
+  onDuplicateBookmark,
+  getHostname,
+  getPastelColor,
+}: MoodboardCardProps) {
+  const hostname = getHostname(bookmark.url);
+  const color = getPastelColor(hostname);
+  
+  const [imageSrc, setImageSrc] = React.useState<string | null>(bookmark.imageUrl || null);
+  const [imageStatus, setImageStatus] = React.useState<'loading' | 'loaded' | 'error'>(
+    bookmark.imageUrl ? 'loading' : 'loading'
+  );
+
+  React.useEffect(() => {
+    if (bookmark.imageUrl) {
+      setImageSrc(bookmark.imageUrl);
+      setImageStatus('loading');
+    } else {
+      // Try live screenshot
+      const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(bookmark.url)}&screenshot=true&embed=screenshot.url`;
+      setImageSrc(screenshotUrl);
+      setImageStatus('loading');
+    }
+  }, [bookmark.imageUrl, bookmark.url]);
+
+  const handleImageError = () => {
+    if (bookmark.imageUrl && imageSrc === bookmark.imageUrl) {
+      // Fallback from metadata image to live screenshot
+      const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(bookmark.url)}&screenshot=true&embed=screenshot.url`;
+      setImageSrc(screenshotUrl);
+      setImageStatus('loading');
+    } else {
+      // Live screenshot also failed, show pastel color fallback
+      setImageStatus('error');
+    }
+  };
+
+  return (
+    <Card className="border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-[#111111]/30 transition-all h-auto w-full group shadow-none [--card-spacing:0px]">
+      {/* Visual Top Header - Screenshot / Fallback */}
+      <div className="relative w-full bg-[#FBFBFA] border-b border-brand-border overflow-hidden aspect-[16/10] shrink-0">
+        {imageStatus === 'loading' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 animate-pulse">
+            <Clock className="w-5 h-5 text-gray-400 animate-spin" />
+          </div>
+        )}
+
+        {imageStatus !== 'error' && imageSrc && (
+          <img
+            src={imageSrc}
+            alt={bookmark.title || hostname}
+            onLoad={() => setImageStatus('loaded')}
+            onError={handleImageError}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${
+              imageStatus === 'loaded' ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        )}
+
+        {imageStatus === 'error' && (
+          <div className={`w-full h-full flex flex-col items-center justify-center relative p-4 ${color.bg}`}>
+            <div className="size-10 bg-white flex items-center justify-center border border-brand-border shadow-sm rounded-none">
+              <img
+                src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
+                alt=""
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+                className="size-6 object-contain"
+              />
+            </div>
+            <span className={`text-[10px] font-mono ${color.text} mt-2 uppercase tracking-wider truncate max-w-full px-2`}>
+              {hostname}
+            </span>
+          </div>
+        )}
+
+        {/* Folder Badge */}
+        {bookmark.folder && (
+          <Badge
+            variant="outline"
+            className="absolute top-2 right-2 text-[8px] bg-white/95 border-none shadow-sm shrink-0 font-mono py-0.5 px-1.5 uppercase"
+          >
+            {bookmark.folder.name}
+          </Badge>
+        )}
+      </div>
+
+      {/* Card Content */}
+      <div className="p-4 flex flex-col justify-between gap-4">
+        <div className="space-y-1.5">
+          <a
+            href={bookmark.url}
+            target="_blank"
+            rel="noreferrer"
+            className="group/link block text-sm font-semibold text-[#111111] hover:underline leading-tight"
+          >
+            {bookmark.title || bookmark.url}
+            <ArrowSquareOut className="inline-block ml-1 w-3 h-3 text-[#787774] opacity-0 group-hover/link:opacity-100 transition-opacity" />
+          </a>
+          {bookmark.description && (
+            <p className="text-[11px] text-[#787774] leading-relaxed mt-1">
+              {bookmark.description}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-3 pt-2">
+          {/* Tags */}
+          {bookmark.tags && bookmark.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {bookmark.tags.map((tag: any) => (
+                <span
+                  key={tag.id}
+                  onClick={() => onSelectTag(tag.name)}
+                  className="px-1.5 py-0.5 bg-brand-blue-bg text-brand-blue-text rounded-none text-[9px] font-mono cursor-pointer hover:opacity-80"
+                >
+                  #{tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Actions footer */}
+          <div className="flex items-center justify-between border-t border-brand-border pt-2.5">
+            <span className="text-[9px] text-[#787774]/70 font-mono">
+              {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
+            <div className="flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger render={
+                  <Button
+                    onClick={() => onToggleFavorite(bookmark)}
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-7"
+                  >
+                    <Star
+                      className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-[#787774]'}`}
+                      weight={bookmark.isFavorite ? 'fill' : 'regular'}
+                    />
+                  </Button>
+                } />
+                <TooltipContent>Favorite</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger render={
+                  <Button
+                    onClick={() => onToggleArchive(bookmark)}
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-7"
+                  >
+                    <Archive
+                      className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-[#787774]'}`}
+                      weight={bookmark.isArchived ? 'fill' : 'regular'}
+                    />
+                  </Button>
+                } />
+                <TooltipContent>Archive</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger render={
+                  <Button
+                    onClick={() => onDuplicateBookmark(bookmark)}
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-7"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-[#787774]" />
+                  </Button>
+                } />
+                <TooltipContent>Duplicate</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger render={
+                  <Button
+                    onClick={() => onEditBookmark(bookmark)}
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-7"
+                  >
+                    <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
+                  </Button>
+                } />
+                <TooltipContent>Edit</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger render={
+                  <Button
+                    onClick={() => onDeleteBookmark(bookmark.id)}
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-7 hover:bg-brand-red-bg hover:text-brand-red-text"
+                  >
+                    <Trash className="w-3.5 h-3.5" />
+                  </Button>
+                } />
+                <TooltipContent>Delete</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 interface BookmarkListProps {
   bookmarks: any[];
@@ -31,7 +264,7 @@ interface BookmarkListProps {
   filterFavorite?: boolean;
   filterArchived?: boolean;
   folders: any[];
-  viewMode: 'card' | 'list' | 'moodboard' | 'masonry';
+  viewMode: 'card' | 'list' | 'moodboard';
   onSelectTag: (tagName: string) => void;
   onToggleFavorite: (bookmark: any) => void;
   onToggleArchive: (bookmark: any) => void;
@@ -56,6 +289,25 @@ export function BookmarkList({
   onDeleteBookmark,
   onDuplicateBookmark,
 }: BookmarkListProps) {
+  const [columnCount, setColumnCount] = React.useState(3);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setColumnCount(1);
+      } else if (window.innerWidth < 1024) {
+        setColumnCount(2);
+      } else {
+        setColumnCount(3);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Determine title for the list header
   const getHeaderTitle = () => {
     if (selectedFolderId) {
@@ -123,11 +375,21 @@ export function BookmarkList({
 
       {/* Bookmarks Loading State */}
       {isBookmarksLoading ? (
-        <div className={viewMode === 'moodboard' || viewMode === 'masonry' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'space-y-4'}>
-          <Skeleton className={viewMode === 'moodboard' || viewMode === 'masonry' ? 'h-72 border border-brand-border' : 'h-24 border border-brand-border'} />
-          <Skeleton className={viewMode === 'moodboard' || viewMode === 'masonry' ? 'h-72 border border-brand-border' : 'h-24 border border-brand-border'} />
-          {(viewMode === 'moodboard' || viewMode === 'masonry') && <Skeleton className="h-72 border border-brand-border" />}
-        </div>
+        viewMode === 'moodboard' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <Skeleton className="h-80 border border-brand-border rounded-none" />
+            <Skeleton className="h-64 border border-brand-border rounded-none" />
+            <Skeleton className="h-96 border border-brand-border rounded-none" />
+            <Skeleton className="h-72 border border-brand-border rounded-none" />
+            <Skeleton className="h-88 border border-brand-border rounded-none" />
+            <Skeleton className="h-56 border border-brand-border rounded-none" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Skeleton className="h-24 border border-brand-border rounded-none" />
+            <Skeleton className="h-24 border border-brand-border rounded-none" />
+          </div>
+        )
       ) : bookmarks.length === 0 ? (
         <Empty className="bg-white border border-brand-border rounded-none p-10">
           <EmptyHeader>
@@ -298,307 +560,54 @@ export function BookmarkList({
           )}
 
           {viewMode === 'moodboard' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {bookmarks.map((bookmark: any) => {
-                const hostname = getHostname(bookmark.url);
-                const color = getPastelColor(hostname);
-                return (
-                  <Card
-                    key={bookmark.id}
-                    className="border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-[#111111]/30 transition-all h-full"
-                  >
-                    {/* Visual Top Header */}
-                    <div
-                      className={`h-32 flex flex-col items-center justify-center relative p-4 ${color.bg} border-b border-brand-border shrink-0`}
-                    >
-                      <div className="size-12 bg-white flex items-center justify-center border border-brand-border shadow-sm rounded-none">
-                        <img
-                          src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
-                          alt=""
-                          onError={handleImageError}
-                          className="size-8 object-contain"
-                        />
-                        <span className="text-xl font-serif font-bold text-[#111111] hidden">
-                          {bookmark.title?.[0] || 'C'}
-                        </span>
+            <div>
+              {!mounted ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {bookmarks.map((bookmark: any) => (
+                    <MoodboardCard
+                      key={bookmark.id}
+                      bookmark={bookmark}
+                      onSelectTag={onSelectTag}
+                      onToggleFavorite={onToggleFavorite}
+                      onToggleArchive={onToggleArchive}
+                      onEditBookmark={onEditBookmark}
+                      onDeleteBookmark={onDeleteBookmark}
+                      onDuplicateBookmark={onDuplicateBookmark}
+                      getHostname={getHostname}
+                      getPastelColor={getPastelColor}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={`grid gap-5 ${
+                  columnCount === 1 ? 'grid-cols-1' : columnCount === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                } items-start`}>
+                  {Array.from({ length: columnCount }).map((_, colIndex) => {
+                    const colBookmarks = bookmarks.filter((_, idx) => idx % columnCount === colIndex);
+                    return (
+                      <div key={colIndex} className="flex flex-col gap-5">
+                        {colBookmarks.map((bookmark: any) => (
+                          <MoodboardCard
+                            key={bookmark.id}
+                            bookmark={bookmark}
+                            onSelectTag={onSelectTag}
+                            onToggleFavorite={onToggleFavorite}
+                            onToggleArchive={onToggleArchive}
+                            onEditBookmark={onEditBookmark}
+                            onDeleteBookmark={onDeleteBookmark}
+                            onDuplicateBookmark={onDuplicateBookmark}
+                            getHostname={getHostname}
+                            getPastelColor={getPastelColor}
+                          />
+                        ))}
                       </div>
-                      <span
-                        className={`text-[10px] font-mono ${color.text} mt-2.5 uppercase tracking-wider truncate max-w-full px-2`}
-                      >
-                        {hostname}
-                      </span>
-                      {bookmark.folder && (
-                        <Badge
-                          variant="outline"
-                          className="absolute top-2 right-2 text-[8px] bg-white/90 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
-                        >
-                          {bookmark.folder.name}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Card Content */}
-                    <div className="p-4 flex-1 flex flex-col justify-between gap-4">
-                      <div className="space-y-1">
-                        <a
-                          href={bookmark.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="group block text-sm font-semibold text-[#111111] hover:underline line-clamp-2 leading-tight"
-                        >
-                          {bookmark.title || bookmark.url}
-                          <ArrowSquareOut className="inline-block ml-1 w-3 h-3 text-[#787774] opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </a>
-                        {bookmark.description && (
-                          <p className="text-[11px] text-[#787774] line-clamp-3 leading-normal mt-1">
-                            {bookmark.description}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-3 mt-auto">
-                        {/* Tags */}
-                        {bookmark.tags && bookmark.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {bookmark.tags.map((tag: any) => (
-                              <span
-                                key={tag.id}
-                                onClick={() => onSelectTag(tag.name)}
-                                className="px-1.5 py-0.5 bg-brand-blue-bg text-brand-blue-text rounded-none text-[9px] font-mono cursor-pointer hover:opacity-80"
-                              >
-                                #{tag.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Actions footer */}
-                        <div className="flex items-center justify-between border-t border-brand-border pt-2.5">
-                          <span className="text-[9px] text-[#787774]/70 font-mono">
-                            {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            <Tooltip>
-                              <TooltipTrigger render={
-                                <Button
-                                  onClick={() => onToggleFavorite(bookmark)}
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="size-7"
-                                  title="Favorite"
-                                >
-                                  <Star
-                                    className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-[#787774]'}`}
-                                    weight={bookmark.isFavorite ? 'fill' : 'regular'}
-                                  />
-                                </Button>
-                              } />
-                              <TooltipContent>Favorite</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger render={
-                                <Button
-                                  onClick={() => onToggleArchive(bookmark)}
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="size-7"
-                                  title="Archive"
-                                >
-                                  <Archive
-                                    className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-[#787774]'}`}
-                                    weight={bookmark.isArchived ? 'fill' : 'regular'}
-                                  />
-                                </Button>
-                              } />
-                              <TooltipContent>Archive</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger render={
-                                <Button
-                                  onClick={() => onDuplicateBookmark(bookmark)}
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="size-7"
-                                  title="Duplicate"
-                                >
-                                  <Copy className="w-3.5 h-3.5 text-[#787774]" />
-                                </Button>
-                              } />
-                              <TooltipContent>Duplicate</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger render={
-                                <Button
-                                  onClick={() => onEditBookmark(bookmark)}
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="size-7"
-                                  title="Edit"
-                                >
-                                  <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
-                                </Button>
-                              } />
-                              <TooltipContent>Edit</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger render={
-                                <Button
-                                  onClick={() => onDeleteBookmark(bookmark.id)}
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="size-7 hover:bg-brand-red-bg hover:text-brand-red-text"
-                                  title="Delete"
-                                >
-                                  <Trash className="w-3.5 h-3.5" />
-                                </Button>
-                              } />
-                              <TooltipContent>Delete</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          {viewMode === 'masonry' && (
-            <Masonry columnWidth={320} gap={16}>
-              {bookmarks.map((bookmark: any) => {
-                const hostname = getHostname(bookmark.url);
-                const color = getPastelColor(hostname);
-                return (
-                  <MasonryItem key={bookmark.id}>
-                    <Card className="border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-[#111111]/30 transition-all">
-                      {/* Visual Top Header */}
-                      <div className={`h-28 flex flex-col items-center justify-center relative p-4 ${color.bg} border-b border-brand-border shrink-0`}>
-                        <div className="size-10 bg-white flex items-center justify-center border border-brand-border shadow-sm rounded-none">
-                          <img
-                            src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
-                            alt=""
-                            onError={handleImageError}
-                            className="size-6 object-contain"
-                          />
-                        </div>
-                        <span className={`text-[10px] font-mono ${color.text} mt-2 uppercase tracking-wider truncate max-w-full px-2`}>
-                          {hostname}
-                        </span>
-                        {bookmark.folder && (
-                          <Badge variant="outline" className="absolute top-2 right-2 text-[8px] bg-white/90 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase">
-                            {bookmark.folder.name}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Card Content */}
-                      <div className="p-4 flex flex-col justify-between gap-4 flex-1">
-                        <div className="space-y-1">
-                          <a
-                            href={bookmark.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="group block text-sm font-semibold text-[#111111] hover:underline leading-tight"
-                          >
-                            {bookmark.title || bookmark.url}
-                            <ArrowSquareOut className="inline-block ml-1 w-3 h-3 text-[#787774] opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </a>
-                          {bookmark.description && (
-                            <p className="text-[11px] text-[#787774] leading-normal mt-1">
-                              {bookmark.description}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-3">
-                          {/* Tags */}
-                          {bookmark.tags && bookmark.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {bookmark.tags.map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  onClick={() => onSelectTag(tag.name)}
-                                  className="px-1.5 py-0.5 bg-brand-blue-bg text-brand-blue-text rounded-none text-[9px] font-mono cursor-pointer hover:opacity-80"
-                                >
-                                  #{tag.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Actions Footer */}
-                          <div className="flex items-center justify-between border-t border-brand-border pt-2.5">
-                            <span className="text-[9px] text-[#787774]/70 font-mono">
-                              {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </span>
-                            <div className="flex items-center gap-0.5">
-                              <Tooltip>
-                                <TooltipTrigger render={
-                                  <Button onClick={() => onToggleFavorite(bookmark)} variant="ghost" size="icon-xs" className="size-7">
-                                    <Star className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-[#787774]'}`} weight={bookmark.isFavorite ? 'fill' : 'regular'} />
-                                  </Button>
-                                } />
-                                <TooltipContent>Favorite</TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger render={
-                                  <Button onClick={() => onToggleArchive(bookmark)} variant="ghost" size="icon-xs" className="size-7">
-                                    <Archive className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-[#787774]'}`} weight={bookmark.isArchived ? 'fill' : 'regular'} />
-                                  </Button>
-                                } />
-                                <TooltipContent>Archive</TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger render={
-                                  <Button onClick={() => onDuplicateBookmark(bookmark)} variant="ghost" size="icon-xs" className="size-7">
-                                    <Copy className="w-3.5 h-3.5 text-[#787774]" />
-                                  </Button>
-                                } />
-                                <TooltipContent>Duplicate</TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger render={
-                                  <Button onClick={() => onEditBookmark(bookmark)} variant="ghost" size="icon-xs" className="size-7">
-                                    <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
-                                  </Button>
-                                } />
-                                <TooltipContent>Edit</TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger render={
-                                  <Button onClick={() => onDeleteBookmark(bookmark.id)} variant="ghost" size="icon-xs" className="size-7 hover:bg-brand-red-bg hover:text-brand-red-text">
-                                    <Trash className="w-3.5 h-3.5" />
-                                  </Button>
-                                } />
-                                <TooltipContent>Delete</TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </MasonryItem>
-                );
-              })}
-            </Masonry>
-          )}
         </div>
       )}
     </div>

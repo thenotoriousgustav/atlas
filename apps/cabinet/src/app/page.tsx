@@ -41,17 +41,17 @@ export default function DashboardPage() {
   const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchDebounced, setSearchDebounced] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'card' | 'list' | 'moodboard' | 'masonry'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'list' | 'moodboard'>('card');
 
   // Load viewMode from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('cabinet_view_mode');
-    if (saved === 'card' || saved === 'list' || saved === 'moodboard' || saved === 'masonry') {
+    if (saved === 'card' || saved === 'list' || saved === 'moodboard') {
       setViewMode(saved as any);
     }
   }, []);
 
-  const handleViewModeChange = (mode: 'card' | 'list' | 'moodboard' | 'masonry') => {
+  const handleViewModeChange = (mode: 'card' | 'list' | 'moodboard') => {
     setViewMode(mode);
     localStorage.setItem('cabinet_view_mode', mode);
   };

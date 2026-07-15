@@ -23,7 +23,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@atlas/ui/components/select';
-import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Columns } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SquaresFour, List, Cards } from '@phosphor-icons/react';
 
 interface ToolbarProps {
   searchQuery: string;
@@ -34,8 +34,8 @@ interface ToolbarProps {
   bookmarkForm: any;
   folders: any[];
   resetBookmarkForm: () => void;
-  viewMode: 'card' | 'list' | 'moodboard' | 'masonry';
-  onViewModeChange: (mode: 'card' | 'list' | 'moodboard' | 'masonry') => void;
+  viewMode: 'card' | 'list' | 'moodboard';
+  onViewModeChange: (mode: 'card' | 'list' | 'moodboard') => void;
 }
 
 export function Toolbar({
@@ -110,19 +110,6 @@ export function Toolbar({
             <TooltipContent>Card View</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger render={
-              <Button
-                onClick={() => onViewModeChange('masonry')}
-                variant={viewMode === 'masonry' ? 'default' : 'ghost'}
-                size="icon-xs"
-                className="size-7"
-              >
-                <Columns className="w-4 h-4" />
-              </Button>
-            } />
-            <TooltipContent>Masonry View</TooltipContent>
-          </Tooltip>
         </ButtonGroup>
       </div>
 
