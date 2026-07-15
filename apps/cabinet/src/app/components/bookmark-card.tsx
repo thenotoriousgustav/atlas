@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@atlas/ui/components/card';
 import { Badge } from '@atlas/ui/components/badge';
 import { Button } from '@atlas/ui/components/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
 import {
   ArrowSquareOut,
   Clock,
@@ -9,6 +10,7 @@ import {
   Archive,
   PencilSimple,
   Trash,
+  Copy,
 } from '@phosphor-icons/react';
 
 interface BookmarkCardProps {
@@ -18,6 +20,7 @@ interface BookmarkCardProps {
   onToggleArchive: (bookmark: any) => void;
   onEditBookmark: (bookmark: any) => void;
   onDeleteBookmark: (id: string) => void;
+  onDuplicateBookmark: (bookmark: any) => void;
 }
 
 export function BookmarkCard({
@@ -27,6 +30,7 @@ export function BookmarkCard({
   onToggleArchive,
   onEditBookmark,
   onDeleteBookmark,
+  onDuplicateBookmark,
 }: BookmarkCardProps) {
   return (
     <Card className="border-brand-border bg-white rounded-none p-5 transition-all hover:border-[#111111]/30 flex flex-col sm:flex-row gap-4 justify-between items-start">
@@ -92,44 +96,73 @@ export function BookmarkCard({
 
       {/* Bookmark actions */}
       <div className="flex sm:flex-col items-center gap-1.5 shrink-0 self-end sm:self-start w-full sm:w-auto justify-end">
-        <Button
-          onClick={() => onToggleFavorite(bookmark)}
-          variant="outline"
-          size="icon"
-          className={bookmark.isFavorite ? 'bg-brand-yellow-bg text-brand-yellow-text border-[#956400]/20' : ''}
-          title="Mark as favorite"
-        >
-          <Star className="w-4 h-4" weight={bookmark.isFavorite ? 'fill' : 'regular'} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger render={
+            <Button
+              onClick={() => onToggleFavorite(bookmark)}
+              variant="outline"
+              size="icon"
+              className={bookmark.isFavorite ? 'bg-brand-yellow-bg text-brand-yellow-text border-[#956400]/20' : ''}
+            >
+              <Star className="w-4 h-4" weight={bookmark.isFavorite ? 'fill' : 'regular'} />
+            </Button>
+          } />
+          <TooltipContent>Mark as favorite</TooltipContent>
+        </Tooltip>
 
-        <Button
-          onClick={() => onToggleArchive(bookmark)}
-          variant="outline"
-          size="icon"
-          className={bookmark.isArchived ? 'bg-brand-blue-bg text-brand-blue-text border-brand-blue-text/20' : ''}
-          title="Archive bookmark"
-        >
-          <Archive className="w-4 h-4" weight={bookmark.isArchived ? 'fill' : 'regular'} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger render={
+            <Button
+              onClick={() => onToggleArchive(bookmark)}
+              variant="outline"
+              size="icon"
+              className={bookmark.isArchived ? 'bg-brand-blue-bg text-brand-blue-text border-brand-blue-text/20' : ''}
+            >
+              <Archive className="w-4 h-4" weight={bookmark.isArchived ? 'fill' : 'regular'} />
+            </Button>
+          } />
+          <TooltipContent>Archive bookmark</TooltipContent>
+        </Tooltip>
 
-        <Button
-          onClick={() => onEditBookmark(bookmark)}
-          variant="outline"
-          size="icon"
-          title="Edit bookmark"
-        >
-          <PencilSimple className="w-4 h-4 text-[#787774]" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger render={
+            <Button
+              onClick={() => onDuplicateBookmark(bookmark)}
+              variant="outline"
+              size="icon"
+            >
+              <Copy className="w-4 h-4 text-[#787774]" />
+            </Button>
+          } />
+          <TooltipContent>Duplicate bookmark</TooltipContent>
+        </Tooltip>
 
-        <Button
-          onClick={() => onDeleteBookmark(bookmark.id)}
-          variant="outline"
-          size="icon"
-          className="hover:bg-brand-red-bg hover:text-brand-red-text hover:border-brand-red-text/20"
-          title="Delete bookmark"
-        >
-          <Trash className="w-4 h-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger render={
+            <Button
+              onClick={() => onEditBookmark(bookmark)}
+              variant="outline"
+              size="icon"
+            >
+              <PencilSimple className="w-4 h-4 text-[#787774]" />
+            </Button>
+          } />
+          <TooltipContent>Edit bookmark</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger render={
+            <Button
+              onClick={() => onDeleteBookmark(bookmark.id)}
+              variant="outline"
+              size="icon"
+              className="hover:bg-brand-red-bg hover:text-brand-red-text hover:border-brand-red-text/20"
+            >
+              <Trash className="w-4 h-4" />
+            </Button>
+          } />
+          <TooltipContent>Delete bookmark</TooltipContent>
+        </Tooltip>
       </div>
     </Card>
   );

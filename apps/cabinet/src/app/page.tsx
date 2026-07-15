@@ -41,6 +41,20 @@ export default function DashboardPage() {
   const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchDebounced, setSearchDebounced] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'card' | 'list' | 'moodboard' | 'masonry'>('card');
+
+  // Load viewMode from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('cabinet_view_mode');
+    if (saved === 'card' || saved === 'list' || saved === 'moodboard' || saved === 'masonry') {
+      setViewMode(saved as any);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: 'card' | 'list' | 'moodboard' | 'masonry') => {
+    setViewMode(mode);
+    localStorage.setItem('cabinet_view_mode', mode);
+  };
 
   // Modals state
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
@@ -295,6 +309,24 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDuplicateBookmark = async (bookmark: any) => {
+    try {
+      await createBookmarkMutation.mutateAsync({
+        data: {
+          url: bookmark.url,
+          title: bookmark.title ? `${bookmark.title} (Copy)` : undefined,
+          description: bookmark.description || undefined,
+          folderId: bookmark.folderId || undefined,
+          tags: bookmark.tags?.map((t: any) => t.name) || [],
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+    } catch {
+      alert('Failed to duplicate bookmark');
+    }
+  };
+
   const resetBookmarkForm = () => {
     setBookmarkToEdit(null);
     bookmarkForm.reset();
@@ -396,6 +428,8 @@ export default function DashboardPage() {
               bookmarkForm={bookmarkForm}
               folders={folders}
               resetBookmarkForm={resetBookmarkForm}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
             />
 
             {/* Bookmarks Grid / List */}
@@ -407,6 +441,7 @@ export default function DashboardPage() {
               filterFavorite={filterFavorite}
               filterArchived={filterArchived}
               folders={folders}
+              viewMode={viewMode}
               onSelectTag={(tag) => {
                 setSelectedTag(tag);
                 setSelectedFolderId(undefined);
@@ -416,6 +451,7 @@ export default function DashboardPage() {
               onToggleArchive={toggleArchive}
               onEditBookmark={handleEditBookmark}
               onDeleteBookmark={handleDeleteBookmark}
+              onDuplicateBookmark={handleDuplicateBookmark}
             />
 
           </section>

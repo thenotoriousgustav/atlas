@@ -8,6 +8,8 @@ import {
   DialogDescription,
 } from '@atlas/ui/components/dialog';
 import { Button } from '@atlas/ui/components/button';
+import { ButtonGroup } from '@atlas/ui/components/button-group';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
 import { Input } from '@atlas/ui/components/input';
 import {
   Field,
@@ -21,7 +23,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@atlas/ui/components/select';
-import { MagnifyingGlass, Plus } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Columns } from '@phosphor-icons/react';
 
 interface ToolbarProps {
   searchQuery: string;
@@ -32,6 +34,8 @@ interface ToolbarProps {
   bookmarkForm: any;
   folders: any[];
   resetBookmarkForm: () => void;
+  viewMode: 'card' | 'list' | 'moodboard' | 'masonry';
+  onViewModeChange: (mode: 'card' | 'list' | 'moodboard' | 'masonry') => void;
 }
 
 export function Toolbar({
@@ -43,20 +47,83 @@ export function Toolbar({
   bookmarkForm,
   folders,
   resetBookmarkForm,
+  viewMode,
+  onViewModeChange,
 }: ToolbarProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-3.5 rounded-none border border-brand-border shadow-sm">
-      <div className="relative w-full sm:max-w-xs">
-        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <MagnifyingGlass className="w-4 h-4 text-[#787774]" />
-        </span>
-        <Input
-          type="text"
-          placeholder="Search titles, descriptions, URLs..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-9 text-xs"
-        />
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="relative w-full sm:max-w-xs">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <MagnifyingGlass className="w-4 h-4 text-[#787774]" />
+          </span>
+          <Input
+            type="text"
+            placeholder="Search titles, descriptions, URLs..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 h-9 text-xs"
+          />
+        </div>
+
+        {/* View Mode Toggle Group */}
+        <ButtonGroup className="shrink-0 bg-[#111111]/5 border border-brand-border p-0.5">
+          <Tooltip>
+            <TooltipTrigger render={
+              <Button
+                onClick={() => onViewModeChange('moodboard')}
+                variant={viewMode === 'moodboard' ? 'default' : 'ghost'}
+                size="icon-xs"
+                className="size-7"
+              >
+                <SquaresFour className="w-4 h-4" />
+              </Button>
+            } />
+            <TooltipContent>Moodboard View</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger render={
+              <Button
+                onClick={() => onViewModeChange('list')}
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="icon-xs"
+                className="size-7"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            } />
+            <TooltipContent>List View</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger render={
+              <Button
+                onClick={() => onViewModeChange('card')}
+                variant={viewMode === 'card' ? 'default' : 'ghost'}
+                size="icon-xs"
+                className="size-7"
+              >
+                <Cards className="w-4 h-4" />
+              </Button>
+            } />
+            <TooltipContent>Card View</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger render={
+              <Button
+                onClick={() => onViewModeChange('masonry')}
+                variant={viewMode === 'masonry' ? 'default' : 'ghost'}
+                size="icon-xs"
+                className="size-7"
+              >
+                <Columns className="w-4 h-4" />
+              </Button>
+            } />
+            <TooltipContent>Masonry View</TooltipContent>
+          </Tooltip>
+        </ButtonGroup>
       </div>
 
       <Dialog open={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen}>
