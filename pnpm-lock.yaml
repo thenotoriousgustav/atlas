@@ -136,7 +136,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  apps/cabinet:
+  apps/platform:
     dependencies:
       '@atlas/api-client':
         specifier: workspace:*

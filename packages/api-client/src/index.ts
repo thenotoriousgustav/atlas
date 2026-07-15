@@ -4,5 +4,7 @@ export * from './generated/health/health';
 export * from './generated/folders/folders';
 export * from './generated/bookmarks/bookmarks';
 export * from './generated/tags/tags';
+export * from './generated/transactions/transactions';
+export * from './generated/subscriptions/subscriptions';
 export * from './generated/model';
 export * from './custom-instance';

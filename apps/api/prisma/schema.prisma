@@ -18,6 +18,8 @@ model User {
   refreshTokens RefreshToken[]
   folders       Folder[]
   bookmarks     Bookmark[]
+  transactions  Transaction[]
+  subscriptions Subscription[]
 
   @@map("users")
 }
@@ -81,4 +83,40 @@ model Tag {
   bookmarks Bookmark[] @relation("BookmarkTags")
 
   @@map("tags")
+}
+
+model Transaction {
+  id          String    @id @default(uuid()) @db.Uuid
+  type        String    // "EXPENSE" or "INCOME"
+  amount      Float
+  title       String
+  description String?
+  category    String
+  date        DateTime  @default(now())
+  userId      String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Subscription {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String
+  cost         Float
+  billingCycle String    // "WEEKLY", "MONTHLY", "YEARLY"
+  startDate    DateTime
+  status       String    @default("ACTIVE") // "ACTIVE", "PAUSED", "CANCELLED"
+  userId       String    @db.Uuid
+  category     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
 }

@@ -19,7 +19,7 @@ import {
   useBookmarksControllerImport,
   AXIOS_INSTANCE,
 } from '@atlas/api-client';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { WorkspaceHeader } from './components/workspace-header';
 import { SidebarFilters } from './components/sidebar-filters';
 import { Toolbar } from './components/toolbar';
@@ -27,7 +27,7 @@ import { BookmarkList } from './components/bookmark-list';
 
 export const dynamic = 'force-dynamic';
 
-export default function DashboardPage() {
+export function CabinetDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, setUser, logout } = useAuthStore();

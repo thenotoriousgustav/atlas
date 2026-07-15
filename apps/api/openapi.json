@@ -506,6 +506,352 @@
           "tags"
         ]
       }
+    },
+    "/v1/transactions": {
+      "post": {
+        "operationId": "TransactionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new transaction",
+        "tags": [
+          "transactions"
+        ]
+      },
+      "get": {
+        "operationId": "TransactionsController_findAll",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "EXPENSE",
+                "INCOME"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get transactions with optional filtering",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/v1/transactions/{id}": {
+      "get": {
+        "operationId": "TransactionsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get transaction details by ID",
+        "tags": [
+          "transactions"
+        ]
+      },
+      "patch": {
+        "operationId": "TransactionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a transaction by ID",
+        "tags": [
+          "transactions"
+        ]
+      },
+      "delete": {
+        "operationId": "TransactionsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete a transaction by ID",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/v1/subscriptions": {
+      "post": {
+        "operationId": "SubscriptionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new subscription",
+        "tags": [
+          "subscriptions"
+        ]
+      },
+      "get": {
+        "operationId": "SubscriptionsController_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "PAUSED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "billingCycle",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "WEEKLY",
+                "MONTHLY",
+                "YEARLY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get subscriptions with optional filtering",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/v1/subscriptions/{id}": {
+      "get": {
+        "operationId": "SubscriptionsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get subscription details by ID",
+        "tags": [
+          "subscriptions"
+        ]
+      },
+      "patch": {
+        "operationId": "SubscriptionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a subscription by ID",
+        "tags": [
+          "subscriptions"
+        ]
+      },
+      "delete": {
+        "operationId": "SubscriptionsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete a subscription by ID",
+        "tags": [
+          "subscriptions"
+        ]
+      }
     }
   },
   "info": {
@@ -700,6 +1046,186 @@
             "type": "boolean",
             "example": false,
             "description": "Is bookmarked archived"
+          }
+        }
+      },
+      "CreateTransactionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "EXPENSE",
+            "description": "Transaction type",
+            "enum": [
+              "EXPENSE",
+              "INCOME"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 12.5,
+            "description": "Amount of transaction"
+          },
+          "title": {
+            "type": "string",
+            "example": "Coffee",
+            "description": "Title of transaction"
+          },
+          "description": {
+            "type": "string",
+            "example": "Venti Latte at Starbucks",
+            "description": "Description of transaction"
+          },
+          "category": {
+            "type": "string",
+            "example": "Food",
+            "description": "Category"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-07-15T00:00:00.000Z",
+            "description": "Date"
+          }
+        },
+        "required": [
+          "type",
+          "amount",
+          "title",
+          "category"
+        ]
+      },
+      "UpdateTransactionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "EXPENSE",
+            "description": "Transaction type",
+            "enum": [
+              "EXPENSE",
+              "INCOME"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 12.5,
+            "description": "Amount of transaction"
+          },
+          "title": {
+            "type": "string",
+            "example": "Coffee",
+            "description": "Title of transaction"
+          },
+          "description": {
+            "type": "string",
+            "example": "Venti Latte at Starbucks",
+            "description": "Description of transaction"
+          },
+          "category": {
+            "type": "string",
+            "example": "Food",
+            "description": "Category"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-07-15T00:00:00.000Z",
+            "description": "Date"
+          }
+        }
+      },
+      "CreateSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Netflix",
+            "description": "Name of subscription"
+          },
+          "cost": {
+            "type": "number",
+            "example": 15.99,
+            "description": "Cost of subscription"
+          },
+          "billingCycle": {
+            "type": "string",
+            "example": "MONTHLY",
+            "description": "Billing cycle",
+            "enum": [
+              "WEEKLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-07-01T00:00:00.000Z",
+            "description": "Start date of subscription"
+          },
+          "category": {
+            "type": "string",
+            "example": "Entertainment",
+            "description": "Category"
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE",
+            "description": "Subscription status",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "cost",
+          "billingCycle",
+          "startDate"
+        ]
+      },
+      "UpdateSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Netflix",
+            "description": "Name of subscription"
+          },
+          "cost": {
+            "type": "number",
+            "example": 15.99,
+            "description": "Cost of subscription"
+          },
+          "billingCycle": {
+            "type": "string",
+            "example": "MONTHLY",
+            "description": "Billing cycle",
+            "enum": [
+              "WEEKLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-07-01T00:00:00.000Z",
+            "description": "Start date of subscription"
+          },
+          "category": {
+            "type": "string",
+            "example": "Entertainment",
+            "description": "Category"
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE",
+            "description": "Subscription status",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "CANCELLED"
+            ]
           }
         }
       }

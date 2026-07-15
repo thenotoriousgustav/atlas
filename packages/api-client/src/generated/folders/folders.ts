@@ -29,7 +29,7 @@ import type {
   UpdateFolderDto
 } from '../model';
 
-import { customInstance } from '../../custom-instance';
+import { customInstance } from '../../custom-instance.js';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];

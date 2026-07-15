@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { FoldersService } from './folders.service';
 import { BookmarksService } from './bookmarks.service';
 import { TagsService } from './tags.service';
