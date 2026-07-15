@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './authControllerCheckPasskeyParams.js';
 export * from './authControllerGenerateLoginOptionsParams.js';
 export * from './bookmarksControllerFindAllParams.js';
 export * from './createBookmarkDto.js';

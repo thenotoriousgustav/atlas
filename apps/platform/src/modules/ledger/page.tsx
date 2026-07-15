@@ -22,6 +22,14 @@ import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
+import { Input } from '@atlas/ui/components/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@atlas/ui/components/select';
 import {
   Dialog,
   DialogContent,
@@ -638,7 +646,7 @@ export function LedgerDashboard() {
                   Transaction Ledger
                 </h2>
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="text"
                     placeholder="Search ledger..."
                     value={searchQuery}
@@ -842,7 +850,7 @@ export function LedgerDashboard() {
               <transactionForm.Field
                 name="title"
                 children={(field) => (
-                  <input
+                  <Input
                     type="text"
                     required
                     placeholder="e.g. Starbucks, Salary"
@@ -860,7 +868,7 @@ export function LedgerDashboard() {
               <transactionForm.Field
                 name="amount"
                 children={(field) => (
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     required
@@ -882,17 +890,21 @@ export function LedgerDashboard() {
                   const type = transactionForm.getFieldValue('type');
                   const list = PREDEFINED_CATEGORIES[type];
                   return (
-                    <select
+                    <Select
                       value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                      onValueChange={(val) => field.handleChange(val || '')}
                     >
-                      {list.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {list.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   );
                 }}
               />
@@ -904,7 +916,7 @@ export function LedgerDashboard() {
               <transactionForm.Field
                 name="date"
                 children={(field) => (
-                  <input
+                  <Input
                     type="date"
                     required
                     value={field.state.value}
@@ -978,7 +990,7 @@ export function LedgerDashboard() {
               <subscriptionForm.Field
                 name="name"
                 children={(field) => (
-                  <input
+                  <Input
                     type="text"
                     required
                     placeholder="e.g. Netflix, Spotify, Figma"
@@ -996,7 +1008,7 @@ export function LedgerDashboard() {
               <subscriptionForm.Field
                 name="cost"
                 children={(field) => (
-                  <input
+                  <Input
                     type="number"
                     step="0.01"
                     required
@@ -1015,15 +1027,19 @@ export function LedgerDashboard() {
               <subscriptionForm.Field
                 name="billingCycle"
                 children={(field) => (
-                  <select
+                  <Select
                     value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value as any)}
-                    className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                    onValueChange={(val) => field.handleChange(val as any)}
                   >
-                    <option value="WEEKLY">Weekly</option>
-                    <option value="MONTHLY">Monthly</option>
-                    <option value="YEARLY">Yearly</option>
-                  </select>
+                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                      <SelectValue placeholder="Billing Cycle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WEEKLY">Weekly</SelectItem>
+                      <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      <SelectItem value="YEARLY">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               />
             </div>
@@ -1034,7 +1050,7 @@ export function LedgerDashboard() {
               <subscriptionForm.Field
                 name="startDate"
                 children={(field) => (
-                  <input
+                  <Input
                     type="date"
                     required
                     value={field.state.value}
@@ -1051,17 +1067,21 @@ export function LedgerDashboard() {
               <subscriptionForm.Field
                 name="category"
                 children={(field) => (
-                  <select
+                  <Select
                     value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                    onValueChange={(val) => field.handleChange(val || '')}
                   >
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Software">Software</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Infrastructure">Infrastructure</option>
-                    <option value="Others">Others</option>
-                  </select>
+                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Entertainment">Entertainment</SelectItem>
+                      <SelectItem value="Software">Software</SelectItem>
+                      <SelectItem value="Utilities">Utilities</SelectItem>
+                      <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                      <SelectItem value="Others">Others</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               />
             </div>

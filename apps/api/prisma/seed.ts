@@ -16,6 +16,15 @@ async function main() {
 
   console.log('Seeding database...');
 
+  // Delete deprecated admin user accounts to keep single-user lock active
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        not: 'rhezagustam@gmail.com',
+      },
+    },
+  });
+
   const hashedPassword = await argon2.hash(password);
 
   const user = await prisma.user.upsert({

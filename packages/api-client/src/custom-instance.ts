@@ -10,7 +10,10 @@ AXIOS_INSTANCE.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const url = originalRequest.url || '';
+    const isBypassRoute = url.includes('/v1/auth/login') || url.includes('/v1/auth/refresh');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isBypassRoute) {
       originalRequest._retry = true;
       try {
         // Attempt to rotate tokens via refresh endpoint
@@ -18,8 +21,8 @@ AXIOS_INSTANCE.interceptors.response.use(
         // Retry the original request
         return AXIOS_INSTANCE(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, redirect client to login page if window exists
-        if (typeof window !== 'undefined') {
+        // If refresh fails, redirect client to login page if window exists and we are not already on it
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

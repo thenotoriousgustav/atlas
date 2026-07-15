@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useAuthControllerMe,
   useAuthControllerLogout,
@@ -110,20 +111,41 @@ export default function HomePortalPage() {
     query: { enabled: !!user },
   });
 
+  const queryClient = useQueryClient();
   const logoutMutation = useAuthControllerLogout();
 
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
+      queryClient.clear();
       logout();
       router.push('/login');
     } catch {
+      queryClient.clear();
       logout();
       router.push('/login');
     }
   };
 
   const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
+  const [hasPasskey, setHasPasskey] = useState(false);
+
+  // Check if current user has passkeys registered
+  useEffect(() => {
+    if (user?.email) {
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/auth/passkey/check?email=${encodeURIComponent(user.email)}`,
+        {
+          credentials: 'include',
+        }
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          setHasPasskey(data?.data?.hasPasskey || false);
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   const handleRegisterPasskey = async () => {
     setIsRegisteringPasskey(true);
@@ -159,6 +181,7 @@ export default function HomePortalPage() {
         throw new Error('Passkey verification failed');
       }
 
+      setHasPasskey(true);
       alert('Passkey successfully registered on this device!');
     } catch (err: any) {
       alert(`Passkey registration failed: ${err.message}`);
@@ -250,7 +273,7 @@ export default function HomePortalPage() {
             className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-[#111111]"
           >
             <Fingerprint className="w-3.5 h-3.5" />
-            {isRegisteringPasskey ? 'Registering...' : 'Setup Passkey'}
+            {isRegisteringPasskey ? 'Registering...' : hasPasskey ? 'Add Passkey Device' : 'Setup Passkey'}
           </Button>
           <Button
             variant="outline"

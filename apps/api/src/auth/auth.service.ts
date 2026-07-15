@@ -22,6 +22,9 @@ export class AuthService {
   ) {}
 
   async validateUser(loginDto: LoginDto) {
+    if (loginDto.email !== 'rhezagustam@gmail.com') {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     const user = await this.userService.findByEmail(loginDto.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -195,7 +198,24 @@ export class AuthService {
     return { success: true };
   }
 
+  async checkUserHasPasskey(email: string): Promise<boolean> {
+    if (email !== 'rhezagustam@gmail.com') {
+      return false;
+    }
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      return false;
+    }
+    const count = await this.prisma.userCredential.count({
+      where: { userId: user.id },
+    });
+    return count > 0;
+  }
+
   async generatePasskeyAuthenticationOptions(email: string) {
+    if (email !== 'rhezagustam@gmail.com') {
+      throw new UnauthorizedException('Access denied');
+    }
     const user = await this.userService.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -221,6 +241,9 @@ export class AuthService {
   }
 
   async verifyPasskeyAuthentication(email: string, responseBody: any, expectedChallenge: string) {
+    if (email !== 'rhezagustam@gmail.com') {
+      throw new UnauthorizedException('Access denied');
+    }
     const user = await this.userService.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('User not found');

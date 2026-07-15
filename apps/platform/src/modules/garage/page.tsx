@@ -34,6 +34,14 @@ import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
+import { Input } from '@atlas/ui/components/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@atlas/ui/components/select';
 import {
   Dialog,
   DialogContent,
@@ -625,18 +633,22 @@ export function GarageDashboard() {
         {/* Top selectors & general state */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-border pb-4">
           <div className="flex items-center gap-3">
-            <select
+            <Select
               value={selectedVehicleId || ''}
-              onChange={(e) => setSelectedVehicleId(e.target.value || null)}
-              className="h-9 px-3 border border-brand-border bg-white text-xs text-[#111111] font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none min-w-48"
+              onValueChange={(val) => setSelectedVehicleId(val || null)}
             >
-              {vehicles.map((v: any) => (
-                <option key={v.id} value={v.id}>
-                  {v.brand} {v.model} ({v.plateNumber})
-                </option>
-              ))}
-              {vehicles.length === 0 && <option value="">No vehicles registered</option>}
-            </select>
+              <SelectTrigger className="h-9 border-brand-border bg-white text-xs text-[#111111] font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none min-w-48">
+                <SelectValue placeholder="Select Vehicle" />
+              </SelectTrigger>
+              <SelectContent>
+                {vehicles.map((v: any) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.brand} {v.model} ({v.plateNumber})
+                  </SelectItem>
+                ))}
+                {vehicles.length === 0 && <SelectItem value="">No vehicles registered</SelectItem>}
+              </SelectContent>
+            </Select>
             
             <Button
               onClick={() => {
@@ -1176,7 +1188,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="brand"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       required
                       placeholder="e.g. Honda, Toyota"
@@ -1193,7 +1205,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="model"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       required
                       placeholder="e.g. Vario, Corolla"
@@ -1212,7 +1224,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="variant"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       placeholder="e.g. CBS-ISS, Altis"
                       value={field.state.value}
@@ -1228,7 +1240,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="year"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       required
                       value={field.state.value}
@@ -1246,7 +1258,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="plateNumber"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       required
                       placeholder="e.g. B 1234 ABC"
@@ -1263,7 +1275,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="odometer"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       required
                       value={field.state.value}
@@ -1282,7 +1294,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="vin"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -1297,7 +1309,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="engineNumber"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -1315,7 +1327,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="purchasePrice"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -1330,7 +1342,7 @@ export function GarageDashboard() {
                 <vehicleForm.Field
                   name="purchaseDate"
                   children={(field) => (
-                    <input
+                    <Input
                       type="date"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -1384,7 +1396,7 @@ export function GarageDashboard() {
                 <maintenanceForm.Field
                   name="date"
                   children={(field) => (
-                    <input
+                    <Input
                       type="date"
                       required
                       value={field.state.value}
@@ -1400,7 +1412,7 @@ export function GarageDashboard() {
                 <maintenanceForm.Field
                   name="odometer"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       required
                       value={field.state.value}
@@ -1418,7 +1430,7 @@ export function GarageDashboard() {
                 <maintenanceForm.Field
                   name="workshop"
                   children={(field) => (
-                    <input
+                    <Input
                       type="text"
                       placeholder="e.g. AHASS"
                       value={field.state.value}
@@ -1434,7 +1446,7 @@ export function GarageDashboard() {
                 <maintenanceForm.Field
                   name="totalCost"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       required
                       placeholder="0"
@@ -1506,7 +1518,7 @@ export function GarageDashboard() {
                 <fuelForm.Field
                   name="liters"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       step="0.01"
                       required
@@ -1524,7 +1536,7 @@ export function GarageDashboard() {
                 <fuelForm.Field
                   name="price"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       required
                       placeholder="e.g. 13500"
@@ -1542,7 +1554,7 @@ export function GarageDashboard() {
               <fuelForm.Field
                 name="odometer"
                 children={(field) => (
-                  <input
+                  <Input
                     type="number"
                     required
                     value={field.state.value}
@@ -1596,17 +1608,21 @@ export function GarageDashboard() {
                 <expenseForm.Field
                   name="category"
                   children={(field) => (
-                    <select
+                    <Select
                       value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                      onValueChange={(val) => field.handleChange(val || '')}
                     >
-                      {EXPENSE_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EXPENSE_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 />
               </div>
@@ -1616,7 +1632,7 @@ export function GarageDashboard() {
                 <expenseForm.Field
                   name="date"
                   children={(field) => (
-                    <input
+                    <Input
                       type="date"
                       required
                       value={field.state.value}
@@ -1633,7 +1649,7 @@ export function GarageDashboard() {
               <expenseForm.Field
                 name="amount"
                 children={(field) => (
-                  <input
+                  <Input
                     type="number"
                     required
                     placeholder="0"
@@ -1687,17 +1703,21 @@ export function GarageDashboard() {
               <reminderForm.Field
                 name="type"
                 children={(field) => (
-                  <select
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
-                  >
-                    {REMINDER_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => field.handleChange(val || '')}
+                    >
+                      <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                        <SelectValue placeholder="Reminder Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REMINDER_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                 )}
               />
             </div>
@@ -1708,7 +1728,7 @@ export function GarageDashboard() {
                 <reminderForm.Field
                   name="dueDate"
                   children={(field) => (
-                    <input
+                    <Input
                       type="date"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -1723,7 +1743,7 @@ export function GarageDashboard() {
                 <reminderForm.Field
                   name="dueMileage"
                   children={(field) => (
-                    <input
+                    <Input
                       type="number"
                       placeholder="e.g. 15000"
                       value={field.state.value}
@@ -1778,16 +1798,20 @@ export function GarageDashboard() {
                 <documentForm.Field
                   name="documentType"
                   children={(field) => (
-                    <select
+                    <Select
                       value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                      onValueChange={(val) => field.handleChange(val || '')}
                     >
-                      <option value="STNK">STNK</option>
-                      <option value="Insurance Policy">Insurance Policy</option>
-                      <option value="Warranty Certificate">Warranty Certificate</option>
-                      <option value="Other">Other</option>
-                    </select>
+                      <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                        <SelectValue placeholder="Document Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="STNK">STNK</SelectItem>
+                        <SelectItem value="Insurance Policy">Insurance Policy</SelectItem>
+                        <SelectItem value="Warranty Certificate">Warranty Certificate</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
                 />
               </div>
@@ -1797,7 +1821,7 @@ export function GarageDashboard() {
                 <documentForm.Field
                   name="expirationDate"
                   children={(field) => (
-                    <input
+                    <Input
                       type="date"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -1813,7 +1837,7 @@ export function GarageDashboard() {
               <documentForm.Field
                 name="documentNumber"
                 children={(field) => (
-                  <input
+                  <Input
                     type="text"
                     required
                     placeholder="e.g. 1234567/A"
@@ -1830,7 +1854,7 @@ export function GarageDashboard() {
               <documentForm.Field
                 name="notes"
                 children={(field) => (
-                  <input
+                  <Input
                     type="text"
                     placeholder="Add description notes..."
                     value={field.state.value}

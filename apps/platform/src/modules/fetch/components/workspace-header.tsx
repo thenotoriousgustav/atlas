@@ -1,6 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { Button } from '@atlas/ui/components/button';
-import { SignOut } from '@phosphor-icons/react';
+import { SignOut, ArrowLeft } from '@phosphor-icons/react';
 
 interface WorkspaceHeaderProps {
   user: {
@@ -14,6 +15,13 @@ export function WorkspaceHeader({ user, onLogout }: WorkspaceHeaderProps) {
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-brand-border pb-5 gap-4">
       <div className="flex items-center gap-3">
+        <Link 
+          href="/"
+          className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] hover:bg-[#111111] hover:text-white hover:border-[#111111] transition-colors"
+          title="Back to portal"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
         <div className="w-7 h-7 bg-[#111111] flex items-center justify-center rounded-none text-white font-serif italic text-sm font-semibold">
           F
         </div>

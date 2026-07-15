@@ -60,17 +60,26 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Authenticate user and set cookies' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiOperation({ summary: 'Authenticate user and check for 2FA requirements' })
+  @ApiResponse({ status: 200, description: 'Login successful or 2FA required' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.authService.validateUser(loginDto);
+    
+    // Check if user has a passkey registered
+    const hasPasskey = await this.authService.checkUserHasPasskey(user.email);
+    if (hasPasskey) {
+      // Return 2FA required, do NOT set access/refresh token cookies yet
+      return { requirePasskey2FA: true, email: user.email };
+    }
+
+    // Direct login since no passkey is registered
     const tokens = await this.authService.login(user);
     this.setCookies(res, tokens.accessToken, tokens.refreshToken);
-    return { user: tokens.user };
+    return { user: tokens.user, requirePasskey2FA: false };
   }
 
   @Post('logout')
@@ -141,6 +150,14 @@ export class AuthController {
     );
     res.clearCookie('reg_challenge');
     return result;
+  }
+
+  @Get('passkey/check')
+  @ApiOperation({ summary: 'Check if an email has any registered passkeys' })
+  @ApiQuery({ name: 'email', required: true })
+  async checkPasskey(@Query('email') email: string) {
+    const hasPasskey = await this.authService.checkUserHasPasskey(email);
+    return { hasPasskey };
   }
 
   @Get('passkey/login-options')

@@ -32,13 +32,13 @@
         },
         "responses": {
           "200": {
-            "description": "Login successful"
+            "description": "Login successful or 2FA required"
           },
           "401": {
             "description": "Invalid credentials"
           }
         },
-        "summary": "Authenticate user and set cookies",
+        "summary": "Authenticate user and check for 2FA requirements",
         "tags": [
           "auth"
         ]
@@ -114,6 +114,30 @@
           }
         },
         "summary": "Verify and register a new Passkey",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/passkey/check": {
+      "get": {
+        "operationId": "AuthController_checkPasskey",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Check if an email has any registered passkeys",
         "tags": [
           "auth"
         ]

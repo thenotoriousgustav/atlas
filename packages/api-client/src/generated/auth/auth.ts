@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuthControllerCheckPasskeyParams,
   AuthControllerGenerateLoginOptionsParams,
   LoginDto
 } from '../model';
@@ -486,6 +487,99 @@ export const useAuthControllerVerifyRegister = <TError = unknown,
       return useMutation(getAuthControllerVerifyRegisterMutationOptions(options), queryClient);
     }
     /**
+ * @summary Check if an email has any registered passkeys
+ */
+export const authControllerCheckPasskey = (
+    params: AuthControllerCheckPasskeyParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/auth/passkey/check`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getAuthControllerCheckPasskeyQueryKey = (params?: AuthControllerCheckPasskeyParams,) => {
+    return [
+    `/v1/auth/passkey/check`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAuthControllerCheckPasskeyQueryOptions = <TData = Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError = unknown>(params: AuthControllerCheckPasskeyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthControllerCheckPasskeyQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authControllerCheckPasskey>>> = ({ signal }) => authControllerCheckPasskey(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AuthControllerCheckPasskeyQueryResult = NonNullable<Awaited<ReturnType<typeof authControllerCheckPasskey>>>
+export type AuthControllerCheckPasskeyQueryError = unknown
+
+
+export function useAuthControllerCheckPasskey<TData = Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError = unknown>(
+ params: AuthControllerCheckPasskeyParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authControllerCheckPasskey>>,
+          TError,
+          Awaited<ReturnType<typeof authControllerCheckPasskey>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthControllerCheckPasskey<TData = Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError = unknown>(
+ params: AuthControllerCheckPasskeyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof authControllerCheckPasskey>>,
+          TError,
+          Awaited<ReturnType<typeof authControllerCheckPasskey>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAuthControllerCheckPasskey<TData = Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError = unknown>(
+ params: AuthControllerCheckPasskeyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Check if an email has any registered passkeys
+ */
+
+export function useAuthControllerCheckPasskey<TData = Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError = unknown>(
+ params: AuthControllerCheckPasskeyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof authControllerCheckPasskey>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAuthControllerCheckPasskeyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * @summary Generate authentication options for login
  */
 export const authControllerGenerateLoginOptions = (

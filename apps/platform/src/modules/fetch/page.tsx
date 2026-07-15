@@ -21,6 +21,15 @@ import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
+import { Input } from '@atlas/ui/components/input';
+import { Checkbox } from '@atlas/ui/components/checkbox';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@atlas/ui/components/select';
 import {
   Dialog,
   DialogContent,
@@ -437,14 +446,14 @@ export function FetchDashboard() {
               Paste Media URL (YouTube, TikTok, Instagram, Threads, Facebook, X)
             </h2>
             <div className="flex flex-col sm:flex-row gap-3">
-              <input
+              <Input
                 type="text"
                 required
                 placeholder="https://www.youtube.com/watch?v=... or https://vt.tiktok.com/..."
                 value={extractingUrl}
                 onChange={(e) => setExtractingUrl(e.target.value)}
                 disabled={isExtracting || isDownloading}
-                className="flex-1 h-10 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono text-xs"
+                className="flex-1 h-10 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono text-xs"
               />
               <Button
                 type="submit"
@@ -520,34 +529,42 @@ export function FetchDashboard() {
                     {/* Media Type option */}
                     <div className="space-y-1">
                       <label className="text-[9px] uppercase text-[#787774] font-bold">Download Type</label>
-                      <select
+                      <Select
                         value={downloadType}
-                        onChange={(e) => setDownloadType(e.target.value as any)}
-                        className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-semibold"
+                        onValueChange={(val) => setDownloadType(val as any)}
                       >
-                        <option value="VIDEO">Video (MP4)</option>
-                        <option value="AUDIO">Audio Only (MP3)</option>
-                      </select>
+                        <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-semibold">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="VIDEO">Video (MP4)</SelectItem>
+                          <SelectItem value="AUDIO">Audio Only (MP3)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Resolution option */}
                     {downloadType === 'VIDEO' && extractedMedia.formats.length > 0 && (
                       <div className="space-y-1">
                         <label className="text-[9px] uppercase text-[#787774] font-bold">Quality / Format</label>
-                        <select
+                        <Select
                           value={selectedFormatId}
-                          onChange={(e) => setSelectedFormatId(e.target.value)}
-                          className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none"
+                          onValueChange={(val) => setSelectedFormatId(val || '')}
                         >
-                          <option value="">Best Merged Quality (Default)</option>
-                          {extractedMedia.formats
-                            .filter((f: any) => f.hasVideo)
-                            .map((f: any) => (
-                              <option key={f.formatId} value={f.formatId}>
-                                {f.resolution} ({f.ext.toUpperCase()}) - {formatBytes(f.filesize)}
-                              </option>
-                            ))}
-                        </select>
+                          <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none">
+                            <SelectValue placeholder="Best Merged Quality (Default)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Best Merged Quality (Default)</SelectItem>
+                            {extractedMedia.formats
+                              .filter((f: any) => f.hasVideo)
+                              .map((f: any) => (
+                                <SelectItem key={f.formatId} value={f.formatId}>
+                                  {f.resolution} ({f.ext.toUpperCase()}) - {formatBytes(f.filesize)}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
                   </div>
@@ -594,26 +611,30 @@ export function FetchDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[9px] uppercase text-[#787774] font-bold">Custom Title / Filename</label>
-                  <input
+                  <Input
                     type="text"
                     required
                     placeholder="e.g. TikTok Dance Video, Podcast Episode"
                     value={fallbackTitle}
                     onChange={(e) => setFallbackTitle(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono text-xs"
+                    className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] uppercase text-[#787774] font-bold">Download Type</label>
-                  <select
+                  <Select
                     value={downloadType}
-                    onChange={(e) => setDownloadType(e.target.value as any)}
-                    className="w-full h-9 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-semibold font-mono"
+                    onValueChange={(val) => setDownloadType(val as any)}
                   >
-                    <option value="VIDEO">Video (MP4)</option>
-                    <option value="AUDIO">Audio Only (MP3)</option>
-                  </select>
+                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-semibold font-mono">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VIDEO">Video (MP4)</SelectItem>
+                      <SelectItem value="AUDIO">Audio Only (MP3)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -721,30 +742,35 @@ export function FetchDashboard() {
                 Platform Filters
               </span>
               <div className="space-y-2">
-                <select
+                <Select
                   value={selectedPlatform}
-                  onChange={(e) => setSelectedPlatform(e.target.value)}
-                  className="w-full h-8 px-2 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none"
+                  onValueChange={(val) => setSelectedPlatform(val || '')}
                 >
-                  <option value="">All Platforms</option>
-                  <option value="YouTube">YouTube</option>
-                  <option value="TikTok">TikTok</option>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Threads">Threads</option>
-                  <option value="Facebook">Facebook</option>
-                  <option value="Twitter">Twitter / X</option>
-                  <option value="Reddit">Reddit</option>
-                </select>
+                  <SelectTrigger className="w-full h-8 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none">
+                    <SelectValue placeholder="All Platforms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Platforms</SelectItem>
+                    <SelectItem value="YouTube">YouTube</SelectItem>
+                    <SelectItem value="TikTok">TikTok</SelectItem>
+                    <SelectItem value="Instagram">Instagram</SelectItem>
+                    <SelectItem value="Threads">Threads</SelectItem>
+                    <SelectItem value="Facebook">Facebook</SelectItem>
+                    <SelectItem value="Twitter">Twitter / X</SelectItem>
+                    <SelectItem value="Reddit">Reddit</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                <label className="flex items-center gap-2 cursor-pointer py-1 font-semibold text-[10px] uppercase text-[#111111]">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center gap-2 py-1 font-semibold text-[10px] uppercase text-[#111111]">
+                  <Checkbox
+                    id="showOnlyFavorites"
                     checked={showOnlyFavorites}
-                    onChange={(e) => setShowOnlyFavorites(e.target.checked)}
-                    className="size-3.5 accent-[#111111] border border-brand-border rounded-none"
+                    onCheckedChange={(checked) => setShowOnlyFavorites(checked === true)}
                   />
-                  Show Favorites
-                </label>
+                  <label htmlFor="showOnlyFavorites" className="cursor-pointer select-none">
+                    Show Favorites
+                  </label>
+                </div>
               </div>
             </Card>
           </div>
@@ -755,12 +781,12 @@ export function FetchDashboard() {
             {/* Search filter row */}
             <div className="flex items-center border border-brand-border bg-white p-2">
               <MagnifyingGlass className="w-4 h-4 text-[#787774] ml-2" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search download history..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-8 px-3 border-none bg-transparent text-xs text-[#111111] focus-visible:outline-none font-mono"
+                className="w-full h-8 border-none bg-transparent text-xs text-[#111111] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-none font-mono"
               />
             </div>
 
@@ -827,18 +853,22 @@ export function FetchDashboard() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       
                       {/* Collection Selector */}
-                      <select
+                      <Select
                         value={item.collectionId || ''}
-                        onChange={(e) => handleAssignCollection(item.id, e.target.value || null)}
-                        className="h-8 px-2 border border-brand-border bg-white text-[9px] font-bold uppercase focus-visible:outline-none rounded-none w-24"
+                        onValueChange={(val) => handleAssignCollection(item.id, val || null)}
                       >
-                        <option value="">Move to...</option>
-                        {collections.map((col: any) => (
-                          <option key={col.id} value={col.id}>
-                            {col.name}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="h-8 border-brand-border bg-white text-[9px] font-bold uppercase focus-visible:outline-none rounded-none w-24">
+                          <SelectValue placeholder="Move to..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Move to...</SelectItem>
+                          {collections.map((col: any) => (
+                            <SelectItem key={col.id} value={col.id}>
+                              {col.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
                       <Tooltip>
                         <TooltipTrigger render={
@@ -908,13 +938,13 @@ export function FetchDashboard() {
           <form onSubmit={handleCreateCollection} className="space-y-4 pt-4">
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase text-[#787774]">Collection Name</label>
-              <input
+              <Input
                 type="text"
                 required
                 placeholder="e.g. Comedy Reels, Code Lectures"
                 value={newCollectionName}
                 onChange={(e) => setNewCollectionName(e.target.value)}
-                className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
+                className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
               />
             </div>
 
