@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@atlas/eslint-config": "workspace:*",
-    "@atlas/tsconfig": "workspace:*",
+    "@atlas/typescript-config": "workspace:*",
     "@types/node": "^22.15.0",
     "orval": "^8.21.0",
     "typescript": "^5.9.3"

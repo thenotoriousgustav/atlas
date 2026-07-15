@@ -1,0 +1,4 @@
+{
+  "extends": "@atlas/typescript-config/base.json"
+}
+

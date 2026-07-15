@@ -1,4 +1,4 @@
-import nextConfig from '@atlas/eslint-config/next.mjs';
+import nextConfig from '@atlas/eslint-config/next';
 
 export default [
   ...nextConfig,

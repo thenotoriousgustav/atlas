@@ -1,5 +1,5 @@
 {
-  "extends": "@atlas/tsconfig/nestjs.json",
+  "extends": "@atlas/typescript-config/nestjs.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "."

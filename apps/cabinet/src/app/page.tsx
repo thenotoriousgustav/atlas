@@ -21,20 +21,14 @@ import {
 } from '@atlas/api-client';
 import { useAuthStore } from '../store/useAuthStore';
 import {
-  Button,
-  Card,
-  Badge,
-  Input,
-  Label,
-} from '@atlas/ui';
-import {
+  
   Dialog,
   DialogTrigger,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../components/ui/dialog';
+} from '@atlas/ui/components/dialog';
 import {
   SignOut,
   BookmarkSimple,
@@ -52,6 +46,11 @@ import {
   DownloadSimple,
   Tag as TagIcon,
 } from '@phosphor-icons/react';
+import { Button } from '@atlas/ui/components/button';
+import { Label } from '@atlas/ui/components/label';
+import { Input } from '@atlas/ui/components/input';
+import { Badge } from '@atlas/ui/components/badge';
+import { Card } from '@atlas/ui/components/card';
 
 export const dynamic = 'force-dynamic';
 
@@ -539,17 +538,15 @@ export default function DashboardPage() {
                 
                 {/* Folder creation wrapped in Dialog Trigger */}
                 <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
-                  <DialogTrigger asChild>
-                    <button
-                      onClick={() => {
-                        resetFolderForm();
-                        setIsFolderModalOpen(true);
-                      }}
-                      className="p-1 hover:bg-[#111111]/5 rounded-none text-[#787774] hover:text-[#111111]"
-                      title="Create folder"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5" />
-                    </button>
+                  <DialogTrigger
+                    onClick={() => {
+                      resetFolderForm();
+                      setIsFolderModalOpen(true);
+                    }}
+                    className="p-1 hover:bg-[#111111]/5 rounded-none text-[#787774] hover:text-[#111111]"
+                    title="Create folder"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" />
                   </DialogTrigger>
                   
                   <DialogContent className="sm:max-w-md">
@@ -741,7 +738,7 @@ export default function DashboardPage() {
 
               {/* Bookmark creation wrapped in Dialog Trigger */}
               <Dialog open={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen}>
-                <DialogTrigger asChild>
+                <DialogTrigger render={
                   <Button
                     onClick={() => {
                       resetBookmarkForm();
@@ -752,7 +749,7 @@ export default function DashboardPage() {
                     <Plus className="w-4 h-4" />
                     Add Bookmark
                   </Button>
-                </DialogTrigger>
+                } />
 
                 <DialogContent className="sm:max-w-lg">
                   <DialogHeader>

@@ -1,5 +1,5 @@
 {
-  "extends": "@atlas/tsconfig/base.json",
+  "extends": "@atlas/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "."

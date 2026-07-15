@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@atlas/eslint-config": "workspace:*",
-    "@atlas/tsconfig": "workspace:*",
+    "@atlas/typescript-config": "workspace:*",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",

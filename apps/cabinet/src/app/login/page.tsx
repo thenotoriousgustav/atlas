@@ -4,16 +4,16 @@ import React, { useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
+import { Button } from '@atlas/ui/components/button';
+import { Input } from '@atlas/ui/components/input';
+import { Label } from '@atlas/ui/components/label';
 import {
-  Button,
-  Input,
-  Label,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@atlas/ui';
+} from '@atlas/ui/components/card';
 import { useAuthControllerLogin } from '@atlas/api-client';
 import { useAuthStore } from '../../store/useAuthStore';
 

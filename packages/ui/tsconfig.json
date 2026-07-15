@@ -1,9 +1,12 @@
 {
-  "extends": "@atlas/tsconfig/base.json",
+  "extends": "@atlas/typescript-config/react-library.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "src",
-    "jsx": "react-jsx"
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@atlas/ui/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*"]
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,5 +1,5 @@
 {
-  "extends": "@atlas/tsconfig/nextjs.json",
+  "extends": "@atlas/typescript-config/nextjs.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
