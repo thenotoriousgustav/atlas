@@ -1,0 +1,337 @@
+import React from 'react';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@atlas/ui/components/dialog';
+import { Button } from '@atlas/ui/components/button';
+import { Input } from '@atlas/ui/components/input';
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from '@atlas/ui/components/field';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@atlas/ui/components/select';
+import {
+  BookmarkSimple,
+  Star,
+  Archive,
+  FolderPlus,
+  Tag as TagIcon,
+  DownloadSimple,
+  UploadSimple,
+} from '@phosphor-icons/react';
+import { FolderTree } from './folder-tree';
+
+interface SidebarFiltersProps {
+  selectedFolderId?: string;
+  onSelectFolder: (id: string | undefined) => void;
+  selectedTag?: string;
+  onSelectTag: (tag: string | undefined) => void;
+  filterFavorite?: boolean;
+  onSelectFavorite: (fav: boolean | undefined) => void;
+  filterArchived?: boolean;
+  onSelectArchived: (arch: boolean | undefined) => void;
+  folders: any[];
+  tags: any[];
+  isFolderModalOpen: boolean;
+  setIsFolderModalOpen: (open: boolean) => void;
+  folderToEdit: any;
+  folderForm: any;
+  onEditFolder: (folder: any) => void;
+  onDeleteFolder: (id: string) => void;
+  onExport: () => void;
+  onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  resetFolderForm: () => void;
+}
+
+export function SidebarFilters({
+  selectedFolderId,
+  onSelectFolder,
+  selectedTag,
+  onSelectTag,
+  filterFavorite,
+  onSelectFavorite,
+  filterArchived,
+  onSelectArchived,
+  folders,
+  tags,
+  isFolderModalOpen,
+  setIsFolderModalOpen,
+  folderToEdit,
+  folderForm,
+  onEditFolder,
+  onDeleteFolder,
+  onExport,
+  onImport,
+  resetFolderForm,
+}: SidebarFiltersProps) {
+  return (
+    <aside className="md:col-span-1 space-y-6">
+      {/* Quick Filters */}
+      <div className="space-y-1">
+        <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider px-2">Library</h3>
+        <button
+          onClick={() => {
+            onSelectFolder(undefined);
+            onSelectTag(undefined);
+            onSelectFavorite(undefined);
+            onSelectArchived(false);
+          }}
+          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+            selectedFolderId === undefined &&
+            filterFavorite === undefined &&
+            filterArchived === false &&
+            selectedTag === undefined
+              ? 'bg-[#111111]/5 text-[#111111] font-semibold'
+              : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+          }`}
+        >
+          <BookmarkSimple className="w-3.5 h-3.5" />
+          All Bookmarks
+        </button>
+
+        <button
+          onClick={() => {
+            onSelectFolder(undefined);
+            onSelectTag(undefined);
+            onSelectFavorite(true);
+            onSelectArchived(false);
+          }}
+          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+            filterFavorite === true
+              ? 'bg-[#111111]/5 text-[#111111] font-semibold'
+              : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+          }`}
+        >
+          <Star className="w-3.5 h-3.5 text-[#956400]" />
+          Favorites
+        </button>
+
+        <button
+          onClick={() => {
+            onSelectFolder(undefined);
+            onSelectTag(undefined);
+            onSelectFavorite(undefined);
+            onSelectArchived(true);
+          }}
+          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+            filterArchived === true
+              ? 'bg-[#111111]/5 text-[#111111] font-semibold'
+              : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+          }`}
+        >
+          <Archive className="w-3.5 h-3.5" />
+          Archive
+        </button>
+      </div>
+
+      {/* Folders */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider">Folders</h3>
+
+          <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
+            <DialogTrigger
+              onClick={() => {
+                resetFolderForm();
+                setIsFolderModalOpen(true);
+              }}
+              className="p-1 hover:bg-[#111111]/5 rounded-none text-[#787774] hover:text-[#111111]"
+              title="Create folder"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{folderToEdit ? 'Edit Folder' : 'New Folder'}</DialogTitle>
+                <DialogDescription>Cabinet collection management</DialogDescription>
+              </DialogHeader>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  folderForm.handleSubmit();
+                }}
+                className="space-y-4"
+              >
+                <FieldGroup>
+                  <folderForm.Field
+                    name="name"
+                    children={(field: any) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Folder Name</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder="e.g. Design Inspiration"
+                          required
+                        />
+                      </Field>
+                    )}
+                  />
+
+                  <folderForm.Field
+                    name="description"
+                    children={(field: any) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder="Describe folder contents..."
+                        />
+                      </Field>
+                    )}
+                  />
+
+                  <folderForm.Field
+                    name="parentId"
+                    children={(field: any) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>Parent Folder (Optional)</FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(val) => field.handleChange(val)}
+                        >
+                          <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-[#111111] text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-medium">
+                            <SelectValue placeholder="None (Root)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None (Root)</SelectItem>
+                            {folders
+                              .filter((f: any) => f.id !== folderToEdit?.id)
+                              .map((f: any) => (
+                                <SelectItem key={f.id} value={f.id}>
+                                  {f.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+
+                <div className="flex gap-2.5 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsFolderModalOpen(false)}
+                    className="flex-1 text-xs uppercase"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 text-xs uppercase bg-[#111111] hover:bg-[#111111]/90"
+                  >
+                    Save Folder
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="max-h-[220px] overflow-y-auto pr-1">
+          {folders.length === 0 ? (
+            <p className="text-[11px] text-[#787774] italic px-2">No folders created</p>
+          ) : (
+            <FolderTree
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={(id) => {
+                onSelectFolder(id);
+                onSelectTag(undefined);
+                onSelectFavorite(undefined);
+              }}
+              onEditFolder={onEditFolder}
+              onDeleteFolder={onDeleteFolder}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div className="space-y-2">
+        <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider px-2">Tags</h3>
+        <div className="flex flex-wrap gap-1.5 px-2">
+          {tags.length === 0 ? (
+            <p className="text-[11px] text-[#787774] italic">No active tags</p>
+          ) : (
+            tags.map((tag: any) => {
+              const isSelected = selectedTag === tag.name;
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => {
+                    onSelectTag(isSelected ? undefined : tag.name);
+                    onSelectFolder(undefined);
+                    onSelectFavorite(undefined);
+                  }}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-mono transition-colors border ${
+                    isSelected
+                      ? 'bg-[#111111] text-white border-[#111111]'
+                      : 'bg-white text-[#787774] border-brand-border hover:border-[#111111]/30 hover:text-[#111111]'
+                  }`}
+                >
+                  <TagIcon className="w-2.5 h-2.5" />
+                  {tag.name}
+                  <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-[#787774]/70'}`}>
+                    ({tag.bookmarkCount})
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Import & Export */}
+      <div className="border-t border-brand-border pt-4 px-2 space-y-2">
+        <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider">Sync</h3>
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExport}
+            className="w-full flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase h-8"
+          >
+            <DownloadSimple className="w-3.5 h-3.5" />
+            Export HTML
+          </Button>
+          <label className="w-full">
+            <span className="flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase border border-brand-border bg-white text-[#111111] hover:bg-[#FBFBFA] rounded-none h-8 cursor-pointer transition-colors px-3 font-semibold text-xs border border-brand-border shadow-none">
+              <UploadSimple className="w-3.5 h-3.5" />
+              Import HTML
+            </span>
+            <input
+              type="file"
+              accept=".html"
+              onChange={onImport}
+              className="hidden"
+            />
+          </label>
+        </div>
+      </div>
+    </aside>
+  );
+}
