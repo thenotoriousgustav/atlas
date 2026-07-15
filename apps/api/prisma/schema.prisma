@@ -20,6 +20,7 @@ model User {
   bookmarks     Bookmark[]
   transactions  Transaction[]
   subscriptions Subscription[]
+  vehicles      Vehicle[]
 
   @@map("users")
 }
@@ -119,4 +120,146 @@ model Subscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+model Vehicle {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String            @db.Uuid
+  brand         String
+  model         String
+  variant       String?
+  year          Int
+  plateNumber   String
+  vin           String?
+  engineNumber  String?
+  chassisNumber String?
+  purchasePrice Float?
+  purchaseDate  DateTime?
+  odometer      Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  maintenances Maintenance[]
+  parts        Part[]
+  fuelLogs     FuelLog[]
+  expenses     Expense[]
+  reminders    Reminder[]
+  documents    VehicleDocument[]
+
+  @@map("vehicles")
+}
+
+model Maintenance {
+  id         String            @id @default(uuid()) @db.Uuid
+  vehicleId  String            @db.Uuid
+  date       DateTime          @default(now())
+  odometer   Int
+  workshop   String?
+  notes      String?
+  totalCost  Float
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  deletedAt  DateTime?
+
+  vehicle   Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  items     MaintenanceItem[]
+  parts     Part[]
+
+  @@map("maintenances")
+}
+
+model MaintenanceItem {
+  id            String      @id @default(uuid()) @db.Uuid
+  maintenanceId String      @db.Uuid
+  type          String
+  cost          Float
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  maintenance   Maintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_items")
+}
+
+model Part {
+  id               String       @id @default(uuid()) @db.Uuid
+  vehicleId        String       @db.Uuid
+  maintenanceId    String?      @db.Uuid
+  name             String
+  brand            String?
+  installedAt      DateTime?
+  installedMileage Int?
+  expectedLife     Int?         // expected mileage lifetime
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  deletedAt        DateTime?
+
+  vehicle     Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  maintenance Maintenance? @relation(fields: [maintenanceId], references: [id], onDelete: SetNull)
+
+  @@map("parts")
+}
+
+model FuelLog {
+  id        String    @id @default(uuid()) @db.Uuid
+  vehicleId String    @db.Uuid
+  liters    Float
+  price     Float     // price per liter
+  odometer  Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("fuel_logs")
+}
+
+model Expense {
+  id        String    @id @default(uuid()) @db.Uuid
+  vehicleId String    @db.Uuid
+  category  String
+  amount    Float
+  date      DateTime  @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("expenses")
+}
+
+model Reminder {
+  id         String    @id @default(uuid()) @db.Uuid
+  vehicleId  String    @db.Uuid
+  type       String
+  dueDate    DateTime?
+  dueMileage Int?
+  status     String    @default("ACTIVE") // "ACTIVE", "COMPLETED", "OVERDUE"
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("reminders")
+}
+
+model VehicleDocument {
+  id             String    @id @default(uuid()) @db.Uuid
+  vehicleId      String    @db.Uuid
+  documentType   String    // "STNK", "Insurance", "Warranty", "Other"
+  documentNumber String
+  expirationDate DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_documents")
 }

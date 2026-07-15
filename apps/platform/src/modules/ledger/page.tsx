@@ -378,7 +378,7 @@ export function LedgerDashboard() {
   // Layout Design Read: "monospace-editorial minimalist language, sharp corners, warm pastel indicators"
   return (
     <div className="min-h-[100dvh] bg-brand-canvas py-8 px-4 md:px-12 select-none">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-8xl mx-auto space-y-8">
         
         {/* Monospace Workspace Header */}
         <WorkspaceHeader user={user} onLogout={handleLogout} />

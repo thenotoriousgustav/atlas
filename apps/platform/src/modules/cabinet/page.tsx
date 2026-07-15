@@ -384,7 +384,7 @@ export function CabinetDashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-brand-canvas py-8 px-4 md:px-12">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-8xl mx-auto space-y-8">
         
         {/* Workspace Nav Header */}
         <WorkspaceHeader user={user} onLogout={handleLogout} />

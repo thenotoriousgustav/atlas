@@ -9,9 +9,10 @@ import {
   useBookmarksControllerFindAll,
   useTransactionsControllerFindAll,
   useSubscriptionsControllerFindAll,
+  useVehiclesControllerFindAll,
+  useRemindersControllerFindAll,
 } from '@atlas/api-client';
 import { useAuthStore } from '../store/useAuthStore';
-import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
 import { Badge } from '@atlas/ui/components/badge';
 import {
@@ -23,6 +24,9 @@ import {
   FolderSimple,
   CreditCard,
   User,
+  GasPump,
+  Gauge,
+  Wrench,
 } from '@phosphor-icons/react';
 
 export const dynamic = 'force-dynamic';
@@ -88,6 +92,14 @@ export default function HomePortalPage() {
     query: { enabled: !!user },
   });
 
+  // Fetch Garage Stats
+  const { data: vehiclesData } = useVehiclesControllerFindAll({
+    query: { enabled: !!user },
+  });
+  const { data: remindersData } = useRemindersControllerFindAll(undefined, {
+    query: { enabled: !!user },
+  });
+
   const logoutMutation = useAuthControllerLogout();
 
   const handleLogout = async () => {
@@ -130,6 +142,10 @@ export default function HomePortalPage() {
 
   const totalActiveSubscriptions = subscriptions.filter((s: any) => s.status === 'ACTIVE').length;
 
+  // Calculations for Garage
+  const totalVehicles = (vehiclesData as any)?.data?.length || 0;
+  const totalActiveReminders = (remindersData as any)?.data?.filter((r: any) => r.status === 'ACTIVE').length || 0;
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -155,7 +171,7 @@ export default function HomePortalPage() {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-[#111111] animate-pulse rounded-none" />
             <h1 className="text-sm font-semibold uppercase tracking-widest text-[#111111]">
-              Gustam Portal
+              Atlas
             </h1>
           </div>
           <p className="text-[10px] text-[#787774] uppercase">
@@ -181,7 +197,7 @@ export default function HomePortalPage() {
       </div>
 
       {/* Main Content: Hub Grid Picker */}
-      <div className="max-w-4xl w-full mx-auto py-12 space-y-10 flex-1 flex flex-col justify-center">
+      <div className="max-w-5xl w-full mx-auto py-12 space-y-10 flex-1 flex flex-col justify-center">
         {/* Asymmetric Header */}
         <div className="space-y-3 max-w-xl">
           <div className="text-[10px] uppercase text-[#787774] tracking-widest flex items-center gap-2">
@@ -195,7 +211,7 @@ export default function HomePortalPage() {
         </div>
 
         {/* Dashboard Grid Picker */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: Cabinet Bookmark Vault */}
           <div
             onClick={() => router.push('/cabinet')}
@@ -287,6 +303,56 @@ export default function HomePortalPage() {
                   <span className="font-semibold text-[#111111] flex items-center gap-1">
                     <CreditCard className="w-3.5 h-3.5" />
                     {totalActiveSubscriptions} active
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] group-hover:bg-[#111111] group-hover:text-white group-hover:border-[#111111] transition-colors">
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Garage Vehicle Vault */}
+          <div
+            onClick={() => router.push('/garage')}
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-[#111111] hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-10 bg-[#111111]/5 flex items-center justify-center text-[#111111]">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
+                  Module 03
+                </Badge>
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-[#111111]">
+                  Garage
+                </h3>
+                <p className="text-xs text-[#787774]">
+                  Personal vehicle logs, maintenance intervals, refueling efficiency, and papers.
+                </p>
+              </div>
+            </div>
+
+            {/* Live Data Summary for Garage */}
+            <div className="border-t border-[#111111]/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-[#787774]">
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Vehicles</span>
+                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                    <Gauge className="w-3.5 h-3.5" />
+                    {totalVehicles} active
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Reminders</span>
+                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {totalActiveReminders} active
                   </span>
                 </div>
               </div>

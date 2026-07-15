@@ -15,12 +15,12 @@ export function WorkspaceHeader({ user, onLogout }: WorkspaceHeaderProps) {
     <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-brand-border pb-5 gap-4">
       <div className="flex items-center gap-3">
         <div className="w-7 h-7 bg-[#111111] flex items-center justify-center rounded-none text-white font-serif italic text-sm font-semibold">
-          L
+          G
         </div>
         <div>
-          <h1 className="font-serif text-2xl font-medium tracking-tight text-[#111111]">Ledger</h1>
+          <h1 className="font-serif text-2xl font-medium tracking-tight text-[#111111]">Garage</h1>
           <p className="text-[10px] text-[#787774] font-mono tracking-tight uppercase">
-            Gustam platform · Ledger
+            Gustam platform · Garage
           </p>
         </div>
       </div>

@@ -852,6 +852,622 @@
           "subscriptions"
         ]
       }
+    },
+    "/v1/vehicles": {
+      "post": {
+        "operationId": "VehiclesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVehicleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register a new vehicle",
+        "tags": [
+          "vehicles"
+        ]
+      },
+      "get": {
+        "operationId": "VehiclesController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all registered vehicles",
+        "tags": [
+          "vehicles"
+        ]
+      }
+    },
+    "/v1/vehicles/{id}": {
+      "get": {
+        "operationId": "VehiclesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get details of a specific vehicle",
+        "tags": [
+          "vehicles"
+        ]
+      },
+      "patch": {
+        "operationId": "VehiclesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVehicleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update vehicle information",
+        "tags": [
+          "vehicles"
+        ]
+      },
+      "delete": {
+        "operationId": "VehiclesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a vehicle record",
+        "tags": [
+          "vehicles"
+        ]
+      }
+    },
+    "/v1/maintenance": {
+      "post": {
+        "operationId": "MaintenanceController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMaintenanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Log a new maintenance service",
+        "tags": [
+          "maintenance"
+        ]
+      },
+      "get": {
+        "operationId": "MaintenanceController_findAll",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get maintenance service history",
+        "tags": [
+          "maintenance"
+        ]
+      }
+    },
+    "/v1/maintenance/{id}": {
+      "delete": {
+        "operationId": "MaintenanceController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a maintenance record",
+        "tags": [
+          "maintenance"
+        ]
+      }
+    },
+    "/v1/fuel": {
+      "post": {
+        "operationId": "FuelController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFuelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Log a new refueling",
+        "tags": [
+          "fuel"
+        ]
+      },
+      "get": {
+        "operationId": "FuelController_findAll",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get refueling logs",
+        "tags": [
+          "fuel"
+        ]
+      }
+    },
+    "/v1/fuel/{id}": {
+      "delete": {
+        "operationId": "FuelController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a refueling log",
+        "tags": [
+          "fuel"
+        ]
+      }
+    },
+    "/v1/expenses": {
+      "post": {
+        "operationId": "ExpensesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Log a new vehicle expense",
+        "tags": [
+          "expenses"
+        ]
+      },
+      "get": {
+        "operationId": "ExpensesController_findAll",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get vehicle expense history",
+        "tags": [
+          "expenses"
+        ]
+      }
+    },
+    "/v1/expenses/{id}": {
+      "delete": {
+        "operationId": "ExpensesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove an expense record",
+        "tags": [
+          "expenses"
+        ]
+      }
+    },
+    "/v1/reminders": {
+      "post": {
+        "operationId": "RemindersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReminderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new reminder",
+        "tags": [
+          "reminders"
+        ]
+      },
+      "get": {
+        "operationId": "RemindersController_findAll",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get active reminders",
+        "tags": [
+          "reminders"
+        ]
+      }
+    },
+    "/v1/reminders/{id}": {
+      "patch": {
+        "operationId": "RemindersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReminderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update reminder details",
+        "tags": [
+          "reminders"
+        ]
+      },
+      "delete": {
+        "operationId": "RemindersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a reminder",
+        "tags": [
+          "reminders"
+        ]
+      }
+    },
+    "/v1/documents": {
+      "post": {
+        "operationId": "DocumentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Log a new vehicle document",
+        "tags": [
+          "documents"
+        ]
+      },
+      "get": {
+        "operationId": "DocumentsController_findAll",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get logged vehicle documents",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{id}": {
+      "delete": {
+        "operationId": "DocumentsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a document log record",
+        "tags": [
+          "documents"
+        ]
+      }
     }
   },
   "info": {
@@ -1228,6 +1844,394 @@
             ]
           }
         }
+      },
+      "CreateVehicleDto": {
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string",
+            "example": "Honda",
+            "description": "Brand of the vehicle"
+          },
+          "model": {
+            "type": "string",
+            "example": "Vario 160",
+            "description": "Model of the vehicle"
+          },
+          "variant": {
+            "type": "string",
+            "example": "CBS-ISS",
+            "description": "Variant"
+          },
+          "year": {
+            "type": "number",
+            "example": 2023,
+            "description": "Year of manufacturing"
+          },
+          "plateNumber": {
+            "type": "string",
+            "example": "B 1234 ABC",
+            "description": "License plate number"
+          },
+          "vin": {
+            "type": "string",
+            "example": "MH1KF1111...",
+            "description": "Vehicle Identification Number (VIN)"
+          },
+          "engineNumber": {
+            "type": "string",
+            "example": "KF11E111...",
+            "description": "Engine number"
+          },
+          "chassisNumber": {
+            "type": "string",
+            "example": "MH123...",
+            "description": "Chassis number"
+          },
+          "purchasePrice": {
+            "type": "number",
+            "example": 25000000,
+            "description": "Purchase price"
+          },
+          "purchaseDate": {
+            "type": "string",
+            "example": "2023-05-12T00:00:00.000Z",
+            "description": "Purchase date"
+          },
+          "odometer": {
+            "type": "number",
+            "example": 12500,
+            "description": "Current odometer mileage"
+          }
+        },
+        "required": [
+          "brand",
+          "model",
+          "year",
+          "plateNumber",
+          "odometer"
+        ]
+      },
+      "UpdateVehicleDto": {
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string",
+            "example": "Honda",
+            "description": "Brand of the vehicle"
+          },
+          "model": {
+            "type": "string",
+            "example": "Vario 160",
+            "description": "Model of the vehicle"
+          },
+          "variant": {
+            "type": "string",
+            "example": "CBS-ISS",
+            "description": "Variant"
+          },
+          "year": {
+            "type": "number",
+            "example": 2023,
+            "description": "Year of manufacturing"
+          },
+          "plateNumber": {
+            "type": "string",
+            "example": "B 1234 ABC",
+            "description": "License plate number"
+          },
+          "vin": {
+            "type": "string",
+            "example": "MH1KF1111...",
+            "description": "Vehicle Identification Number (VIN)"
+          },
+          "engineNumber": {
+            "type": "string",
+            "example": "KF11E111...",
+            "description": "Engine number"
+          },
+          "chassisNumber": {
+            "type": "string",
+            "example": "MH123...",
+            "description": "Chassis number"
+          },
+          "purchasePrice": {
+            "type": "number",
+            "example": 25000000,
+            "description": "Purchase price"
+          },
+          "purchaseDate": {
+            "type": "string",
+            "example": "2023-05-12T00:00:00.000Z",
+            "description": "Purchase date"
+          },
+          "odometer": {
+            "type": "number",
+            "example": 12500,
+            "description": "Current odometer mileage"
+          }
+        }
+      },
+      "MaintenanceItemDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "Engine Oil",
+            "description": "Type of maintenance service/item"
+          },
+          "cost": {
+            "type": "number",
+            "example": 45000,
+            "description": "Cost of this item"
+          }
+        },
+        "required": [
+          "type",
+          "cost"
+        ]
+      },
+      "MaintenancePartDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Federal Oil 10W-30",
+            "description": "Name of the part installed"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Federal",
+            "description": "Brand of the part"
+          },
+          "expectedLife": {
+            "type": "number",
+            "example": 3000,
+            "description": "Expected mileage lifetime (km)"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateMaintenanceDto": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Vehicle ID"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-07-15T00:00:00.000Z",
+            "description": "Date of service"
+          },
+          "odometer": {
+            "type": "number",
+            "example": 13000,
+            "description": "Odometer mileage at service"
+          },
+          "workshop": {
+            "type": "string",
+            "example": "AHASS Kebon Jeruk",
+            "description": "Workshop name"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Regular oil change and CVT cleaning",
+            "description": "Service notes"
+          },
+          "totalCost": {
+            "type": "number",
+            "example": 120000,
+            "description": "Total service cost (parts + labor)"
+          },
+          "items": {
+            "description": "Detailed items/jobs",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceItemDto"
+            }
+          },
+          "parts": {
+            "description": "Parts replaced during this service",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenancePartDto"
+            }
+          }
+        },
+        "required": [
+          "vehicleId",
+          "odometer",
+          "totalCost"
+        ]
+      },
+      "CreateFuelDto": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Vehicle ID"
+          },
+          "liters": {
+            "type": "number",
+            "example": 4.2,
+            "description": "Liters of fuel filled"
+          },
+          "price": {
+            "type": "number",
+            "example": 13500,
+            "description": "Price per liter (IDR)"
+          },
+          "odometer": {
+            "type": "number",
+            "example": 12650,
+            "description": "Odometer mileage at refueling"
+          }
+        },
+        "required": [
+          "vehicleId",
+          "liters",
+          "price",
+          "odometer"
+        ]
+      },
+      "CreateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Vehicle ID"
+          },
+          "category": {
+            "type": "string",
+            "example": "Toll",
+            "description": "Expense category"
+          },
+          "amount": {
+            "type": "number",
+            "example": 20000,
+            "description": "Amount spent"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-07-15T00:00:00.000Z",
+            "description": "Date of expense"
+          }
+        },
+        "required": [
+          "vehicleId",
+          "category",
+          "amount"
+        ]
+      },
+      "CreateReminderDto": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Vehicle ID"
+          },
+          "type": {
+            "type": "string",
+            "example": "Oil Change",
+            "description": "Type/title of reminder"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-10-15T00:00:00.000Z",
+            "description": "Due date"
+          },
+          "dueMileage": {
+            "type": "number",
+            "example": 15000,
+            "description": "Due odometer mileage"
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE",
+            "description": "Reminder status",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "OVERDUE"
+            ]
+          }
+        },
+        "required": [
+          "vehicleId",
+          "type"
+        ]
+      },
+      "UpdateReminderDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "Oil Change",
+            "description": "Type/title of reminder"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-10-15T00:00:00.000Z",
+            "description": "Due date"
+          },
+          "dueMileage": {
+            "type": "number",
+            "example": 15000,
+            "description": "Due odometer mileage"
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE",
+            "description": "Reminder status",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "OVERDUE"
+            ]
+          }
+        }
+      },
+      "CreateDocumentDto": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Vehicle ID"
+          },
+          "documentType": {
+            "type": "string",
+            "example": "STNK",
+            "description": "Document type (STNK, Insurance, Warranty, Other)"
+          },
+          "documentNumber": {
+            "type": "string",
+            "example": "1234567890",
+            "description": "Document number"
+          },
+          "expirationDate": {
+            "type": "string",
+            "example": "2028-05-12T00:00:00.000Z",
+            "description": "Expiration date"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Registration invoice and plates info",
+            "description": "Notes"
+          }
+        },
+        "required": [
+          "vehicleId",
+          "documentType",
+          "documentNumber"
+        ]
       }
     }
   }
