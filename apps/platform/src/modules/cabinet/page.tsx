@@ -154,12 +154,11 @@ export function CabinetDashboard() {
       title: '',
       description: '',
       folderId: '',
-      tags: '',
+      tags: [] as string[],
     },
     onSubmit: async ({ value }) => {
-      const tagsArray = value.tags
-        .split(',')
-        .map((t) => t.trim())
+      const tagsArray = (value.tags || [])
+        .map((t) => t.replace(/^#/, '').trim())
         .filter((t) => t.length > 0);
 
       let targetUrl = value.url.trim();
@@ -375,7 +374,7 @@ export function CabinetDashboard() {
     bookmarkForm.setFieldValue('title', bookmark.title || '');
     bookmarkForm.setFieldValue('description', bookmark.description || '');
     bookmarkForm.setFieldValue('folderId', bookmark.folderId || '');
-    bookmarkForm.setFieldValue('tags', bookmark.tags?.map((t: any) => t.name).join(', ') || '');
+    bookmarkForm.setFieldValue('tags', bookmark.tags?.map((t: any) => `#${t.name}`) || []);
     setIsBookmarkModalOpen(true);
   };
 
@@ -651,6 +650,7 @@ export function CabinetDashboard() {
               bookmarkToEdit={bookmarkToEdit}
               bookmarkForm={bookmarkForm}
               folders={folders}
+              tags={tags}
               resetBookmarkForm={resetBookmarkForm}
               viewMode={viewMode}
               onViewModeChange={handleViewModeChange}

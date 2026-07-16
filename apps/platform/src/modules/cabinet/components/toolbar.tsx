@@ -23,11 +23,30 @@ import {
   SelectContent,
   SelectItem,
 } from '@atlas/ui/components/select';
-import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Sparkle } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Sparkle, CaretDown } from '@phosphor-icons/react';
 import { AXIOS_INSTANCE } from '@atlas/api-client';
 import { Spinner } from '@atlas/ui/components/spinner';
 import { Item } from '@atlas/ui/components/item';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@atlas/ui/components/input-group';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxGroup,
+  ComboboxLabel,
+  ComboboxEmpty,
+  ComboboxChipsInput,
+  ComboboxTrigger,
+  useComboboxAnchor,
+  ComboboxAnchor,
+} from '@atlas/ui/components/combobox';
+import {
+  TagsInput,
+  TagsInputList,
+  TagsInputInput,
+  TagsInputItem,
+} from '@atlas/ui/components/tags-input';
 
 interface ToolbarProps {
   searchQuery: string;
@@ -37,6 +56,7 @@ interface ToolbarProps {
   bookmarkToEdit: any;
   bookmarkForm: any;
   folders: any[];
+  tags?: any[];
   resetBookmarkForm: () => void;
   viewMode: 'list' | 'moodboard';
   onViewModeChange: (mode: 'list' | 'moodboard') => void;
@@ -52,6 +72,7 @@ export function Toolbar({
   bookmarkToEdit,
   bookmarkForm,
   folders,
+  tags = [],
   resetBookmarkForm,
   viewMode,
   onViewModeChange,
@@ -59,6 +80,13 @@ export function Toolbar({
   onColumnCountChange = () => {},
 }: ToolbarProps) {
   const [isScraping, setIsScraping] = React.useState(false);
+  const [tagInputValue, setTagInputValue] = React.useState('');
+  const filteredTags = React.useMemo(() => {
+    const query = tagInputValue.trim().toLowerCase().replace(/^#/, '');
+    if (!query) return tags;
+    return tags.filter((t: any) => t.name.toLowerCase().includes(query));
+  }, [tags, tagInputValue]);
+  const anchorRef = useComboboxAnchor();
   const handleScrape = async (url: string) => {
     if (!url) return;
     let targetUrl = url.trim();
@@ -79,9 +107,6 @@ export function Toolbar({
         }
         if (metadata.description) {
           bookmarkForm.setFieldValue('description', metadata.description);
-        }
-        if (metadata.tags && metadata.tags.length > 0) {
-          bookmarkForm.setFieldValue('tags', metadata.tags.join(', '));
         }
       }
     } catch (err) {
@@ -171,7 +196,7 @@ export function Toolbar({
           </Button>
 </DialogTrigger>
 
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{bookmarkToEdit ? 'Edit Bookmark' : 'New Bookmark'}</DialogTitle>
             <DialogDescription>Resource collection</DialogDescription>
@@ -291,15 +316,81 @@ export function Toolbar({
                   name="tags"
                   children={(field: any) => (
                     <Field>
-                      <FieldLabel htmlFor={field.name}>Tags (Comma-separated)</FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="react, tailwind, guide"
-                      />
+                      <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
+                      <Combobox
+                        value={field.state.value || []}
+                        onValueChange={(val) => {
+                          const formatted = val.map((t: string) => (t.startsWith('#') ? t : `#${t}`));
+                          field.handleChange(formatted);
+                          setTagInputValue('');
+                        }}
+                        inputValue={tagInputValue}
+                        onInputValueChange={setTagInputValue}
+                      >
+                        <ComboboxAnchor className="w-full">
+                          <TagsInput
+                            value={field.state.value || []}
+                            onValueChange={(val) => {
+                              const formatted = val.map((t: string) => (t.startsWith('#') ? t : `#${t}`));
+                              field.handleChange(formatted);
+                              setTagInputValue('');
+                            }}
+                            className="w-full gap-0"
+                          >
+                            <TagsInputList className="w-full min-h-10 px-3 py-1.5 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-within:ring-1 focus-within:ring-brand-charcoal/30 flex flex-wrap items-center gap-1.5">
+                              {(field.state.value || []).map((tag: string) => (
+                                <TagsInputItem
+                                  key={tag}
+                                  value={tag}
+                                  className="bg-brand-charcoal/5 border-brand-border text-brand-charcoal rounded-none text-xs py-0.5 px-2 gap-1"
+                                >
+                                  {tag}
+                                </TagsInputItem>
+                              ))}
+                              <ComboboxChipsInput
+                                render={
+                                  <TagsInputInput
+                                    placeholder="Select or add tags..."
+                                    className="text-xs text-brand-charcoal placeholder:text-brand-muted outline-none focus:outline-none flex-1"
+                                  />
+                                }
+                              />
+                            </TagsInputList>
+                          </TagsInput>
+                        </ComboboxAnchor>
+                        <ComboboxContent className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto bg-white border border-brand-border rounded-none shadow-sm z-50 p-1">
+                          <ComboboxList className="no-scrollbar max-h-[200px] overflow-y-auto overscroll-contain">
+                            {filteredTags.length === 0 ? (
+                              <ComboboxEmpty className="py-4 text-center text-xs text-brand-muted">
+                                {tagInputValue.trim() ? `Press enter to create "${tagInputValue}"` : 'No tags found.'}
+                              </ComboboxEmpty>
+                            ) : (
+                              <ComboboxGroup>
+                                {filteredTags.map((tag: any) => {
+                                  const tagValue = `#${tag.name}`;
+                                  const isSelected = (field.state.value || []).includes(tagValue);
+                                  return (
+                                    <ComboboxItem
+                                      key={tag.id}
+                                      value={tagValue}
+                                      onClick={() => {
+                                        const nextValue = isSelected
+                                          ? field.state.value.filter((v: string) => v !== tagValue)
+                                          : [...(field.state.value || []), tagValue];
+                                        field.handleChange(nextValue);
+                                        setTagInputValue('');
+                                      }}
+                                      className="cursor-pointer hover:bg-brand-canvas text-xs px-3 py-2 text-brand-charcoal flex justify-between items-center"
+                                    >
+                                      <span>{tagValue}</span>
+                                    </ComboboxItem>
+                                  );
+                                })}
+                              </ComboboxGroup>
+                            )}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
                     </Field>
                   )}
                 />
