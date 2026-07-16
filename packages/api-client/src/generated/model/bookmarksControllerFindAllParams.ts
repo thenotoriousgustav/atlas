@@ -12,4 +12,6 @@ isFavorite?: boolean;
 isArchived?: boolean;
 tag?: string;
 search?: string;
+cursor?: string;
+limit?: number;
 };

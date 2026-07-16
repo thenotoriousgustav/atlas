@@ -11,7 +11,7 @@ import {
   useFoldersControllerCreate,
   useFoldersControllerUpdate,
   useFoldersControllerRemove,
-  useBookmarksControllerFindAll,
+  useBookmarksControllerFindAllInfinite,
   useBookmarksControllerCreate,
   useBookmarksControllerUpdate,
   useBookmarksControllerRemove,
@@ -26,12 +26,14 @@ import {
 } from '@atlas/api-client';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
+import { toast } from 'sonner';
 import { WorkspaceHeader } from './components/workspace-header';
 import { SidebarFilters } from './components/sidebar-filters';
 import { Toolbar } from './components/toolbar';
 import { BookmarkList } from './components/bookmark-list';
 import { Archive, Trash } from '@phosphor-icons/react';
 import { Button } from '@atlas/ui/components/button';
+import { Spinner } from '@atlas/ui/components/spinner';
 import {
   Select,
   SelectTrigger,
@@ -128,7 +130,7 @@ export function CabinetDashboard() {
         setIsFolderModalOpen(false);
         resetFolderForm();
       } catch {
-        alert('Failed to save folder');
+        toast.error('Failed to save folder');
       }
     },
   });
@@ -179,7 +181,7 @@ export function CabinetDashboard() {
         setIsBookmarkModalOpen(false);
         resetBookmarkForm();
       } catch {
-        alert('Failed to save bookmark');
+        toast.error('Failed to save bookmark');
       }
     },
   });
@@ -207,23 +209,29 @@ export function CabinetDashboard() {
   const tags = (tagsData as any)?.data || [];
 
   const {
-    data: bookmarksData,
+    data: bookmarksInfiniteData,
     isLoading: isBookmarksLoading,
-  } = useBookmarksControllerFindAll(
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useBookmarksControllerFindAllInfinite(
     {
       folderId: selectedFolderId,
-      isFavorite: filterFavorite ? 'true' : undefined,
-      isArchived:
-        filterArchived === undefined
-          ? undefined
-          : filterArchived
-            ? 'true'
-            : 'false',
+      isFavorite: filterFavorite,
+      isArchived: filterArchived,
       tag: selectedTag,
       search: searchDebounced || undefined,
-    } as any
+      limit: 20,
+    },
+    {
+      query: {
+        initialPageParam: undefined,
+        getNextPageParam: (lastPage: any) => lastPage?.data?.nextCursor || undefined,
+      },
+    }
   );
-  const bookmarks = (bookmarksData as any)?.data || bookmarksData || [];
+  const rawBookmarks = bookmarksInfiniteData?.pages.flatMap((page: any) => page?.data?.data || []) || [];
+  const bookmarks = Array.from(new Map(rawBookmarks.map((b: any) => [b.id, b])).values());
   const filteredBookmarks = bookmarks.filter((b: any) => filterBroken ? b.status === 'BROKEN' : true);
 
   // Health and Duplicates Queries
@@ -304,7 +312,7 @@ export function CabinetDashboard() {
           setSelectedFolderId(undefined);
         }
       } catch {
-        alert('Failed to delete folder');
+        toast.error('Failed to delete folder');
       }
     }
   };
@@ -320,9 +328,9 @@ export function CabinetDashboard() {
     try {
       await scanHealthMutation.mutateAsync();
       invalidateAllQueries();
-      alert('Link status check started in the background!');
+      toast.success('Link status check started in the background!');
     } catch {
-      alert('Failed to start link status scan.');
+      toast.error('Failed to start link status scan.');
     }
   };
 
@@ -335,9 +343,9 @@ export function CabinetDashboard() {
       try {
         await cleanDuplicatesMutation.mutateAsync();
         invalidateAllQueries();
-        alert('Duplicate bookmarks successfully cleaned!');
+        toast.success('Duplicate bookmarks successfully cleaned!');
       } catch {
-        alert('Failed to clean duplicate bookmarks.');
+        toast.error('Failed to clean duplicate bookmarks.');
       }
     }
   };
@@ -369,7 +377,7 @@ export function CabinetDashboard() {
         await removeBookmarkMutation.mutateAsync({ id });
         invalidateAllQueries();
       } catch {
-        alert('Failed to delete bookmark');
+        toast.error('Failed to delete bookmark');
       }
     }
   };
@@ -383,7 +391,7 @@ export function CabinetDashboard() {
         setSelectedTag(undefined);
       }
     } catch {
-      alert('Failed to delete tag');
+      toast.error('Failed to delete tag');
     }
   };
 
@@ -397,7 +405,7 @@ export function CabinetDashboard() {
       });
       invalidateAllQueries();
     } catch {
-      alert('Failed to update favorite status');
+      toast.error('Failed to update favorite status');
     }
   };
 
@@ -411,7 +419,7 @@ export function CabinetDashboard() {
       });
       invalidateAllQueries();
     } catch {
-      alert('Failed to update archive status');
+      toast.error('Failed to update archive status');
     }
   };
 
@@ -428,7 +436,7 @@ export function CabinetDashboard() {
       });
       invalidateAllQueries();
     } catch {
-      alert('Failed to duplicate bookmark');
+      toast.error('Failed to duplicate bookmark');
     }
   };
 
@@ -447,6 +455,16 @@ export function CabinetDashboard() {
     setSelectedBookmarkIds([]);
   };
 
+  const handleSelectAll = () => {
+    const allIds = filteredBookmarks.map((b: any) => b.id);
+    const allSelected = allIds.every((id) => selectedBookmarkIds.includes(id));
+    if (allSelected) {
+      setSelectedBookmarkIds([]);
+    } else {
+      setSelectedBookmarkIds(allIds);
+    }
+  };
+
   const handleBulkDelete = async () => {
     const isConfirmed = await confirm({
       title: 'Delete Selected Bookmarks',
@@ -462,7 +480,7 @@ export function CabinetDashboard() {
       invalidateAllQueries();
       setSelectedBookmarkIds([]);
     } catch {
-      alert('Failed to delete some bookmarks');
+      toast.error('Failed to delete some bookmarks');
     }
   };
 
@@ -479,7 +497,7 @@ export function CabinetDashboard() {
       invalidateAllQueries();
       setSelectedBookmarkIds([]);
     } catch {
-      alert('Failed to archive some bookmarks');
+      toast.error('Failed to archive some bookmarks');
     }
   };
 
@@ -496,7 +514,7 @@ export function CabinetDashboard() {
       invalidateAllQueries();
       setSelectedBookmarkIds([]);
     } catch {
-      alert('Failed to move some bookmarks');
+      toast.error('Failed to move some bookmarks');
     }
   };
 
@@ -514,7 +532,7 @@ export function CabinetDashboard() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert('Failed to export bookmarks');
+      toast.error('Failed to export bookmarks');
     }
   };
 
@@ -530,9 +548,9 @@ export function CabinetDashboard() {
           data: { htmlContent: content },
         });
         invalidateAllQueries();
-        alert('Bookmarks imported successfully!');
+        toast.success('Bookmarks imported successfully!');
       } catch {
-        alert('Failed to import bookmarks. Ensure it is a valid Netscape Bookmark HTML file.');
+        toast.error('Failed to import bookmarks. Ensure it is a valid Netscape Bookmark HTML file.');
       }
     };
     reader.readAsText(file);
@@ -653,6 +671,27 @@ export function CabinetDashboard() {
               onCleanDuplicates={handleCleanDuplicates}
             />
 
+            {/* Load More Button */}
+            {!filterDuplicates && hasNextPage && (
+              <div className="flex justify-center pt-6 pb-4">
+                <Button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  variant="outline"
+                  className="font-mono text-xs uppercase h-9 px-6 border-brand-border rounded-none hover:bg-brand-charcoal/5 gap-1.5 flex items-center justify-center min-w-[140px]"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Spinner className="w-3.5 h-3.5 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More'
+                  )}
+                </Button>
+              </div>
+            )}
+
           </section>
 
         </main>
@@ -668,6 +707,13 @@ export function CabinetDashboard() {
         </ActionBarSelection>
         <ActionBarSeparator />
         <ActionBarGroup className="gap-1.5">
+          <ActionBarItem
+            onClick={handleSelectAll}
+            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-white text-brand-charcoal border border-brand-border hover:bg-brand-canvas px-3 rounded-none"
+          >
+            {filteredBookmarks.length > 0 && filteredBookmarks.every((b: any) => selectedBookmarkIds.includes(b.id)) ? 'Deselect All' : 'Select All'}
+          </ActionBarItem>
+
           <Select
             value=""
             onValueChange={(val) => handleBulkMove(val || null)}

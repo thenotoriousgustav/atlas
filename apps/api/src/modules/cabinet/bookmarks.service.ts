@@ -64,6 +64,8 @@ export class BookmarksService {
       isArchived?: boolean;
       tag?: string;
       search?: string;
+      cursor?: string;
+      limit?: number;
     },
   ) {
     const where: any = {
@@ -99,7 +101,8 @@ export class BookmarksService {
       ];
     }
 
-    return this.prisma.bookmark.findMany({
+    const take = filters.limit;
+    const findParams: any = {
       where,
       include: {
         tags: true,
@@ -108,7 +111,31 @@ export class BookmarksService {
       orderBy: {
         createdAt: 'desc',
       },
-    });
+    };
+
+    if (take !== undefined) {
+      findParams.take = take + 1;
+      if (filters.cursor) {
+        findParams.cursor = { id: filters.cursor };
+        findParams.skip = 1;
+      }
+    }
+
+    const items = await this.prisma.bookmark.findMany(findParams);
+
+    let nextCursor: string | null = null;
+    let slicedItems = items;
+    if (take !== undefined) {
+      if (items.length > take) {
+        nextCursor = items[take - 1].id;
+      }
+      slicedItems = items.slice(0, take);
+    }
+
+    return {
+      data: slicedItems,
+      nextCursor,
+    };
   }
 
   async findOne(userId: string, id: string) {

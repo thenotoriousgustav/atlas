@@ -6,18 +6,23 @@
  * OpenAPI spec version: 1.0
  */
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -230,11 +235,84 @@ export const bookmarksControllerFindAll = (
 
 
 
+export const getBookmarksControllerFindAllInfiniteQueryKey = (params?: BookmarksControllerFindAllParams,) => {
+    return [
+    'infinite', `/v1/bookmarks`, ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getBookmarksControllerFindAllQueryKey = (params?: BookmarksControllerFindAllParams,) => {
     return [
     `/v1/bookmarks`, ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getBookmarksControllerFindAllInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, BookmarksControllerFindAllParams['cursor']>, TError = unknown>(params?: BookmarksControllerFindAllParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData, QueryKey, BookmarksControllerFindAllParams['cursor']>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBookmarksControllerFindAllInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, QueryKey, BookmarksControllerFindAllParams['cursor']> = ({ signal, pageParam }) => bookmarksControllerFindAll({...params, 'cursor': pageParam ?? params?.['cursor']}, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData, QueryKey, BookmarksControllerFindAllParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BookmarksControllerFindAllInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerFindAll>>>
+export type BookmarksControllerFindAllInfiniteQueryError = unknown
+
+
+export function useBookmarksControllerFindAllInfinite<TData = InfiniteData<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, BookmarksControllerFindAllParams['cursor']>, TError = unknown>(
+ params: undefined |  BookmarksControllerFindAllParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData, QueryKey, BookmarksControllerFindAllParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerFindAll>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerFindAll>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerFindAllInfinite<TData = InfiniteData<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, BookmarksControllerFindAllParams['cursor']>, TError = unknown>(
+ params?: BookmarksControllerFindAllParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData, QueryKey, BookmarksControllerFindAllParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerFindAll>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerFindAll>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerFindAllInfinite<TData = InfiniteData<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, BookmarksControllerFindAllParams['cursor']>, TError = unknown>(
+ params?: BookmarksControllerFindAllParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData, QueryKey, BookmarksControllerFindAllParams['cursor']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get bookmarks with optional filtering
+ */
+
+export function useBookmarksControllerFindAllInfinite<TData = InfiniteData<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, BookmarksControllerFindAllParams['cursor']>, TError = unknown>(
+ params?: BookmarksControllerFindAllParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData, QueryKey, BookmarksControllerFindAllParams['cursor']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBookmarksControllerFindAllInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getBookmarksControllerFindAllQueryOptions = <TData = Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError = unknown>(params?: BookmarksControllerFindAllParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerFindAll>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}

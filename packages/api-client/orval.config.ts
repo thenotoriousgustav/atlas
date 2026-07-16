@@ -14,6 +14,10 @@ export default defineConfig({
           path: './src/custom-instance.ts',
           name: 'customInstance',
         },
+        query: {
+          useInfinite: true,
+          useInfiniteQueryParam: 'cursor',
+        },
       },
     },
   },

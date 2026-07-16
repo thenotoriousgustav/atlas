@@ -193,7 +193,9 @@ export default function HomePortalPage() {
 
   // Calculations for Cabinet
   const totalFolders = (foldersData as any)?.data?.length || 0;
-  const totalBookmarks = (bookmarksData as any)?.data?.filter((b: any) => !b.deletedAt).length || 0;
+  const totalBookmarks =
+    ((bookmarksData as any)?.data?.data || (bookmarksData as any)?.data || [])
+      .filter((b: any) => !b.deletedAt).length || 0;
 
   // Calculations for Ledger
   const transactions = (transactionsData as any)?.data || [];

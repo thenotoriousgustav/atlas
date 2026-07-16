@@ -4,6 +4,7 @@ import React from 'react';
 import { Instrument_Serif, Inter } from 'next/font/google';
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@atlas/ui/components/sonner';
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -29,7 +30,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body className={`${instrumentSerif.variable} bg-brand-canvas text-brand-charcoal antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Providers>{children}</Providers>
+          <Providers>
+            {children}
+            <Toaster />
+          </Providers>
         </ThemeProvider>
       </body>
     </html>
