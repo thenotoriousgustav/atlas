@@ -70,18 +70,31 @@ export function CabinetDashboard() {
   const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([]);
   const [filterBroken, setFilterBroken] = useState<boolean | undefined>(undefined);
   const [filterDuplicates, setFilterDuplicates] = useState<boolean | undefined>(undefined);
+  const [columnCount, setColumnCount] = useState<number>(3);
 
-  // Load viewMode from localStorage on mount
+  // Load viewMode and columnCount from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('cabinet_view_mode');
-    if (saved === 'list' || saved === 'moodboard') {
-      setViewMode(saved as any);
+    const savedMode = localStorage.getItem('cabinet_view_mode');
+    if (savedMode === 'list' || savedMode === 'moodboard') {
+      setViewMode(savedMode as any);
+    }
+    const savedCols = localStorage.getItem('cabinet_column_count');
+    if (savedCols) {
+      const parsed = parseInt(savedCols, 10);
+      if ([1, 2, 3, 4].includes(parsed)) {
+        setColumnCount(parsed);
+      }
     }
   }, []);
 
   const handleViewModeChange = (mode: 'list' | 'moodboard') => {
     setViewMode(mode);
     localStorage.setItem('cabinet_view_mode', mode);
+  };
+
+  const handleColumnCountChange = (count: number) => {
+    setColumnCount(count);
+    localStorage.setItem('cabinet_column_count', count.toString());
   };
 
   const invalidateAllQueries = () => {
@@ -641,6 +654,8 @@ export function CabinetDashboard() {
               resetBookmarkForm={resetBookmarkForm}
               viewMode={viewMode}
               onViewModeChange={handleViewModeChange}
+              columnCount={columnCount}
+              onColumnCountChange={handleColumnCountChange}
             />
 
              {/* Bookmarks Grid / List */}
@@ -654,6 +669,7 @@ export function CabinetDashboard() {
               filterArchived={filterArchived}
               folders={folders}
               viewMode={viewMode}
+              columnCount={columnCount}
               selectedBookmarkIds={selectedBookmarkIds}
               onToggleSelect={handleToggleSelectBookmark}
               onSelectTag={(tag) => {

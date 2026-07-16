@@ -179,10 +179,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-12 bg-white select-none font-mono">
+    <div className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-12 bg-brand-canvas select-none font-mono">
       
       {/* Left side: Editorial brand layout & manifesto (5 cols) */}
-      <div className="hidden md:flex md:col-span-5 bg-brand-canvas border-r border-[#EAEAEA] flex-col justify-between p-12 text-brand-charcoal">
+      <div className="hidden md:flex md:col-span-5 bg-brand-canvas border-r border-brand-border flex-col justify-between p-12 text-brand-charcoal">
         
         {/* Logo and Dynamic Clock */}
         <div className="space-y-6">
@@ -193,7 +193,7 @@ export default function LoginPage() {
             </h1>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#EAEAEA] bg-white text-[10px] text-brand-muted font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 border border-brand-border bg-brand-canvas text-[10px] text-brand-muted font-bold">
             <Clock className="w-3.5 h-3.5 text-brand-charcoal" />
             <span>UTC/LOCAL · {currentTime || '--:--:--'}</span>
           </div>
@@ -210,7 +210,7 @@ export default function LoginPage() {
         </div>
 
         {/* Security Specs Monospace Footer */}
-        <div className="space-y-3 pt-6 border-t border-[#EAEAEA]">
+        <div className="space-y-3 pt-6 border-t border-brand-border">
           <span className="text-[9px] uppercase tracking-wider text-brand-muted font-bold block">
             System Protocols
           </span>
@@ -229,10 +229,10 @@ export default function LoginPage() {
       </div>
 
       {/* Right side: Modern high-contrast input interface (7 cols) */}
-      <div className="col-span-1 md:col-span-7 flex flex-col justify-between p-8 md:p-16 bg-white min-h-[100dvh]">
+      <div className="col-span-1 md:col-span-7 flex flex-col justify-between p-8 md:p-16 bg-brand-canvas min-h-[100dvh]">
         
         {/* Mobile Header (Hidden on desktop) */}
-        <div className="md:hidden flex items-center justify-between pb-6 border-b border-[#EAEAEA] mb-8">
+        <div className="md:hidden flex items-center justify-between pb-6 border-b border-brand-border mb-8">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-brand-charcoal" />
             <h1 className="text-xs font-bold uppercase tracking-widest text-brand-charcoal">
@@ -272,9 +272,9 @@ export default function LoginPage() {
                   type="button"
                   onClick={handlePasskeyLogin}
                   disabled={isPasskeyAuthenticating}
-                  className="w-full h-11 bg-brand-charcoal text-white hover:bg-[#2e2e2e] active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-2"
+                  className="w-full h-11 bg-brand-charcoal text-brand-canvas border border-brand-border hover:opacity-90 active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-2"
                 >
-                  <Fingerprint className="w-4 h-4 text-white" />
+                  <Fingerprint className="w-4 h-4 text-brand-canvas" />
                   <span>{isPasskeyAuthenticating ? 'Scanning...' : 'Verify with Passkey'}</span>
                 </Button>
 
@@ -286,7 +286,7 @@ export default function LoginPage() {
                   }}
                   disabled={isPasskeyAuthenticating}
                   variant="outline"
-                  className="w-full h-11 font-bold tracking-wider text-xs uppercase rounded-none border border-[#EAEAEA] text-brand-muted hover:bg-brand-charcoal/5 active:scale-[0.98] transition-all flex items-center justify-center"
+                  className="w-full h-11 font-bold tracking-wider text-xs uppercase rounded-none border border-brand-border text-brand-muted hover:bg-brand-charcoal/5 active:scale-[0.98] transition-all flex items-center justify-center"
                 >
                   <span>Back to Credentials</span>
                 </Button>
@@ -330,7 +330,7 @@ export default function LoginPage() {
                   children={(field) => {
                     const hasError = field.state.meta.errors.length > 0;
                     return (
-                      <div className="space-y-1.5">
+                       <div className="space-y-1.5">
                         <Label htmlFor="email" className="text-[9px] uppercase tracking-wider text-brand-muted font-bold">
                           Email Address
                         </Label>
@@ -343,8 +343,8 @@ export default function LoginPage() {
                           type="email"
                           autoComplete="email"
                           placeholder="admin@gustam.dev"
-                          className={`h-11 px-3 border rounded-none bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
-                            hasError ? 'border-[#9F2F2D]' : 'border-[#EAEAEA]'
+                          className={`h-11 px-3 border rounded-none bg-brand-canvas text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
+                            hasError ? 'border-[#9F2F2D]' : 'border-brand-border'
                           }`}
                         />
                         {hasError && (
@@ -382,8 +382,8 @@ export default function LoginPage() {
                           type="password"
                           autoComplete="current-password"
                           placeholder="••••••••"
-                          className={`h-11 px-3 border rounded-none bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
-                            hasError ? 'border-[#9F2F2D]' : 'border-[#EAEAEA]'
+                          className={`h-11 px-3 border rounded-none bg-brand-canvas text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
+                            hasError ? 'border-[#9F2F2D]' : 'border-brand-border'
                           }`}
                         />
                         {hasError && (
@@ -403,7 +403,7 @@ export default function LoginPage() {
                       <Button
                         type="submit"
                         disabled={isSubmitting || isPasskeyAuthenticating}
-                        className="w-full h-11 bg-brand-charcoal text-white hover:bg-[#2e2e2e] active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-1.5"
+                        className="w-full h-11 bg-brand-charcoal text-brand-canvas border border-brand-border hover:opacity-90 active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-1.5"
                       >
                         <span>{isSubmitting ? 'Authenticating...' : 'Submit Credentials'}</span>
                         <ArrowRight className="w-4 h-4" />
@@ -417,7 +417,7 @@ export default function LoginPage() {
         </div>
 
         {/* Micro-UX footer security indicators */}
-        <div className="text-center md:text-left pt-12 border-t border-[#EAEAEA]">
+        <div className="text-center md:text-left pt-12 border-t border-brand-border">
           <p className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
             Protected by HttpOnly Session Cookies · SameSite Lax · WebAuthn v2
           </p>

@@ -40,6 +40,8 @@ interface ToolbarProps {
   resetBookmarkForm: () => void;
   viewMode: 'list' | 'moodboard';
   onViewModeChange: (mode: 'list' | 'moodboard') => void;
+  columnCount?: number;
+  onColumnCountChange?: (count: number) => void;
 }
 
 export function Toolbar({
@@ -53,6 +55,8 @@ export function Toolbar({
   resetBookmarkForm,
   viewMode,
   onViewModeChange,
+  columnCount = 3,
+  onColumnCountChange = () => {},
 }: ToolbarProps) {
   const [isScraping, setIsScraping] = React.useState(false);
   const handleScrape = async (url: string) => {
@@ -134,6 +138,23 @@ export function Toolbar({
           </Tooltip>
 
         </ButtonGroup>
+
+        {viewMode === 'moodboard' && (
+          <Select
+            value={columnCount.toString()}
+            onValueChange={(val) => onColumnCountChange(parseInt(val, 10))}
+          >
+            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] tracking-wider uppercase font-bold text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none w-24 px-2">
+              <SelectValue placeholder="COLUMNS" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 Col</SelectItem>
+              <SelectItem value="2">2 Cols</SelectItem>
+              <SelectItem value="3">3 Cols</SelectItem>
+              <SelectItem value="4">4 Cols</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <Dialog open={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen}>

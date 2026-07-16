@@ -310,6 +310,7 @@ interface BookmarkListProps {
   duplicateGroups?: Array<{ url: string; bookmarks: any[] }>;
   onCleanDuplicates?: () => void;
   totalBookmarks?: number;
+  columnCount?: number;
 }
 
 export function BookmarkList({
@@ -333,25 +334,27 @@ export function BookmarkList({
   duplicateGroups,
   onCleanDuplicates,
   totalBookmarks,
+  columnCount = 3,
 }: BookmarkListProps) {
-  const [columnCount, setColumnCount] = React.useState(3);
+  const [windowWidth, setWindowWidth] = React.useState<number | null>(null);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
+    setWindowWidth(window.innerWidth);
     const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setColumnCount(1);
-      } else if (window.innerWidth < 1024) {
-        setColumnCount(2);
-      } else {
-        setColumnCount(3);
-      }
+      setWindowWidth(window.innerWidth);
     };
-    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const activeColumnCount = React.useMemo(() => {
+    if (!windowWidth) return 3;
+    if (windowWidth < 640) return 1;
+    if (windowWidth < 1024) return Math.min(columnCount, 2);
+    return columnCount;
+  }, [columnCount, windowWidth]);
 
   // Determine title for the list header
   const getHeaderTitle = () => {
@@ -843,10 +846,16 @@ export function BookmarkList({
                 </div>
               ) : (
                 <div className={`grid gap-5 ${
-                  columnCount === 1 ? 'grid-cols-1' : columnCount === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                  activeColumnCount === 1
+                    ? 'grid-cols-1'
+                    : activeColumnCount === 2
+                    ? 'grid-cols-2'
+                    : activeColumnCount === 3
+                    ? 'grid-cols-3'
+                    : 'grid-cols-4'
                 } items-start`}>
-                  {Array.from({ length: columnCount }).map((_, colIndex) => {
-                    const colBookmarks = bookmarks.filter((_, idx) => idx % columnCount === colIndex);
+                  {Array.from({ length: activeColumnCount }).map((_, colIndex) => {
+                    const colBookmarks = bookmarks.filter((_, idx) => idx % activeColumnCount === colIndex);
                     return (
                       <div key={colIndex} className="flex flex-col gap-5">
                         {colBookmarks.map((bookmark: any) => (
