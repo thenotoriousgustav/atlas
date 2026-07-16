@@ -79,7 +79,7 @@ export function SidebarFilters({
     <aside className="md:col-span-1 space-y-6">
       {/* Quick Filters */}
       <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider px-2">Library</h3>
+        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">Library</h3>
         <button
           onClick={() => {
             onSelectFolder(undefined);
@@ -92,8 +92,8 @@ export function SidebarFilters({
             filterFavorite === undefined &&
             filterArchived === false &&
             selectedTag === undefined
-              ? 'bg-[#111111]/5 text-[#111111] font-semibold'
-              : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
+              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
           }`}
         >
           <BookmarkSimple className="w-3.5 h-3.5" />
@@ -109,8 +109,8 @@ export function SidebarFilters({
           }}
           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             filterFavorite === true
-              ? 'bg-[#111111]/5 text-[#111111] font-semibold'
-              : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
+              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
           }`}
         >
           <Star className="w-3.5 h-3.5 text-[#956400]" />
@@ -126,8 +126,8 @@ export function SidebarFilters({
           }}
           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             filterArchived === true
-              ? 'bg-[#111111]/5 text-[#111111] font-semibold'
-              : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
+              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
           }`}
         >
           <Archive className="w-3.5 h-3.5" />
@@ -138,7 +138,7 @@ export function SidebarFilters({
       {/* Folders */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider">Folders</h3>
+          <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Folders</h3>
 
           <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
             <DialogTrigger
@@ -146,7 +146,7 @@ export function SidebarFilters({
                 resetFolderForm();
                 setIsFolderModalOpen(true);
               }}
-              className="p-1 hover:bg-[#111111]/5 rounded-none text-[#787774] hover:text-[#111111]"
+              className="p-1 hover:bg-brand-charcoal/5 rounded-none text-brand-muted hover:text-brand-charcoal"
               title="Create folder"
             >
               <FolderPlus className="w-3.5 h-3.5" />
@@ -211,7 +211,7 @@ export function SidebarFilters({
                           value={field.state.value}
                           onValueChange={(val) => field.handleChange(val)}
                         >
-                          <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-[#111111] text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-medium">
+                          <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-medium">
                             <SelectValue placeholder="None (Root)" />
                           </SelectTrigger>
                           <SelectContent>
@@ -241,7 +241,7 @@ export function SidebarFilters({
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1 text-xs uppercase bg-[#111111] hover:bg-[#111111]/90"
+                    className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90"
                   >
                     Save Folder
                   </Button>
@@ -253,7 +253,7 @@ export function SidebarFilters({
 
         <div className="max-h-[220px] overflow-y-auto pr-1">
           {folders.length === 0 ? (
-            <p className="text-[11px] text-[#787774] italic px-2">No folders created</p>
+            <p className="text-[11px] text-brand-muted italic px-2">No folders created</p>
           ) : (
             <FolderTree
               folders={folders}
@@ -272,10 +272,10 @@ export function SidebarFilters({
 
       {/* Tags */}
       <div className="space-y-2">
-        <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider px-2">Tags</h3>
+        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">Tags</h3>
         <div className="flex flex-wrap gap-1.5 px-2">
           {tags.length === 0 ? (
-            <p className="text-[11px] text-[#787774] italic">No active tags</p>
+            <p className="text-[11px] text-brand-muted italic">No active tags</p>
           ) : (
             tags.map((tag: any) => {
               const isSelected = selectedTag === tag.name;
@@ -289,13 +289,13 @@ export function SidebarFilters({
                   }}
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-mono transition-colors border ${
                     isSelected
-                      ? 'bg-[#111111] text-white border-[#111111]'
-                      : 'bg-white text-[#787774] border-brand-border hover:border-[#111111]/30 hover:text-[#111111]'
+                      ? 'bg-brand-charcoal text-white border-brand-charcoal'
+                      : 'bg-white text-brand-muted border-brand-border hover:border-brand-charcoal/30 hover:text-brand-charcoal'
                   }`}
                 >
                   <TagIcon className="w-2.5 h-2.5" />
                   {tag.name}
-                  <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-[#787774]/70'}`}>
+                  <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-brand-muted/70'}`}>
                     ({tag.bookmarkCount})
                   </span>
                 </button>
@@ -307,7 +307,7 @@ export function SidebarFilters({
 
       {/* Import & Export */}
       <div className="border-t border-brand-border pt-4 px-2 space-y-2">
-        <h3 className="text-[10px] font-mono text-[#787774] uppercase tracking-wider">Sync</h3>
+        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Sync</h3>
         <div className="flex flex-col gap-2">
           <Button
             variant="outline"
@@ -319,7 +319,7 @@ export function SidebarFilters({
             Export HTML
           </Button>
           <label className="w-full">
-            <span className="flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase border border-brand-border bg-white text-[#111111] hover:bg-[#FBFBFA] rounded-none h-8 cursor-pointer transition-colors px-3 font-semibold text-xs border border-brand-border shadow-none">
+            <span className="flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase border border-brand-border bg-white text-brand-charcoal hover:bg-brand-canvas rounded-none h-8 cursor-pointer transition-colors px-3 font-semibold text-xs border border-brand-border shadow-none">
               <UploadSimple className="w-3.5 h-3.5" />
               Import HTML
             </span>

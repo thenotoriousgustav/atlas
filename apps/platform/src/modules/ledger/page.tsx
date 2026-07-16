@@ -376,8 +376,8 @@ export function LedgerDashboard() {
 
   if (isLoading || isMeLoading || !user) {
     return (
-      <div className="min-h-[60dvh] flex flex-col items-center justify-center font-mono text-xs text-[#787774] space-y-4 select-none">
-        <Clock className="w-6 h-6 animate-spin text-[#111111]" />
+      <div className="min-h-[60dvh] flex flex-col items-center justify-center font-mono text-xs text-brand-muted space-y-4 select-none">
+        <Clock className="w-6 h-6 animate-spin text-brand-charcoal" />
         <span>Syncing Ledger session...</span>
       </div>
     );
@@ -395,36 +395,36 @@ export function LedgerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           {/* Card 1: Monthly Income */}
           <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#787774] flex items-center gap-1.5">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
               <ArrowUpRight className="w-3.5 h-3.5 text-[#1e4620]" />
               Income (This Month)
             </span>
-            <div className="font-serif text-3xl font-semibold text-[#111111] tracking-tight">
+            <div className="font-serif text-3xl font-semibold text-brand-charcoal tracking-tight">
               {formatCurrency(totalIncome)}
             </div>
-            <p className="text-[9px] text-[#787774]/70 font-mono">
+            <p className="text-[9px] text-brand-muted/70 font-mono">
               Net balance cash inflows logged
             </p>
           </Card>
 
           {/* Card 2: Monthly Expenses */}
           <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#787774] flex items-center gap-1.5">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
               <ArrowDownLeft className="w-3.5 h-3.5 text-[#5f2120]" />
               Expenses (This Month)
             </span>
-            <div className="font-serif text-3xl font-semibold text-[#111111] tracking-tight">
+            <div className="font-serif text-3xl font-semibold text-brand-charcoal tracking-tight">
               {formatCurrency(totalExpense)}
             </div>
-            <p className="text-[9px] text-[#787774]/70 font-mono">
+            <p className="text-[9px] text-brand-muted/70 font-mono">
               Net balance cash outflows logged
             </p>
           </Card>
 
           {/* Card 3: Net Cashflow */}
           <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#787774] flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-[#111111]" />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
+              <Coins className="w-3.5 h-3.5 text-brand-charcoal" />
               Net Flow / Margin
             </span>
             <div className={`font-serif text-3xl font-semibold tracking-tight ${
@@ -443,15 +443,15 @@ export function LedgerDashboard() {
 
           {/* Card 4: Subscription Commitments */}
           <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#787774] flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-[#111111]" />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-brand-charcoal" />
               Active Subscriptions
             </span>
-            <div className="font-serif text-3xl font-semibold text-[#111111] tracking-tight">
+            <div className="font-serif text-3xl font-semibold text-brand-charcoal tracking-tight">
               {formatCurrency(totalMonthlySubscriptions)}
-              <span className="text-[10px] text-[#787774] font-mono font-normal"> /mo</span>
+              <span className="text-[10px] text-brand-muted font-mono font-normal"> /mo</span>
             </div>
-            <p className="text-[9px] text-[#787774]/70 font-mono">
+            <p className="text-[9px] text-brand-muted/70 font-mono">
               Committed recurring cost base
             </p>
           </Card>
@@ -465,7 +465,7 @@ export function LedgerDashboard() {
             
             {/* Action Card */}
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
-              <h2 className="text-xs font-mono text-[#787774] uppercase tracking-wider">
+              <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider">
                 Quick Actions
               </h2>
               <div className="grid grid-cols-2 gap-3">
@@ -474,7 +474,7 @@ export function LedgerDashboard() {
                     resetTransactionForm();
                     setIsTransactionModalOpen(true);
                   }}
-                  className="rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 flex items-center justify-center gap-1.5 h-10 text-[10px] font-mono uppercase tracking-tight"
+                  className="rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 flex items-center justify-center gap-1.5 h-10 text-[10px] font-mono uppercase tracking-tight"
                 >
                   <Plus className="w-4 h-4" />
                   Log Transaction
@@ -485,7 +485,7 @@ export function LedgerDashboard() {
                     setIsSubscriptionModalOpen(true);
                   }}
                   variant="outline"
-                  className="rounded-none border-brand-border hover:border-[#111111]/30 flex items-center justify-center gap-1.5 h-10 text-[10px] font-mono uppercase tracking-tight"
+                  className="rounded-none border-brand-border hover:border-brand-charcoal/30 flex items-center justify-center gap-1.5 h-10 text-[10px] font-mono uppercase tracking-tight"
                 >
                   <Plus className="w-4 h-4" />
                   Add Subscription
@@ -496,7 +496,7 @@ export function LedgerDashboard() {
             {/* Category Breakdown list */}
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-mono text-[#787774] uppercase tracking-wider">
+                <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider">
                   Category Outflows
                 </h2>
                 <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
@@ -505,7 +505,7 @@ export function LedgerDashboard() {
               </div>
 
               {categoryBreakdown.length === 0 ? (
-                <div className="py-6 text-center text-[#787774] text-[10px] font-mono bg-brand-canvas/30 border border-dashed border-brand-border">
+                <div className="py-6 text-center text-brand-muted text-[10px] font-mono bg-brand-canvas/30 border border-dashed border-brand-border">
                   No expense records logged this month
                 </div>
               ) : (
@@ -516,17 +516,17 @@ export function LedgerDashboard() {
                       <div key={item.name} className="space-y-1 text-[11px]">
                         <div className="flex justify-between items-center text-[11px] font-mono">
                           <span className="flex items-center gap-2">
-                            <Circle className="w-2 h-2 text-[#111111] fill-current" />
+                            <Circle className="w-2 h-2 text-brand-charcoal fill-current" />
                             {item.name}
                           </span>
                           <div className="space-x-1.5">
-                            <span className="font-semibold text-[#111111]">{formatCurrency(item.amount)}</span>
-                            <span className="text-[#787774]/70">({pct.toFixed(0)}%)</span>
+                            <span className="font-semibold text-brand-charcoal">{formatCurrency(item.amount)}</span>
+                            <span className="text-brand-muted/70">({pct.toFixed(0)}%)</span>
                           </div>
                         </div>
-                        <div className="h-1 w-full bg-[#111111]/5 rounded-none overflow-hidden">
+                        <div className="h-1 w-full bg-brand-charcoal/5 rounded-none overflow-hidden">
                           <div
-                            className="h-full bg-[#111111]"
+                            className="h-full bg-brand-charcoal"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -544,8 +544,8 @@ export function LedgerDashboard() {
             {/* Subscriptions Timeline Section */}
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-mono text-[#787774] uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-[#111111]" />
+                <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-brand-charcoal" />
                   Subscription Renewal Timeline
                 </h2>
                 <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
@@ -554,7 +554,7 @@ export function LedgerDashboard() {
               </div>
 
               {subscriptions.length === 0 ? (
-                <div className="py-8 text-center text-[#787774] text-[10px] font-mono bg-brand-canvas/30 border border-dashed border-brand-border">
+                <div className="py-8 text-center text-brand-muted text-[10px] font-mono bg-brand-canvas/30 border border-dashed border-brand-border">
                   No subscription records configured
                 </div>
               ) : (
@@ -566,12 +566,12 @@ export function LedgerDashboard() {
                       <div
                         key={sub.id}
                         className={`flex items-center justify-between p-3 transition-colors ${
-                          sub.status !== 'ACTIVE' ? 'bg-[#111111]/3 opacity-60' : 'bg-white hover:bg-[#111111]/2'
+                          sub.status !== 'ACTIVE' ? 'bg-brand-charcoal/3 opacity-60' : 'bg-white hover:bg-brand-charcoal/2'
                         }`}
                       >
                         <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-[#111111] truncate">{sub.name}</span>
+                            <span className="font-semibold text-brand-charcoal truncate">{sub.name}</span>
                             <Badge
                               variant="outline"
                               className={`text-[8px] px-1.5 py-0 uppercase shrink-0 font-mono ${
@@ -583,14 +583,14 @@ export function LedgerDashboard() {
                               {sub.status}
                             </Badge>
                             {sub.category && (
-                              <span className="text-[9px] text-[#787774]/70 px-1 py-0.5 uppercase border border-brand-border bg-[#FBFBFA]">
+                              <span className="text-[9px] text-brand-muted/70 px-1 py-0.5 uppercase border border-brand-border bg-brand-canvas">
                                 #{sub.category}
                               </span>
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2.5 text-[10px] text-[#787774]">
-                            <span className="font-semibold text-[#111111]">{formatCurrency(sub.cost)}</span>
+                          <div className="flex items-center gap-2.5 text-[10px] text-brand-muted">
+                            <span className="font-semibold text-brand-charcoal">{formatCurrency(sub.cost)}</span>
                             <span>·</span>
                             <span>{sub.billingCycle.toLowerCase()}</span>
                             {sub.status === 'ACTIVE' && (
@@ -612,7 +612,7 @@ export function LedgerDashboard() {
                                 size="icon-xs"
                                 className="size-7"
                               >
-                                <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
+                                <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                               </Button>
                             } />
                             <TooltipContent>Edit</TooltipContent>
@@ -642,7 +642,7 @@ export function LedgerDashboard() {
             {/* Transactions Ledger records */}
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-mono text-[#787774] uppercase tracking-wider">
+                <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider">
                   Transaction Ledger
                 </h2>
                 <div className="flex items-center gap-2">
@@ -651,7 +651,7 @@ export function LedgerDashboard() {
                     placeholder="Search ledger..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-7 px-2 border border-brand-border rounded-none bg-white text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 max-w-40"
+                    className="h-7 px-2 border border-brand-border rounded-none bg-white text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 max-w-40"
                   />
                   <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
                     {transactions.length} Records
@@ -663,30 +663,30 @@ export function LedgerDashboard() {
               <div className="flex items-center gap-1.5 border-b border-brand-border pb-2.5 font-mono text-[10px]">
                 <span
                   onClick={() => setTransactionTypeFilter('ALL')}
-                  className={`px-2.5 py-1 border cursor-pointer hover:border-[#111111]/30 ${
+                  className={`px-2.5 py-1 border cursor-pointer hover:border-brand-charcoal/30 ${
                     transactionTypeFilter === 'ALL'
-                      ? 'border-[#111111] bg-[#111111] text-white font-semibold'
-                      : 'border-brand-border bg-white text-[#787774]'
+                      ? 'border-brand-charcoal bg-brand-charcoal text-white font-semibold'
+                      : 'border-brand-border bg-white text-brand-muted'
                   }`}
                 >
                   All
                 </span>
                 <span
                   onClick={() => setTransactionTypeFilter('INCOME')}
-                  className={`px-2.5 py-1 border cursor-pointer hover:border-[#111111]/30 ${
+                  className={`px-2.5 py-1 border cursor-pointer hover:border-brand-charcoal/30 ${
                     transactionTypeFilter === 'INCOME'
                       ? 'border-[#1e4620] bg-[#edf7ed] text-[#1e4620] font-semibold'
-                      : 'border-brand-border bg-white text-[#787774]'
+                      : 'border-brand-border bg-white text-brand-muted'
                   }`}
                 >
                   Incomes
                 </span>
                 <span
                   onClick={() => setTransactionTypeFilter('EXPENSE')}
-                  className={`px-2.5 py-1 border cursor-pointer hover:border-[#111111]/30 ${
+                  className={`px-2.5 py-1 border cursor-pointer hover:border-brand-charcoal/30 ${
                     transactionTypeFilter === 'EXPENSE'
                       ? 'border-[#5f2120] bg-[#fdeded] text-[#5f2120] font-semibold'
-                      : 'border-brand-border bg-white text-[#787774]'
+                      : 'border-brand-border bg-white text-brand-muted'
                   }`}
                 >
                   Expenses
@@ -694,7 +694,7 @@ export function LedgerDashboard() {
               </div>
 
               {transactions.length === 0 ? (
-                <div className="py-12 text-center text-[#787774] text-[10px] font-mono bg-brand-canvas/30 border border-dashed border-brand-border">
+                <div className="py-12 text-center text-brand-muted text-[10px] font-mono bg-brand-canvas/30 border border-dashed border-brand-border">
                   No transaction records matched the current filters
                 </div>
               ) : (
@@ -702,11 +702,11 @@ export function LedgerDashboard() {
                   {transactions.map((tx: any) => (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between p-3 bg-white hover:bg-[#111111]/2 transition-colors"
+                      className="flex items-center justify-between p-3 bg-white hover:bg-brand-charcoal/2 transition-colors"
                     >
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="font-semibold text-[#111111] truncate">{tx.title}</span>
+                          <span className="font-semibold text-brand-charcoal truncate">{tx.title}</span>
                           <Badge
                             variant="outline"
                             className={`text-[8px] px-1.5 py-0 uppercase shrink-0 font-mono border-none ${
@@ -715,12 +715,12 @@ export function LedgerDashboard() {
                           >
                             {tx.type.toLowerCase()}
                           </Badge>
-                          <span className="text-[9px] text-[#787774]/70 px-1 py-0.5 uppercase border border-brand-border bg-[#FBFBFA]">
+                          <span className="text-[9px] text-brand-muted/70 px-1 py-0.5 uppercase border border-brand-border bg-brand-canvas">
                             #{tx.category}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2.5 text-[10px] text-[#787774]/80">
+                        <div className="flex items-center gap-2.5 text-[10px] text-brand-muted/80">
                           <span className="flex items-center gap-1">
                             <CalendarBlank className="w-3 h-3" />
                             {new Date(tx.date).toLocaleDateString(undefined, {
@@ -741,7 +741,7 @@ export function LedgerDashboard() {
                       {/* Transaction Amount & Action buttons */}
                       <div className="flex items-center gap-3 shrink-0 ml-4">
                         <span className={`font-semibold text-sm ${
-                          tx.type === 'INCOME' ? 'text-[#1e4620]' : 'text-[#111111]'
+                          tx.type === 'INCOME' ? 'text-[#1e4620]' : 'text-brand-charcoal'
                         }`}>
                           {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </span>
@@ -755,7 +755,7 @@ export function LedgerDashboard() {
                                 size="icon-xs"
                                 className="size-7"
                               >
-                                <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
+                                <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                               </Button>
                             } />
                             <TooltipContent>Edit</TooltipContent>
@@ -789,10 +789,10 @@ export function LedgerDashboard() {
       <Dialog open={isTransactionModalOpen} onOpenChange={setIsTransactionModalOpen}>
         <DialogContent className="sm:max-w-md bg-white border border-brand-border rounded-none p-6 text-xs font-mono">
           <DialogHeader>
-            <DialogTitle className="font-serif text-lg font-medium text-[#111111]">
+            <DialogTitle className="font-serif text-lg font-medium text-brand-charcoal">
               {transactionToEdit ? 'Edit Transaction' : 'Log New Transaction'}
             </DialogTitle>
-            <DialogDescription className="text-xs font-mono mt-1 text-[#787774]">
+            <DialogDescription className="text-xs font-mono mt-1 text-brand-muted">
               Add details of your financial transaction below.
             </DialogDescription>
           </DialogHeader>
@@ -806,7 +806,7 @@ export function LedgerDashboard() {
           >
             {/* Transaction Type */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Type</label>
+              <label className="text-[10px] uppercase text-brand-muted">Type</label>
               <transactionForm.Field
                 name="type"
                 children={(field) => (
@@ -820,7 +820,7 @@ export function LedgerDashboard() {
                       className={`flex-1 h-9 border text-center font-semibold transition-colors ${
                         field.state.value === 'EXPENSE'
                           ? 'border-[#5f2120] bg-[#fdeded] text-[#5f2120]'
-                          : 'border-brand-border bg-white text-[#787774]'
+                          : 'border-brand-border bg-white text-brand-muted'
                       }`}
                     >
                       Expense
@@ -834,7 +834,7 @@ export function LedgerDashboard() {
                       className={`flex-1 h-9 border text-center font-semibold transition-colors ${
                         field.state.value === 'INCOME'
                           ? 'border-[#1e4620] bg-[#edf7ed] text-[#1e4620]'
-                          : 'border-brand-border bg-white text-[#787774]'
+                          : 'border-brand-border bg-white text-brand-muted'
                       }`}
                     >
                       Income
@@ -846,7 +846,7 @@ export function LedgerDashboard() {
 
             {/* Title / Merchant */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Title / Merchant</label>
+              <label className="text-[10px] uppercase text-brand-muted">Title / Merchant</label>
               <transactionForm.Field
                 name="title"
                 children={(field) => (
@@ -856,7 +856,7 @@ export function LedgerDashboard() {
                     placeholder="e.g. Starbucks, Salary"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
+                    className="w-full h-9 px-3 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono"
                   />
                 )}
               />
@@ -864,7 +864,7 @@ export function LedgerDashboard() {
 
             {/* Amount */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Amount (USD)</label>
+              <label className="text-[10px] uppercase text-brand-muted">Amount (USD)</label>
               <transactionForm.Field
                 name="amount"
                 children={(field) => (
@@ -875,7 +875,7 @@ export function LedgerDashboard() {
                     placeholder="0.00"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
+                    className="w-full h-9 px-3 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono"
                   />
                 )}
               />
@@ -883,7 +883,7 @@ export function LedgerDashboard() {
 
             {/* Category selection */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Category</label>
+              <label className="text-[10px] uppercase text-brand-muted">Category</label>
               <transactionForm.Field
                 name="category"
                 children={(field) => {
@@ -894,7 +894,7 @@ export function LedgerDashboard() {
                       value={field.state.value}
                       onValueChange={(val) => field.handleChange(val || '')}
                     >
-                      <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                      <SelectTrigger className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none font-mono text-xs">
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -912,7 +912,7 @@ export function LedgerDashboard() {
 
             {/* Date Selection */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Transaction Date</label>
+              <label className="text-[10px] uppercase text-brand-muted">Transaction Date</label>
               <transactionForm.Field
                 name="date"
                 children={(field) => (
@@ -921,7 +921,7 @@ export function LedgerDashboard() {
                     required
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                    className="w-full h-9 px-3 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono rounded-none"
                   />
                 )}
               />
@@ -929,7 +929,7 @@ export function LedgerDashboard() {
 
             {/* Description */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Description (Optional)</label>
+              <label className="text-[10px] uppercase text-brand-muted">Description (Optional)</label>
               <transactionForm.Field
                 name="description"
                 children={(field) => (
@@ -938,7 +938,7 @@ export function LedgerDashboard() {
                     placeholder="Add extra transaction notes..."
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full p-2.5 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none resize-none"
+                    className="w-full p-2.5 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono rounded-none resize-none"
                   />
                 )}
               />
@@ -956,7 +956,7 @@ export function LedgerDashboard() {
               </Button>
               <Button
                 type="submit"
-                className="h-9 px-4 rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 font-semibold text-[10px] uppercase tracking-tight"
+                className="h-9 px-4 rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 font-semibold text-[10px] uppercase tracking-tight"
               >
                 {transactionToEdit ? 'Save Changes' : 'Log Transaction'}
               </Button>
@@ -969,10 +969,10 @@ export function LedgerDashboard() {
       <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
         <DialogContent className="sm:max-w-md bg-white border border-brand-border rounded-none p-6 text-xs font-mono">
           <DialogHeader>
-            <DialogTitle className="font-serif text-lg font-medium text-[#111111]">
+            <DialogTitle className="font-serif text-lg font-medium text-brand-charcoal">
               {subscriptionToEdit ? 'Edit Subscription' : 'Add Subscription'}
             </DialogTitle>
-            <DialogDescription className="text-xs font-mono mt-1 text-[#787774]">
+            <DialogDescription className="text-xs font-mono mt-1 text-brand-muted">
               Add recurring cost subscription configurations.
             </DialogDescription>
           </DialogHeader>
@@ -986,7 +986,7 @@ export function LedgerDashboard() {
           >
             {/* Service Name */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Service Name</label>
+              <label className="text-[10px] uppercase text-brand-muted">Service Name</label>
               <subscriptionForm.Field
                 name="name"
                 children={(field) => (
@@ -996,7 +996,7 @@ export function LedgerDashboard() {
                     placeholder="e.g. Netflix, Spotify, Figma"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
+                    className="w-full h-9 px-3 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono"
                   />
                 )}
               />
@@ -1004,7 +1004,7 @@ export function LedgerDashboard() {
 
             {/* Cost */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Cost (USD)</label>
+              <label className="text-[10px] uppercase text-brand-muted">Cost (USD)</label>
               <subscriptionForm.Field
                 name="cost"
                 children={(field) => (
@@ -1015,7 +1015,7 @@ export function LedgerDashboard() {
                     placeholder="0.00"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
+                    className="w-full h-9 px-3 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono"
                   />
                 )}
               />
@@ -1023,7 +1023,7 @@ export function LedgerDashboard() {
 
             {/* Billing Cycle */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Billing Cycle</label>
+              <label className="text-[10px] uppercase text-brand-muted">Billing Cycle</label>
               <subscriptionForm.Field
                 name="billingCycle"
                 children={(field) => (
@@ -1031,7 +1031,7 @@ export function LedgerDashboard() {
                     value={field.state.value}
                     onValueChange={(val) => field.handleChange(val as any)}
                   >
-                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none font-mono text-xs">
                       <SelectValue placeholder="Billing Cycle" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1046,7 +1046,7 @@ export function LedgerDashboard() {
 
             {/* Start Date */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Start / Anchor Date</label>
+              <label className="text-[10px] uppercase text-brand-muted">Start / Anchor Date</label>
               <subscriptionForm.Field
                 name="startDate"
                 children={(field) => (
@@ -1055,7 +1055,7 @@ export function LedgerDashboard() {
                     required
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    className="w-full h-9 px-3 border border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono rounded-none"
+                    className="w-full h-9 px-3 border border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono rounded-none"
                   />
                 )}
               />
@@ -1063,7 +1063,7 @@ export function LedgerDashboard() {
 
             {/* Category */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Category</label>
+              <label className="text-[10px] uppercase text-brand-muted">Category</label>
               <subscriptionForm.Field
                 name="category"
                 children={(field) => (
@@ -1071,7 +1071,7 @@ export function LedgerDashboard() {
                     value={field.state.value}
                     onValueChange={(val) => field.handleChange(val || '')}
                   >
-                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-mono text-xs">
+                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none font-mono text-xs">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1088,7 +1088,7 @@ export function LedgerDashboard() {
 
             {/* Status (ACTIVE / PAUSED / CANCELLED) */}
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Status</label>
+              <label className="text-[10px] uppercase text-brand-muted">Status</label>
               <subscriptionForm.Field
                 name="status"
                 children={(field) => (
@@ -1099,7 +1099,7 @@ export function LedgerDashboard() {
                       className={`flex-1 h-8 border text-center font-semibold transition-colors ${
                         field.state.value === 'ACTIVE'
                           ? 'border-[#1e4620] bg-[#edf7ed] text-[#1e4620]'
-                          : 'border-brand-border bg-white text-[#787774]'
+                          : 'border-brand-border bg-white text-brand-muted'
                       }`}
                     >
                       Active
@@ -1110,7 +1110,7 @@ export function LedgerDashboard() {
                       className={`flex-1 h-8 border text-center font-semibold transition-colors ${
                         field.state.value === 'PAUSED'
                           ? 'border-[#956400] bg-[#fff8e1] text-[#956400]'
-                          : 'border-brand-border bg-white text-[#787774]'
+                          : 'border-brand-border bg-white text-brand-muted'
                       }`}
                     >
                       Paused
@@ -1121,7 +1121,7 @@ export function LedgerDashboard() {
                       className={`flex-1 h-8 border text-center font-semibold transition-colors ${
                         field.state.value === 'CANCELLED'
                           ? 'border-[#b3261e] bg-[#fdeded] text-[#b3261e]'
-                          : 'border-brand-border bg-white text-[#787774]'
+                          : 'border-brand-border bg-white text-brand-muted'
                       }`}
                     >
                       Cancelled
@@ -1143,7 +1143,7 @@ export function LedgerDashboard() {
               </Button>
               <Button
                 type="submit"
-                className="h-9 px-4 rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 font-semibold text-[10px] uppercase tracking-tight"
+                className="h-9 px-4 rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 font-semibold text-[10px] uppercase tracking-tight"
               >
                 {subscriptionToEdit ? 'Save Changes' : 'Add Subscription'}
               </Button>

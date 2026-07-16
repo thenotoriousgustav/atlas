@@ -33,7 +33,7 @@ export function FolderTree({
             <div
               style={{ paddingLeft: `${depth * 12 + 8}px` }}
               className={`group flex items-center justify-between rounded-none py-1.5 pr-2 text-xs transition-colors cursor-pointer ${
-                isSelected ? 'bg-[#111111]/5 text-[#111111] font-semibold' : 'text-[#787774] hover:bg-[#111111]/5 hover:text-[#111111]'
+                isSelected ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold' : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
               }`}
               onClick={() => onSelectFolder(folder.id)}
             >
@@ -51,7 +51,7 @@ export function FolderTree({
                   size="icon-xs"
                   title="Edit folder"
                 >
-                  <PencilSimple className="w-3 h-3 text-[#787774]" />
+                  <PencilSimple className="w-3 h-3 text-brand-muted" />
                 </Button>
                 <Button
                   onClick={(e) => {

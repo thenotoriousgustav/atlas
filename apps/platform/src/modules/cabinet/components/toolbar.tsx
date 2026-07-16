@@ -86,7 +86,7 @@ export function Toolbar({
       <div className="flex items-center gap-3 w-full sm:w-auto">
         <div className="relative w-full sm:max-w-xs">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <MagnifyingGlass className="w-4 h-4 text-[#787774]" />
+            <MagnifyingGlass className="w-4 h-4 text-brand-muted" />
           </span>
           <Input
             type="text"
@@ -98,7 +98,7 @@ export function Toolbar({
         </div>
 
         {/* View Mode Toggle Group */}
-        <ButtonGroup className="shrink-0 bg-[#111111]/5 border border-brand-border p-0.5">
+        <ButtonGroup className="shrink-0 bg-brand-charcoal/5 border border-brand-border p-0.5">
           <Tooltip>
             <TooltipTrigger render={
               <Button
@@ -151,7 +151,7 @@ export function Toolbar({
               resetBookmarkForm();
               setIsBookmarkModalOpen(true);
             }}
-            className="w-full sm:w-auto h-9 flex items-center gap-1.5 text-xs font-semibold uppercase bg-[#111111] hover:bg-[#111111]/90"
+            className="w-full sm:w-auto h-9 flex items-center gap-1.5 text-xs font-semibold uppercase bg-brand-charcoal hover:bg-brand-charcoal/90"
           >
             <Plus className="w-4 h-4" />
             Add Bookmark
@@ -195,7 +195,7 @@ export function Toolbar({
                          variant="outline"
                          disabled={!field.state.value || isScraping}
                          onClick={() => handleScrape(field.state.value)}
-                         className="shrink-0 h-8 px-3 font-mono text-[10px] uppercase font-semibold flex items-center gap-1.5 border border-brand-border hover:bg-[#FBFBFA]"
+                         className="shrink-0 h-8 px-3 font-mono text-[10px] uppercase font-semibold flex items-center gap-1.5 border border-brand-border hover:bg-brand-canvas"
                        >
                          {isScraping ? (
                            <>
@@ -258,7 +258,7 @@ export function Toolbar({
                         value={field.state.value}
                         onValueChange={(val) => field.handleChange(val)}
                       >
-                        <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-[#111111] text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-medium">
+                        <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-medium">
                           <SelectValue placeholder="None (Root)" />
                         </SelectTrigger>
                         <SelectContent>
@@ -304,7 +304,7 @@ export function Toolbar({
               </Button>
               <Button
                 type="submit"
-                className="flex-1 text-xs uppercase bg-[#111111] hover:bg-[#111111]/90"
+                className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90"
               >
                 Save Bookmark
               </Button>

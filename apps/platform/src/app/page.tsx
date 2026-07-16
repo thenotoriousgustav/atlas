@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { Button } from '@atlas/ui/components/button';
 import { Badge } from '@atlas/ui/components/badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   BookmarkSimple,
   Coins,
@@ -237,8 +238,8 @@ export default function HomePortalPage() {
 
   if (isLoading || isMeLoading || !user) {
     return (
-      <div className="min-h-[100dvh] bg-brand-canvas flex flex-col items-center justify-center font-mono text-xs text-[#787774] space-y-4 select-none">
-        <Clock className="w-6 h-6 animate-spin text-[#111111]" />
+      <div className="min-h-[100dvh] bg-brand-canvas flex flex-col items-center justify-center font-mono text-xs text-brand-muted space-y-4 select-none">
+        <Clock className="w-6 h-6 animate-spin text-brand-charcoal" />
         <span>Loading Gustam Platform Portal...</span>
       </div>
     );
@@ -250,19 +251,19 @@ export default function HomePortalPage() {
       <div className="max-w-8xl w-full mx-auto flex items-center justify-between border-b border-brand-border pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-[#111111] animate-pulse rounded-none" />
-            <h1 className="text-sm font-semibold uppercase tracking-widest text-[#111111]">
+            <span className="w-2.5 h-2.5 bg-brand-charcoal animate-pulse rounded-none" />
+            <h1 className="text-sm font-semibold uppercase tracking-widest text-brand-charcoal">
               Atlas
             </h1>
           </div>
-          <p className="text-[10px] text-[#787774] uppercase">
+          <p className="text-[10px] text-brand-muted uppercase">
             Productivity Suite Hub
           </p>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-right text-[10px] text-[#787774] hidden sm:block">
-            <p className="font-semibold text-[#111111]">{user.name}</p>
+          <div className="text-right text-[10px] text-brand-muted hidden sm:block">
+            <p className="font-semibold text-brand-charcoal">{user.name}</p>
             <p className="text-[9px]">{user.email}</p>
           </div>
           <Button
@@ -270,11 +271,12 @@ export default function HomePortalPage() {
             size="sm"
             onClick={handleRegisterPasskey}
             disabled={isRegisteringPasskey}
-            className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-[#111111]"
+            className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-brand-charcoal"
           >
             <Fingerprint className="w-3.5 h-3.5" />
             {isRegisteringPasskey ? 'Registering...' : hasPasskey ? 'Add Passkey Device' : 'Setup Passkey'}
           </Button>
+          <ThemeToggle />
           <Button
             variant="outline"
             size="sm"
@@ -291,12 +293,12 @@ export default function HomePortalPage() {
       <div className="max-w-8xl w-full mx-auto py-12 space-y-10 flex-1 flex flex-col justify-center">
         {/* Asymmetric Header */}
         <div className="space-y-3 max-w-xl">
-          <div className="text-[10px] uppercase text-[#787774] tracking-widest flex items-center gap-2">
+          <div className="text-[10px] uppercase text-brand-muted tracking-widest flex items-center gap-2">
             <span>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</span>
             <span>·</span>
             <span>{currentTime}</span>
           </div>
-          <h2 className="font-serif text-3xl md:text-4xl text-[#111111] font-medium tracking-tight leading-tight">
+          <h2 className="font-serif text-3xl md:text-4xl text-brand-charcoal font-medium tracking-tight leading-tight">
             Select a workspace to continue your focus session
           </h2>
         </div>
@@ -306,11 +308,11 @@ export default function HomePortalPage() {
           {/* Card 1: Cabinet Bookmark Vault */}
           <div
             onClick={() => router.push('/cabinet')}
-            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-[#111111] hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-brand-charcoal hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
           >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
-                <div className="w-10 h-10 bg-[#111111]/5 flex items-center justify-center text-[#111111]">
+                <div className="w-10 h-10 bg-brand-charcoal/5 flex items-center justify-center text-brand-charcoal">
                   <BookmarkSimple className="w-5 h-5" />
                 </div>
                 <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
@@ -319,35 +321,35 @@ export default function HomePortalPage() {
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-serif text-2xl font-semibold tracking-tight text-[#111111]">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
                   Cabinet
                 </h3>
-                <p className="text-xs text-[#787774]">
+                <p className="text-xs text-brand-muted">
                   Personal knowledge vault, bookmark manager, and tag taxonomies.
                 </p>
               </div>
             </div>
 
             {/* Live Data Summary for Cabinet */}
-            <div className="border-t border-[#111111]/5 pt-4 mt-6 flex items-center justify-between">
-              <div className="flex gap-4 text-[10px] text-[#787774]">
+            <div className="border-t border-brand-charcoal/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-brand-muted">
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Bookmarks</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <BookmarkSimple className="w-3.5 h-3.5" />
                     {totalBookmarks} saved
                   </span>
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Folders</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <FolderSimple className="w-3.5 h-3.5" />
                     {totalFolders} folders
                   </span>
                 </div>
               </div>
 
-              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] group-hover:bg-[#111111] group-hover:text-white group-hover:border-[#111111] transition-colors">
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-brand-muted group-hover:bg-brand-charcoal group-hover:text-white group-hover:border-brand-charcoal transition-colors">
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
@@ -356,11 +358,11 @@ export default function HomePortalPage() {
           {/* Card 2: Ledger Financial Vault */}
           <div
             onClick={() => router.push('/ledger')}
-            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-[#111111] hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-brand-charcoal hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
           >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
-                <div className="w-10 h-10 bg-[#111111]/5 flex items-center justify-center text-[#111111]">
+                <div className="w-10 h-10 bg-brand-charcoal/5 flex items-center justify-center text-brand-charcoal">
                   <Coins className="w-5 h-5" />
                 </div>
                 <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
@@ -369,18 +371,18 @@ export default function HomePortalPage() {
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-serif text-2xl font-semibold tracking-tight text-[#111111]">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
                   Ledger
                 </h3>
-                <p className="text-xs text-[#787774]">
+                <p className="text-xs text-brand-muted">
                   Personal finance, cashflow margins, and active recurring subscriptions.
                 </p>
               </div>
             </div>
 
             {/* Live Data Summary for Ledger */}
-            <div className="border-t border-[#111111]/5 pt-4 mt-6 flex items-center justify-between">
-              <div className="flex gap-4 text-[10px] text-[#787774]">
+            <div className="border-t border-brand-charcoal/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-brand-muted">
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Cash Flow</span>
                   <span className={`font-semibold flex items-center gap-0.5 ${
@@ -391,14 +393,14 @@ export default function HomePortalPage() {
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Subscriptions</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <CreditCard className="w-3.5 h-3.5" />
                     {totalActiveSubscriptions} active
                   </span>
                 </div>
               </div>
 
-              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] group-hover:bg-[#111111] group-hover:text-white group-hover:border-[#111111] transition-colors">
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-brand-muted group-hover:bg-brand-charcoal group-hover:text-white group-hover:border-brand-charcoal transition-colors">
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
@@ -407,11 +409,11 @@ export default function HomePortalPage() {
           {/* Card 3: Garage Vehicle Vault */}
           <div
             onClick={() => router.push('/garage')}
-            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-[#111111] hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-brand-charcoal hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
           >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
-                <div className="w-10 h-10 bg-[#111111]/5 flex items-center justify-center text-[#111111]">
+                <div className="w-10 h-10 bg-brand-charcoal/5 flex items-center justify-center text-brand-charcoal">
                   <Wrench className="w-5 h-5" />
                 </div>
                 <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
@@ -420,35 +422,35 @@ export default function HomePortalPage() {
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-serif text-2xl font-semibold tracking-tight text-[#111111]">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
                   Garage
                 </h3>
-                <p className="text-xs text-[#787774]">
+                <p className="text-xs text-brand-muted">
                   Personal vehicle logs, maintenance intervals, refueling efficiency, and papers.
                 </p>
               </div>
             </div>
 
             {/* Live Data Summary for Garage */}
-            <div className="border-t border-[#111111]/5 pt-4 mt-6 flex items-center justify-between">
-              <div className="flex gap-4 text-[10px] text-[#787774]">
+            <div className="border-t border-brand-charcoal/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-brand-muted">
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Vehicles</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <Gauge className="w-3.5 h-3.5" />
                     {totalVehicles} active
                   </span>
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Reminders</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     {totalActiveReminders} active
                   </span>
                 </div>
               </div>
 
-              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] group-hover:bg-[#111111] group-hover:text-white group-hover:border-[#111111] transition-colors">
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-brand-muted group-hover:bg-brand-charcoal group-hover:text-white group-hover:border-brand-charcoal transition-colors">
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
@@ -457,11 +459,11 @@ export default function HomePortalPage() {
           {/* Card 4: Fetch Media Downloader */}
           <div
             onClick={() => router.push('/fetch')}
-            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-[#111111] hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-brand-charcoal hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
           >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
-                <div className="w-10 h-10 bg-[#111111]/5 flex items-center justify-center text-[#111111]">
+                <div className="w-10 h-10 bg-brand-charcoal/5 flex items-center justify-center text-brand-charcoal">
                   <Download className="w-5 h-5" />
                 </div>
                 <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
@@ -470,35 +472,35 @@ export default function HomePortalPage() {
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-serif text-2xl font-semibold tracking-tight text-[#111111]">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
                   Fetch
                 </h3>
-                <p className="text-xs text-[#787774]">
+                <p className="text-xs text-brand-muted">
                   Social media video, audio, and image downloader with metadata history.
                 </p>
               </div>
             </div>
 
             {/* Live Data Summary for Fetch */}
-            <div className="border-t border-[#111111]/5 pt-4 mt-6 flex items-center justify-between">
-              <div className="flex gap-4 text-[10px] text-[#787774]">
+            <div className="border-t border-brand-charcoal/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-brand-muted">
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Downloads</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <Download className="w-3.5 h-3.5" />
                     {totalDownloads} items
                   </span>
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Favorites</span>
-                  <span className="font-semibold text-[#111111] flex items-center gap-1">
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <Heart className="w-3.5 h-3.5 text-[#b3261e]" />
                     {totalFavoriteDownloads} saved
                   </span>
                 </div>
               </div>
 
-              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] group-hover:bg-[#111111] group-hover:text-white group-hover:border-[#111111] transition-colors">
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-brand-muted group-hover:bg-brand-charcoal group-hover:text-white group-hover:border-brand-charcoal transition-colors">
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
@@ -507,7 +509,7 @@ export default function HomePortalPage() {
       </div>
 
       {/* Footer Details */}
-      <div className="max-w-8xl w-full mx-auto border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-[#787774] uppercase tracking-wider gap-4">
+      <div className="max-w-8xl w-full mx-auto border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-brand-muted uppercase tracking-wider gap-4">
         <span>Gustam Platform v1.0 · Personal Workspaces</span>
         <span className="flex items-center gap-1">
           <User className="w-3 h-3" />

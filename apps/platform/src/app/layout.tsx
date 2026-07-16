@@ -3,6 +3,7 @@ import { Providers } from './providers';
 import React from 'react';
 import { Instrument_Serif, Inter } from 'next/font/google';
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -23,10 +24,13 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // ponytail: theme provider wrapping providers at html root level to enable class-based dark mode
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body className={`${instrumentSerif.variable} bg-brand-canvas text-brand-charcoal antialiased`}>
-        <Providers>{children}</Providers>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Providers>{children}</Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

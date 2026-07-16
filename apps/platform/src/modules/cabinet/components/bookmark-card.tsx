@@ -38,7 +38,7 @@ export function BookmarkCard({
   onToggleSelect,
 }: BookmarkCardProps) {
   return (
-    <Card className={`border-brand-border bg-white rounded-none p-5 transition-all hover:border-[#111111]/30 flex flex-col sm:flex-row gap-4 justify-between items-start group/card ${isSelected ? 'border-[#111111]' : ''}`}>
+    <Card className={`border-brand-border bg-white rounded-none p-5 transition-all hover:border-brand-charcoal/30 flex flex-col sm:flex-row gap-4 justify-between items-start group/card ${isSelected ? 'border-brand-charcoal' : ''}`}>
       <div className="flex items-start gap-3 flex-1 min-w-0 w-full">
         {/* Selection Checkbox */}
         <div className={`pt-1 transition-opacity shrink-0 ${
@@ -58,10 +58,10 @@ export function BookmarkCard({
                 href={bookmark.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex items-center gap-1 text-sm font-semibold text-[#111111] hover:underline break-all"
+                className="group flex items-center gap-1 text-sm font-semibold text-brand-charcoal hover:underline break-all"
               >
                 {bookmark.title || bookmark.url}
-                <ArrowSquareOut className="w-3.5 h-3.5 text-[#787774] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                <ArrowSquareOut className="w-3.5 h-3.5 text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </a>
               {bookmark.folder && (
                 <Badge
@@ -72,12 +72,12 @@ export function BookmarkCard({
                 </Badge>
               )}
             </div>
-            <p className="text-[10px] text-[#787774]/70 font-mono truncate">{bookmark.url}</p>
+            <p className="text-[10px] text-brand-muted/70 font-mono truncate">{bookmark.url}</p>
           </div>
 
           {/* Description */}
           {bookmark.description && (
-            <p className="text-xs text-[#787774] leading-relaxed max-w-[65ch]">
+            <p className="text-xs text-brand-muted leading-relaxed max-w-[65ch]">
               {bookmark.description}
             </p>
           )}
@@ -98,7 +98,7 @@ export function BookmarkCard({
           )}
 
           {/* Footer Info */}
-          <div className="flex items-center gap-3 pt-1 text-[9px] text-[#787774]/80 font-mono">
+          <div className="flex items-center gap-3 pt-1 text-[9px] text-brand-muted/80 font-mono">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
@@ -148,7 +148,7 @@ export function BookmarkCard({
               variant="outline"
               size="icon"
             >
-              <Copy className="w-4 h-4 text-[#787774]" />
+              <Copy className="w-4 h-4 text-brand-muted" />
             </Button>
           } />
           <TooltipContent>Duplicate bookmark</TooltipContent>
@@ -161,7 +161,7 @@ export function BookmarkCard({
               variant="outline"
               size="icon"
             >
-              <PencilSimple className="w-4 h-4 text-[#787774]" />
+              <PencilSimple className="w-4 h-4 text-brand-muted" />
             </Button>
           } />
           <TooltipContent>Edit bookmark</TooltipContent>

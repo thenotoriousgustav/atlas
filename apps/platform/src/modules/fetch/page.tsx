@@ -411,7 +411,7 @@ export function FetchDashboard() {
       case 'YouTube':
         return 'bg-[#fdeded] text-[#b3261e] border-[#b3261e]/20';
       case 'TikTok':
-        return 'bg-[#111111] text-white border-none';
+        return 'bg-brand-charcoal text-white border-none';
       case 'Instagram':
         return 'bg-[#fcedfc] text-[#c13584] border-[#c13584]/20';
       case 'Twitter':
@@ -419,14 +419,14 @@ export function FetchDashboard() {
       case 'Reddit':
         return 'bg-[#fff2eb] text-[#ff4500] border-[#ff4500]/20';
       default:
-        return 'bg-[#f1f1ef] text-[#787774] border-none';
+        return 'bg-[#f1f1ef] text-brand-muted border-none';
     }
   };
 
   if (isLoading || isMeLoading || !user) {
     return (
-      <div className="min-h-[60dvh] flex flex-col items-center justify-center font-mono text-xs text-[#787774] space-y-4 select-none">
-        <Clock className="w-6 h-6 animate-spin text-[#111111]" />
+      <div className="min-h-[60dvh] flex flex-col items-center justify-center font-mono text-xs text-brand-muted space-y-4 select-none">
+        <Clock className="w-6 h-6 animate-spin text-brand-charcoal" />
         <span>Syncing Fetch session...</span>
       </div>
     );
@@ -442,7 +442,7 @@ export function FetchDashboard() {
         {/* Input Bar Section */}
         <Card className="border-brand-border bg-white rounded-none p-6 shadow-none">
           <form onSubmit={handleExtract} className="space-y-4">
-            <h2 className="text-[10px] font-bold text-[#787774] uppercase tracking-wider">
+            <h2 className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">
               Paste Media URL (YouTube, TikTok, Instagram, Threads, Facebook, X)
             </h2>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -453,12 +453,12 @@ export function FetchDashboard() {
                 value={extractingUrl}
                 onChange={(e) => setExtractingUrl(e.target.value)}
                 disabled={isExtracting || isDownloading}
-                className="flex-1 h-10 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono text-xs"
+                className="flex-1 h-10 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono text-xs"
               />
               <Button
                 type="submit"
                 disabled={isExtracting || isDownloading}
-                className="h-10 px-6 rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 font-bold uppercase tracking-tight text-[10px]"
+                className="h-10 px-6 rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 font-bold uppercase tracking-tight text-[10px]"
               >
                 {isExtracting ? (
                   <>
@@ -495,7 +495,7 @@ export function FetchDashboard() {
                     className="max-h-48 object-contain"
                   />
                 ) : (
-                  <Video className="w-12 h-12 text-[#787774]" />
+                  <Video className="w-12 h-12 text-brand-muted" />
                 )}
               </div>
 
@@ -507,17 +507,17 @@ export function FetchDashboard() {
                       {extractedMedia.platform}
                     </Badge>
                     {extractedMedia.duration && (
-                      <span className="text-[10px] text-[#787774] flex items-center gap-1">
+                      <span className="text-[10px] text-brand-muted flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
                         {formatDuration(extractedMedia.duration)}
                       </span>
                     )}
                   </div>
-                  <h3 className="font-serif text-lg font-semibold tracking-tight text-[#111111] leading-tight">
+                  <h3 className="font-serif text-lg font-semibold tracking-tight text-brand-charcoal leading-tight">
                     {extractedMedia.title}
                   </h3>
                   {extractedMedia.author && (
-                    <p className="text-[10px] text-[#787774] font-medium flex items-center gap-1">
+                    <p className="text-[10px] text-brand-muted font-medium flex items-center gap-1">
                       <User className="w-3.5 h-3.5" /> {extractedMedia.author}
                     </p>
                   )}
@@ -528,12 +528,12 @@ export function FetchDashboard() {
                     
                     {/* Media Type option */}
                     <div className="space-y-1">
-                      <label className="text-[9px] uppercase text-[#787774] font-bold">Download Type</label>
+                      <label className="text-[9px] uppercase text-brand-muted font-bold">Download Type</label>
                       <Select
                         value={downloadType}
                         onValueChange={(val) => setDownloadType(val as any)}
                       >
-                        <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-semibold">
+                        <SelectTrigger className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none font-semibold">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -546,12 +546,12 @@ export function FetchDashboard() {
                     {/* Resolution option */}
                     {downloadType === 'VIDEO' && extractedMedia.formats.length > 0 && (
                       <div className="space-y-1">
-                        <label className="text-[9px] uppercase text-[#787774] font-bold">Quality / Format</label>
+                        <label className="text-[9px] uppercase text-brand-muted font-bold">Quality / Format</label>
                         <Select
                           value={selectedFormatId}
                           onValueChange={(val) => setSelectedFormatId(val || '')}
                         >
-                          <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none">
+                          <SelectTrigger className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none">
                             <SelectValue placeholder="Best Merged Quality (Default)" />
                           </SelectTrigger>
                           <SelectContent>
@@ -573,14 +573,14 @@ export function FetchDashboard() {
                     <Button
                       onClick={handleDownload}
                       disabled={isDownloading}
-                      className="h-10 px-6 rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 font-bold uppercase tracking-tight text-[10px] flex items-center justify-center gap-1.5"
+                      className="h-10 px-6 rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 font-bold uppercase tracking-tight text-[10px] flex items-center justify-center gap-1.5"
                     >
                       <Download className="w-4 h-4" /> Download File
                     </Button>
                     <Button
                       onClick={() => setExtractedMedia(null)}
                       variant="outline"
-                      className="h-10 px-4 rounded-none border-brand-border hover:border-[#111111]/30 font-bold uppercase tracking-tight text-[10px]"
+                      className="h-10 px-4 rounded-none border-brand-border hover:border-brand-charcoal/30 font-bold uppercase tracking-tight text-[10px]"
                     >
                       Clear
                     </Button>
@@ -600,7 +600,7 @@ export function FetchDashboard() {
               <Info className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-xs uppercase tracking-wide">Platform Rate Limit Detected</p>
-                <p className="text-[10px] text-[#787774] mt-1 leading-relaxed font-mono">
+                <p className="text-[10px] text-brand-muted mt-1 leading-relaxed font-mono">
                   The social platform is blocking metadata extraction (too many requests or login required). 
                   You can still attempt to force-download the media blindly by entering a filename below.
                 </p>
@@ -610,24 +610,24 @@ export function FetchDashboard() {
             <div className="space-y-4 pt-2 border-t border-brand-border">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] uppercase text-[#787774] font-bold">Custom Title / Filename</label>
+                  <label className="text-[9px] uppercase text-brand-muted font-bold">Custom Title / Filename</label>
                   <Input
                     type="text"
                     required
                     placeholder="e.g. TikTok Dance Video, Podcast Episode"
                     value={fallbackTitle}
                     onChange={(e) => setFallbackTitle(e.target.value)}
-                    className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono text-xs"
+                    className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono text-xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] uppercase text-[#787774] font-bold">Download Type</label>
+                  <label className="text-[9px] uppercase text-brand-muted font-bold">Download Type</label>
                   <Select
                     value={downloadType}
                     onValueChange={(val) => setDownloadType(val as any)}
                   >
-                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none font-semibold font-mono">
+                    <SelectTrigger className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none font-semibold font-mono">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -642,7 +642,7 @@ export function FetchDashboard() {
                 <Button
                   onClick={handleFallbackDownload}
                   disabled={!fallbackTitle || isDownloading}
-                  className="h-10 px-6 rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 font-bold uppercase tracking-tight text-[10px] flex items-center justify-center gap-1.5"
+                  className="h-10 px-6 rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 font-bold uppercase tracking-tight text-[10px] flex items-center justify-center gap-1.5"
                 >
                   <Download className="w-4 h-4" /> Force Download Best Quality
                 </Button>
@@ -653,7 +653,7 @@ export function FetchDashboard() {
                     setFallbackTitle('');
                   }}
                   variant="outline"
-                  className="h-10 px-4 rounded-none border-brand-border hover:border-[#111111]/30 font-bold uppercase tracking-tight text-[10px]"
+                  className="h-10 px-4 rounded-none border-brand-border hover:border-brand-charcoal/30 font-bold uppercase tracking-tight text-[10px]"
                 >
                   Cancel
                 </Button>
@@ -669,26 +669,26 @@ export function FetchDashboard() {
           <div className="lg:col-span-3 space-y-6">
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
               <div className="flex items-center justify-between border-b border-brand-border pb-2">
-                <span className="text-[10px] font-bold text-[#787774] uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">
                   Collections
                 </span>
                 <Button
                   onClick={() => setIsCollectionModalOpen(true)}
                   variant="ghost"
                   size="xs"
-                  className="text-[9px] font-bold text-[#111111] hover:underline uppercase"
+                  className="text-[9px] font-bold text-brand-charcoal hover:underline uppercase"
                 >
                   + New
                 </Button>
               </div>
 
-              <div className="space-y-1.5 font-mono text-[11px] text-[#787774]">
+              <div className="space-y-1.5 font-mono text-[11px] text-brand-muted">
                 <div
                   onClick={() => setSelectedCollectionId('')}
                   className={`px-2.5 py-1.5 cursor-pointer flex items-center gap-2 ${
                     !selectedCollectionId
-                      ? 'bg-[#111111] text-white font-semibold'
-                      : 'hover:bg-[#111111]/5 text-[#111111]'
+                      ? 'bg-brand-charcoal text-white font-semibold'
+                      : 'hover:bg-brand-charcoal/5 text-brand-charcoal'
                   }`}
                 >
                   <Bookmark className="w-3.5 h-3.5" /> All Downloads
@@ -699,8 +699,8 @@ export function FetchDashboard() {
                     key={col.id}
                     className={`px-2.5 py-1.5 cursor-pointer flex items-center justify-between group transition-colors ${
                       selectedCollectionId === col.id
-                        ? 'bg-[#111111] text-white font-semibold'
-                        : 'hover:bg-[#111111]/5 text-[#111111]'
+                        ? 'bg-brand-charcoal text-white font-semibold'
+                        : 'hover:bg-brand-charcoal/5 text-brand-charcoal'
                     }`}
                   >
                     <span
@@ -715,7 +715,7 @@ export function FetchDashboard() {
                         handleRemoveCollection(col.id);
                       }}
                       className={`opacity-0 group-hover:opacity-100 hover:text-brand-red-text shrink-0 ml-2 ${
-                        selectedCollectionId === col.id ? 'text-white/60' : 'text-[#787774]'
+                        selectedCollectionId === col.id ? 'text-white/60' : 'text-brand-muted'
                       }`}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -727,8 +727,8 @@ export function FetchDashboard() {
                   onClick={() => setSelectedCollectionId('none')}
                   className={`px-2.5 py-1.5 cursor-pointer flex items-center gap-2 ${
                     selectedCollectionId === 'none'
-                      ? 'bg-[#111111] text-white font-semibold'
-                      : 'hover:bg-[#111111]/5 text-[#111111]'
+                      ? 'bg-brand-charcoal text-white font-semibold'
+                      : 'hover:bg-brand-charcoal/5 text-brand-charcoal'
                   }`}
                 >
                   <Bookmark className="w-3.5 h-3.5" /> Uncategorized
@@ -738,7 +738,7 @@ export function FetchDashboard() {
 
             {/* Quick Filters */}
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
-              <span className="text-[10px] font-bold text-[#787774] uppercase tracking-wider block border-b border-brand-border pb-2">
+              <span className="text-[10px] font-bold text-brand-muted uppercase tracking-wider block border-b border-brand-border pb-2">
                 Platform Filters
               </span>
               <div className="space-y-2">
@@ -746,7 +746,7 @@ export function FetchDashboard() {
                   value={selectedPlatform}
                   onValueChange={(val) => setSelectedPlatform(val || '')}
                 >
-                  <SelectTrigger className="w-full h-8 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none">
+                  <SelectTrigger className="w-full h-8 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none">
                     <SelectValue placeholder="All Platforms" />
                   </SelectTrigger>
                   <SelectContent>
@@ -761,7 +761,7 @@ export function FetchDashboard() {
                   </SelectContent>
                 </Select>
 
-                <div className="flex items-center gap-2 py-1 font-semibold text-[10px] uppercase text-[#111111]">
+                <div className="flex items-center gap-2 py-1 font-semibold text-[10px] uppercase text-brand-charcoal">
                   <Checkbox
                     id="showOnlyFavorites"
                     checked={showOnlyFavorites}
@@ -780,19 +780,19 @@ export function FetchDashboard() {
             
             {/* Search filter row */}
             <div className="flex items-center border border-brand-border bg-white p-2">
-              <MagnifyingGlass className="w-4 h-4 text-[#787774] ml-2" />
+              <MagnifyingGlass className="w-4 h-4 text-brand-muted ml-2" />
               <Input
                 type="text"
                 placeholder="Search download history..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-8 border-none bg-transparent text-xs text-[#111111] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-none font-mono"
+                className="w-full h-8 border-none bg-transparent text-xs text-brand-charcoal focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-none font-mono"
               />
             </div>
 
             {/* History Items list */}
             {historyItems.length === 0 ? (
-              <div className="py-20 text-center border border-dashed border-brand-border text-[#787774] font-mono bg-white">
+              <div className="py-20 text-center border border-dashed border-brand-border text-brand-muted font-mono bg-white">
                 No download records match the current filters
               </div>
             ) : (
@@ -800,7 +800,7 @@ export function FetchDashboard() {
                 {historyItems.map((item: any) => (
                   <div
                     key={item.id}
-                    className="p-4 hover:bg-[#111111]/2 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 hover:bg-brand-charcoal/2 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-2">
@@ -812,22 +812,22 @@ export function FetchDashboard() {
                           {item.mediaType}
                         </Badge>
                         {item.resolution && (
-                          <span className="text-[9px] font-mono text-[#787774] px-1 border border-brand-border">
+                          <span className="text-[9px] font-mono text-brand-muted px-1 border border-brand-border">
                             {item.resolution}
                           </span>
                         )}
                         {item.fileSize && (
-                          <span className="text-[9px] font-mono text-[#787774]">
+                          <span className="text-[9px] font-mono text-brand-muted">
                             {formatBytes(item.fileSize)}
                           </span>
                         )}
                       </div>
 
-                      <h4 className="font-serif text-sm font-semibold text-[#111111] truncate max-w-xl">
+                      <h4 className="font-serif text-sm font-semibold text-brand-charcoal truncate max-w-xl">
                         {item.title}
                       </h4>
 
-                      <div className="flex items-center flex-wrap gap-3 text-[10px] text-[#787774]">
+                      <div className="flex items-center flex-wrap gap-3 text-[10px] text-brand-muted">
                         {item.author && <span>by {item.author}</span>}
                         <span>·</span>
                         <span className="flex items-center gap-0.5">
@@ -841,7 +841,7 @@ export function FetchDashboard() {
                         {item.collection && (
                           <>
                             <span>·</span>
-                            <span className="text-[#111111] font-semibold bg-[#F1F1EF] px-1.5 py-0.5 uppercase text-[8px]">
+                            <span className="text-brand-charcoal font-semibold bg-[#F1F1EF] px-1.5 py-0.5 uppercase text-[8px]">
                               {item.collection.name}
                             </span>
                           </>
@@ -877,7 +877,7 @@ export function FetchDashboard() {
                             variant="ghost"
                             size="icon-xs"
                             className={`size-8 hover:bg-[#fff0f2] ${
-                              item.isFavorite ? 'text-[#b3261e]' : 'text-[#787774]'
+                              item.isFavorite ? 'text-[#b3261e]' : 'text-brand-muted'
                             }`}
                           >
                             <Heart className="w-4 h-4" weight={item.isFavorite ? 'fill' : 'regular'} />
@@ -927,24 +927,24 @@ export function FetchDashboard() {
       <Dialog open={isCollectionModalOpen} onOpenChange={setIsCollectionModalOpen}>
         <DialogContent className="sm:max-w-md bg-white border border-brand-border rounded-none p-6 font-mono text-xs">
           <DialogHeader>
-            <DialogTitle className="font-serif text-lg font-medium text-[#111111]">
+            <DialogTitle className="font-serif text-lg font-medium text-brand-charcoal">
               New Collection
             </DialogTitle>
-            <DialogDescription className="text-xs font-mono text-[#787774] mt-1">
+            <DialogDescription className="text-xs font-mono text-brand-muted mt-1">
               Create a group to organize downloaded links and media.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateCollection} className="space-y-4 pt-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase text-[#787774]">Collection Name</label>
+              <label className="text-[10px] uppercase text-brand-muted">Collection Name</label>
               <Input
                 type="text"
                 required
                 placeholder="e.g. Comedy Reels, Code Lectures"
                 value={newCollectionName}
                 onChange={(e) => setNewCollectionName(e.target.value)}
-                className="w-full h-9 border-brand-border bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 font-mono"
+                className="w-full h-9 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-mono"
               />
             </div>
 
@@ -959,7 +959,7 @@ export function FetchDashboard() {
               </Button>
               <Button
                 type="submit"
-                className="h-9 px-4 rounded-none bg-[#111111] text-white hover:bg-[#111111]/90 font-semibold text-[10px] uppercase tracking-tight"
+                className="h-9 px-4 rounded-none bg-brand-charcoal text-white hover:bg-brand-charcoal/90 font-semibold text-[10px] uppercase tracking-tight"
               >
                 Create Group
               </Button>

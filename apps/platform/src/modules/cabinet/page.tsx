@@ -456,7 +456,7 @@ export function CabinetDashboard() {
   // Rendering Loader
   if (!mounted || isLoading || !user) {
     return (
-      <div className="min-h-[100dvh] bg-brand-canvas p-8 flex flex-col items-center justify-center font-mono text-xs text-[#787774] space-y-4">
+      <div className="min-h-[100dvh] bg-brand-canvas p-8 flex flex-col items-center justify-center font-mono text-xs text-brand-muted space-y-4">
         <div className="w-12 h-1 bg-[#EAEAEA] animate-pulse rounded-none" />
         <div className="uppercase tracking-widest animate-pulse">Initializing session...</div>
       </div>
@@ -547,7 +547,7 @@ export function CabinetDashboard() {
         align="center"
         className="rounded-none border border-brand-border bg-white shadow-md p-1.5 gap-1.5"
       >
-        <ActionBarSelection className="border-none text-[10px] font-mono text-[#787774] uppercase tracking-wider px-2 py-0 bg-transparent">
+        <ActionBarSelection className="border-none text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2 py-0 bg-transparent">
           {selectedBookmarkIds.length} Selected
         </ActionBarSelection>
         <ActionBarSeparator />
@@ -556,7 +556,7 @@ export function CabinetDashboard() {
             value=""
             onValueChange={(val) => handleBulkMove(val || null)}
           >
-            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] tracking-wider uppercase font-bold text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none w-40 px-2.5">
+            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] tracking-wider uppercase font-bold text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none w-40 px-2.5">
               <SelectValue placeholder="MOVE TO..." />
             </SelectTrigger>
             <SelectContent>
@@ -571,7 +571,7 @@ export function CabinetDashboard() {
 
           <ActionBarItem
             onClick={handleBulkArchive}
-            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-white text-[#111111] border border-brand-border hover:bg-[#FBFBFA] px-3 rounded-none"
+            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-white text-brand-charcoal border border-brand-border hover:bg-brand-canvas px-3 rounded-none"
           >
             <Archive className="w-3.5 h-3.5 mr-1" />
             Archive
@@ -591,7 +591,7 @@ export function CabinetDashboard() {
             variant="ghost"
             size="xs"
             onClick={handleClearSelection}
-            className="h-8 font-mono text-[10px] uppercase font-bold text-[#787774] hover:text-[#111111] px-2.5 rounded-none"
+            className="h-8 font-mono text-[10px] uppercase font-bold text-brand-muted hover:text-brand-charcoal px-2.5 rounded-none"
           >
             Cancel
           </Button>

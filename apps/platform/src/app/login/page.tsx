@@ -172,7 +172,7 @@ export default function LoginPage() {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-[#FBFBFA] font-mono text-[10px] text-[#787774] uppercase tracking-widest">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-brand-canvas font-mono text-[10px] text-brand-muted uppercase tracking-widest">
         <span>Loading session coordinates...</span>
       </div>
     );
@@ -182,45 +182,45 @@ export default function LoginPage() {
     <div className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-12 bg-white select-none font-mono">
       
       {/* Left side: Editorial brand layout & manifesto (5 cols) */}
-      <div className="hidden md:flex md:col-span-5 bg-[#FBFBFA] border-r border-[#EAEAEA] flex-col justify-between p-12 text-[#111111]">
+      <div className="hidden md:flex md:col-span-5 bg-brand-canvas border-r border-[#EAEAEA] flex-col justify-between p-12 text-brand-charcoal">
         
         {/* Logo and Dynamic Clock */}
         <div className="space-y-6">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-[#111111]" />
-            <h1 className="text-xs font-bold uppercase tracking-widest text-[#111111]">
+            <span className="w-3 h-3 bg-brand-charcoal" />
+            <h1 className="text-xs font-bold uppercase tracking-widest text-brand-charcoal">
               Atlas Platform
             </h1>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#EAEAEA] bg-white text-[10px] text-[#787774] font-bold">
-            <Clock className="w-3.5 h-3.5 text-[#111111]" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#EAEAEA] bg-white text-[10px] text-brand-muted font-bold">
+            <Clock className="w-3.5 h-3.5 text-brand-charcoal" />
             <span>UTC/LOCAL · {currentTime || '--:--:--'}</span>
           </div>
         </div>
 
         {/* Brand Manifesto Statement */}
         <div className="space-y-6 max-w-sm my-auto">
-          <h2 className="font-serif text-3xl italic tracking-tight leading-tight text-[#111111]">
+          <h2 className="font-serif text-3xl italic tracking-tight leading-tight text-brand-charcoal">
             A unified suite built to coordinate life, finances, and media without overhead.
           </h2>
-          <p className="text-[11px] text-[#787774] leading-relaxed">
+          <p className="text-[11px] text-brand-muted leading-relaxed">
             Atlas streamlines workspace orchestration by linking documents, ledger balances, vehicle sheets, and download collections into a single, offline-first portal.
           </p>
         </div>
 
         {/* Security Specs Monospace Footer */}
         <div className="space-y-3 pt-6 border-t border-[#EAEAEA]">
-          <span className="text-[9px] uppercase tracking-wider text-[#787774] font-bold block">
+          <span className="text-[9px] uppercase tracking-wider text-brand-muted font-bold block">
             System Protocols
           </span>
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-[10px] text-[#787774]">
-              <ShieldCheck className="w-4 h-4 text-[#111111]" />
+            <div className="flex items-center gap-2 text-[10px] text-brand-muted">
+              <ShieldCheck className="w-4 h-4 text-brand-charcoal" />
               <span>HTTP-only Secure Cookies active</span>
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-[#787774]">
-              <Key className="w-4 h-4 text-[#111111]" />
+            <div className="flex items-center gap-2 text-[10px] text-brand-muted">
+              <Key className="w-4 h-4 text-brand-charcoal" />
               <span>WebAuthn Passkey integration ready</span>
             </div>
           </div>
@@ -234,13 +234,13 @@ export default function LoginPage() {
         {/* Mobile Header (Hidden on desktop) */}
         <div className="md:hidden flex items-center justify-between pb-6 border-b border-[#EAEAEA] mb-8">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-[#111111]" />
-            <h1 className="text-xs font-bold uppercase tracking-widest text-[#111111]">
+            <span className="w-2.5 h-2.5 bg-brand-charcoal" />
+            <h1 className="text-xs font-bold uppercase tracking-widest text-brand-charcoal">
               Atlas
             </h1>
           </div>
           {currentTime && (
-            <span className="text-[10px] text-[#787774] font-bold">{currentTime}</span>
+            <span className="text-[10px] text-brand-muted font-bold">{currentTime}</span>
           )}
         </div>
 
@@ -253,10 +253,10 @@ export default function LoginPage() {
             /* Two-Step Passkey Verification Screen */
             <div className="space-y-8 animate-fadeIn">
               <div className="space-y-2">
-                <h3 className="font-serif text-3xl font-medium tracking-tight text-[#111111]">
+                <h3 className="font-serif text-3xl font-medium tracking-tight text-brand-charcoal">
                   Two-Step Verification
                 </h3>
-                <p className="text-xs text-[#787774] leading-relaxed">
+                <p className="text-xs text-brand-muted leading-relaxed">
                   Your primary credentials match. Please verify your identity using your registered Passkey (biometrics) to access the platform.
                 </p>
               </div>
@@ -272,7 +272,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handlePasskeyLogin}
                   disabled={isPasskeyAuthenticating}
-                  className="w-full h-11 bg-[#111111] text-white hover:bg-[#2e2e2e] active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-2"
+                  className="w-full h-11 bg-brand-charcoal text-white hover:bg-[#2e2e2e] active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-2"
                 >
                   <Fingerprint className="w-4 h-4 text-white" />
                   <span>{isPasskeyAuthenticating ? 'Scanning...' : 'Verify with Passkey'}</span>
@@ -286,7 +286,7 @@ export default function LoginPage() {
                   }}
                   disabled={isPasskeyAuthenticating}
                   variant="outline"
-                  className="w-full h-11 font-bold tracking-wider text-xs uppercase rounded-none border border-[#EAEAEA] text-[#787774] hover:bg-[#111111]/5 active:scale-[0.98] transition-all flex items-center justify-center"
+                  className="w-full h-11 font-bold tracking-wider text-xs uppercase rounded-none border border-[#EAEAEA] text-brand-muted hover:bg-brand-charcoal/5 active:scale-[0.98] transition-all flex items-center justify-center"
                 >
                   <span>Back to Credentials</span>
                 </Button>
@@ -296,10 +296,10 @@ export default function LoginPage() {
             /* Standard Login Form */
             <div className="space-y-8">
               <div className="space-y-2">
-                <h3 className="font-serif text-3xl font-medium tracking-tight text-[#111111]">
+                <h3 className="font-serif text-3xl font-medium tracking-tight text-brand-charcoal">
                   Authenticate
                 </h3>
-                <p className="text-xs text-[#787774]">
+                <p className="text-xs text-brand-muted">
                   Please fill in your coordinates to open your productivity workspace.
                 </p>
               </div>
@@ -331,7 +331,7 @@ export default function LoginPage() {
                     const hasError = field.state.meta.errors.length > 0;
                     return (
                       <div className="space-y-1.5">
-                        <Label htmlFor="email" className="text-[9px] uppercase tracking-wider text-[#787774] font-bold">
+                        <Label htmlFor="email" className="text-[9px] uppercase tracking-wider text-brand-muted font-bold">
                           Email Address
                         </Label>
                         <Input
@@ -343,7 +343,7 @@ export default function LoginPage() {
                           type="email"
                           autoComplete="email"
                           placeholder="admin@gustam.dev"
-                          className={`h-11 px-3 border rounded-none bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#111111] font-mono text-xs placeholder:text-[#c4c4c4] transition-colors ${
+                          className={`h-11 px-3 border rounded-none bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
                             hasError ? 'border-[#9F2F2D]' : 'border-[#EAEAEA]'
                           }`}
                         />
@@ -370,7 +370,7 @@ export default function LoginPage() {
                     const hasError = field.state.meta.errors.length > 0;
                     return (
                       <div className="space-y-1.5">
-                        <Label htmlFor="password" className="text-[9px] uppercase tracking-wider text-[#787774] font-bold">
+                        <Label htmlFor="password" className="text-[9px] uppercase tracking-wider text-brand-muted font-bold">
                           Security Keyphrase
                         </Label>
                         <Input
@@ -382,7 +382,7 @@ export default function LoginPage() {
                           type="password"
                           autoComplete="current-password"
                           placeholder="••••••••"
-                          className={`h-11 px-3 border rounded-none bg-white text-[#111111] focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#111111] font-mono text-xs placeholder:text-[#c4c4c4] transition-colors ${
+                          className={`h-11 px-3 border rounded-none bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
                             hasError ? 'border-[#9F2F2D]' : 'border-[#EAEAEA]'
                           }`}
                         />
@@ -403,7 +403,7 @@ export default function LoginPage() {
                       <Button
                         type="submit"
                         disabled={isSubmitting || isPasskeyAuthenticating}
-                        className="w-full h-11 bg-[#111111] text-white hover:bg-[#2e2e2e] active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-1.5"
+                        className="w-full h-11 bg-brand-charcoal text-white hover:bg-[#2e2e2e] active:scale-[0.98] transition-all font-bold tracking-wider text-xs uppercase rounded-none flex items-center justify-center gap-1.5"
                       >
                         <span>{isSubmitting ? 'Authenticating...' : 'Submit Credentials'}</span>
                         <ArrowRight className="w-4 h-4" />
@@ -418,7 +418,7 @@ export default function LoginPage() {
 
         {/* Micro-UX footer security indicators */}
         <div className="text-center md:text-left pt-12 border-t border-[#EAEAEA]">
-          <p className="text-[9px] font-mono text-[#787774] uppercase tracking-wider">
+          <p className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
             Protected by HttpOnly Session Cookies · SameSite Lax · WebAuthn v2
           </p>
         </div>

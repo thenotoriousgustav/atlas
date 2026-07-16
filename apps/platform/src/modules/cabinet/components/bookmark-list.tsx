@@ -83,9 +83,9 @@ function MoodboardCard({
   };
 
   return (
-    <Card className={`border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-[#111111]/30 transition-all h-auto w-full group/card shadow-none [--card-spacing:0px] ${isSelected ? 'border-[#111111]' : ''}`}>
+    <Card className={`border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-brand-charcoal/30 transition-all h-auto w-full group/card shadow-none [--card-spacing:0px] ${isSelected ? 'border-brand-charcoal' : ''}`}>
       {/* Visual Top Header - Screenshot / Fallback */}
-      <div className="relative w-full bg-[#FBFBFA] border-b border-brand-border overflow-hidden aspect-[16/10] shrink-0">
+      <div className="relative w-full bg-brand-canvas border-b border-brand-border overflow-hidden aspect-[16/10] shrink-0">
         {/* Checkbox Overlay */}
         <div className={`absolute top-2 left-2 z-10 bg-white p-1 border border-brand-border shadow-sm transition-opacity ${
           isSelected ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100 focus-within:opacity-100'
@@ -149,13 +149,13 @@ function MoodboardCard({
             href={bookmark.url}
             target="_blank"
             rel="noreferrer"
-            className="group/link block text-sm font-semibold text-[#111111] hover:underline leading-tight"
+            className="group/link block text-sm font-semibold text-brand-charcoal hover:underline leading-tight"
           >
             {bookmark.title || bookmark.url}
-            <ArrowSquareOut className="inline-block ml-1 w-3 h-3 text-[#787774] opacity-0 group-hover/link:opacity-100 transition-opacity" />
+            <ArrowSquareOut className="inline-block ml-1 w-3 h-3 text-brand-muted opacity-0 group-hover/link:opacity-100 transition-opacity" />
           </a>
           {bookmark.description && (
-            <p className="text-[11px] text-[#787774] leading-relaxed mt-1">
+            <p className="text-[11px] text-brand-muted leading-relaxed mt-1">
               {bookmark.description}
             </p>
           )}
@@ -179,7 +179,7 @@ function MoodboardCard({
 
           {/* Actions footer */}
           <div className="flex items-center justify-between border-t border-brand-border pt-2.5">
-            <span className="text-[9px] text-[#787774]/70 font-mono">
+            <span className="text-[9px] text-brand-muted/70 font-mono">
               {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
@@ -196,7 +196,7 @@ function MoodboardCard({
                     className="size-7"
                   >
                     <Star
-                      className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-[#787774]'}`}
+                      className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-brand-muted'}`}
                       weight={bookmark.isFavorite ? 'fill' : 'regular'}
                     />
                   </Button>
@@ -213,7 +213,7 @@ function MoodboardCard({
                     className="size-7"
                   >
                     <Archive
-                      className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-[#787774]'}`}
+                      className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-brand-muted'}`}
                       weight={bookmark.isArchived ? 'fill' : 'regular'}
                     />
                   </Button>
@@ -229,7 +229,7 @@ function MoodboardCard({
                     size="icon-xs"
                     className="size-7"
                   >
-                    <Copy className="w-3.5 h-3.5 text-[#787774]" />
+                    <Copy className="w-3.5 h-3.5 text-brand-muted" />
                   </Button>
                 } />
                 <TooltipContent>Duplicate</TooltipContent>
@@ -243,7 +243,7 @@ function MoodboardCard({
                     size="icon-xs"
                     className="size-7"
                   >
-                    <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
+                    <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                   </Button>
                 } />
                 <TooltipContent>Edit</TooltipContent>
@@ -382,8 +382,8 @@ export function BookmarkList({
     <div className="space-y-6">
       {/* List Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-mono text-[#787774] uppercase tracking-wider flex items-center gap-2">
-          <BookmarkSimple className="w-4 h-4 text-[#111111]" />
+        <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider flex items-center gap-2">
+          <BookmarkSimple className="w-4 h-4 text-brand-charcoal" />
           {getHeaderTitle()}
         </h2>
         <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
@@ -445,8 +445,8 @@ export function BookmarkList({
                 return (
                   <div
                     key={bookmark.id}
-                    className={`flex items-center justify-between py-2.5 px-3 bg-white transition-all hover:bg-[#111111]/5 gap-4 text-xs group/item ${
-                      isSelected ? 'bg-[#111111]/5' : ''
+                    className={`flex items-center justify-between py-2.5 px-3 bg-white transition-all hover:bg-brand-charcoal/5 gap-4 text-xs group/item ${
+                      isSelected ? 'bg-brand-charcoal/5' : ''
                     }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -463,11 +463,11 @@ export function BookmarkList({
                           href={bookmark.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-semibold text-[#111111] hover:underline truncate shrink-0"
+                          className="font-semibold text-brand-charcoal hover:underline truncate shrink-0"
                         >
                           {bookmark.title || bookmark.url}
                         </a>
-                        <span className="text-[10px] text-[#787774]/70 font-mono truncate hidden md:inline">
+                        <span className="text-[10px] text-brand-muted/70 font-mono truncate hidden md:inline">
                           ({hostname})
                         </span>
                       </span>
@@ -498,7 +498,7 @@ export function BookmarkList({
                       )}
 
                       {/* Date */}
-                      <span className="text-[10px] text-[#787774]/80 font-mono hidden lg:inline-block">
+                      <span className="text-[10px] text-brand-muted/80 font-mono hidden lg:inline-block">
                         {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
                           month: 'short',
                           day: 'numeric',
@@ -516,7 +516,7 @@ export function BookmarkList({
                               className="size-7"
                             >
                               <Star
-                                className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-[#787774]'}`}
+                                className={`w-3.5 h-3.5 ${bookmark.isFavorite ? 'text-[#956400]' : 'text-brand-muted'}`}
                                 weight={bookmark.isFavorite ? 'fill' : 'regular'}
                               />
                             </Button>
@@ -533,7 +533,7 @@ export function BookmarkList({
                               className="size-7"
                             >
                               <Archive
-                                className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-[#787774]'}`}
+                                className={`w-3.5 h-3.5 ${bookmark.isArchived ? 'text-brand-blue-text' : 'text-brand-muted'}`}
                                 weight={bookmark.isArchived ? 'fill' : 'regular'}
                               />
                             </Button>
@@ -549,7 +549,7 @@ export function BookmarkList({
                               size="icon-xs"
                               className="size-7"
                             >
-                              <Copy className="w-3.5 h-3.5 text-[#787774]" />
+                              <Copy className="w-3.5 h-3.5 text-brand-muted" />
                             </Button>
                           } />
                           <TooltipContent>Duplicate</TooltipContent>
@@ -563,7 +563,7 @@ export function BookmarkList({
                               size="icon-xs"
                               className="size-7"
                             >
-                              <PencilSimple className="w-3.5 h-3.5 text-[#787774]" />
+                              <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                             </Button>
                           } />
                           <TooltipContent>Edit</TooltipContent>

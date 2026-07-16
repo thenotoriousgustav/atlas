@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@atlas/ui/components/button';
 import { SignOut, ArrowLeft } from '@phosphor-icons/react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface WorkspaceHeaderProps {
   user: {
@@ -12,22 +13,23 @@ interface WorkspaceHeaderProps {
 }
 
 export function WorkspaceHeader({ user, onLogout }: WorkspaceHeaderProps) {
+  // ponytail: support dynamic theme changes by replacing #111111 with brand-charcoal and white with brand-canvas
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-brand-border pb-5 gap-4">
       <div className="flex items-center gap-3">
         <Link 
           href="/"
-          className="w-7 h-7 border border-brand-border flex items-center justify-center text-[#787774] hover:bg-[#111111] hover:text-white hover:border-[#111111] transition-colors"
+          className="w-7 h-7 border border-brand-border flex items-center justify-center text-brand-muted hover:bg-brand-charcoal hover:text-brand-canvas hover:border-brand-charcoal transition-colors"
           title="Back to portal"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
-        <div className="w-7 h-7 bg-[#111111] flex items-center justify-center rounded-none text-white font-serif italic text-sm font-semibold">
+        <div className="w-7 h-7 bg-brand-charcoal flex items-center justify-center rounded-none text-brand-canvas font-serif italic text-sm font-semibold">
           L
         </div>
         <div>
-          <h1 className="font-serif text-2xl font-medium tracking-tight text-[#111111]">Ledger</h1>
-          <p className="text-[10px] text-[#787774] font-mono tracking-tight uppercase">
+          <h1 className="font-serif text-2xl font-medium tracking-tight text-brand-charcoal">Ledger</h1>
+          <p className="text-[10px] text-brand-muted font-mono tracking-tight uppercase">
             Gustam platform · Ledger
           </p>
         </div>
@@ -35,14 +37,15 @@ export function WorkspaceHeader({ user, onLogout }: WorkspaceHeaderProps) {
 
       <div className="flex items-center gap-4">
         <div className="text-right font-mono hidden sm:block">
-          <p className="text-xs font-semibold text-[#111111]">{user.name}</p>
-          <p className="text-[10px] text-[#787774]">{user.email}</p>
+          <p className="text-xs font-semibold text-brand-charcoal">{user.name}</p>
+          <p className="text-[10px] text-brand-muted">{user.email}</p>
         </div>
+        <ThemeToggle />
         <Button
           variant="outline"
           size="sm"
           onClick={onLogout}
-          className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase"
+          className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border"
         >
           <SignOut className="w-3.5 h-3.5" />
           Sign out
