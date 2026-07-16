@@ -37,6 +37,15 @@ export class FoldersService {
         userId,
         deletedAt: null,
       },
+      include: {
+        _count: {
+          select: {
+            bookmarks: {
+              where: { deletedAt: null },
+            },
+          },
+        },
+      },
       orderBy: {
         name: 'asc',
       },

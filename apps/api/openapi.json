@@ -516,6 +516,86 @@
         ]
       }
     },
+    "/v1/bookmarks/health": {
+      "get": {
+        "operationId": "BookmarksController_getHealthSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get bookmark health status count summary",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/duplicates": {
+      "get": {
+        "operationId": "BookmarksController_getDuplicates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get groups of duplicate bookmarks",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/duplicates/clean": {
+      "delete": {
+        "operationId": "BookmarksController_cleanDuplicates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Auto-clean duplicate bookmarks",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/health/check": {
+      "post": {
+        "operationId": "BookmarksController_triggerHealthCheck",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Trigger manual scan of bookmark links status",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/{id}": {
       "get": {
         "operationId": "BookmarksController_findOne",

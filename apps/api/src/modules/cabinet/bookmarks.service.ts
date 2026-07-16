@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MetadataService } from './metadata.service';
+import { LinkCheckerService } from './link-checker.service';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
 
@@ -9,6 +10,8 @@ export class BookmarksService {
   constructor(
     private prisma: PrismaService,
     private metadataService: MetadataService,
+    @Inject(forwardRef(() => LinkCheckerService))
+    private linkCheckerService: LinkCheckerService,
   ) {}
 
   async create(userId: string, createBookmarkDto: CreateBookmarkDto) {
@@ -293,5 +296,113 @@ export class BookmarksService {
       ...extracted,
       tags,
     };
+  }
+
+  async getHealthSummary(userId: string) {
+    const total = await this.prisma.bookmark.count({
+      where: { userId, deletedAt: null },
+    });
+    const broken = await this.prisma.bookmark.count({
+      where: { userId, status: 'BROKEN', deletedAt: null },
+    });
+    const redirected = await this.prisma.bookmark.count({
+      where: { userId, status: 'REDIRECTED', deletedAt: null },
+    });
+    const favorites = await this.prisma.bookmark.count({
+      where: { userId, isFavorite: true, deletedAt: null },
+    });
+    const archived = await this.prisma.bookmark.count({
+      where: { userId, isArchived: true, deletedAt: null },
+    });
+
+    const duplicatesGrouped = await this.prisma.bookmark.groupBy({
+      by: ['url'],
+      where: { userId, deletedAt: null },
+      _count: { url: true },
+      having: {
+        url: {
+          _count: {
+            gt: 1,
+          },
+        },
+      },
+    });
+    const duplicates = duplicatesGrouped.length;
+
+    return { total, broken, redirected, favorites, archived, duplicates };
+  }
+
+  async getDuplicates(userId: string) {
+    const duplicatesGrouped = await this.prisma.bookmark.groupBy({
+      by: ['url'],
+      where: { userId, deletedAt: null },
+      _count: { url: true },
+      having: {
+        url: {
+          _count: { gt: 1 },
+        },
+      },
+    });
+
+    const urls = duplicatesGrouped.map((g) => g.url);
+    const bookmarks = await this.prisma.bookmark.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        url: { in: urls },
+      },
+      include: {
+        tags: true,
+        folder: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return urls.map((url) => ({
+      url,
+      bookmarks: bookmarks.filter((b) => b.url === url),
+    }));
+  }
+
+  async cleanDuplicates(userId: string) {
+    const duplicatesGrouped = await this.prisma.bookmark.groupBy({
+      by: ['url'],
+      where: { userId, deletedAt: null },
+      _count: { url: true },
+      having: {
+        url: {
+          _count: { gt: 1 },
+        },
+      },
+    });
+
+    const urls = duplicatesGrouped.map((g) => g.url);
+    let deletedCount = 0;
+
+    for (const url of urls) {
+      const list = await this.prisma.bookmark.findMany({
+        where: { userId, url, deletedAt: null },
+        orderBy: { createdAt: 'asc' }, // oldest first
+      });
+
+      const toDelete = list.slice(1);
+      for (const b of toDelete) {
+        await this.prisma.bookmark.update({
+          where: { id: b.id },
+          data: { deletedAt: new Date() },
+        });
+        deletedCount++;
+      }
+    }
+
+    return { deleted: deletedCount };
+  }
+
+  async triggerHealthCheck(userId: string) {
+    // ponytail: trigger runScan asynchronously to prevent blocking the HTTP response
+    this.linkCheckerService.runScan().catch((err) => {
+      console.error('Triggered health scan failed', err);
+    });
+    return { success: true, message: 'Scan started in background' };
   }
 }

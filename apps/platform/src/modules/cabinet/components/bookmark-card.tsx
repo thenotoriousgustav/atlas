@@ -71,6 +71,23 @@ export function BookmarkCard({
                   {bookmark.folder.name}
                 </Badge>
               )}
+              {bookmark.status === 'BROKEN' && (
+                <Badge
+                  variant="outline"
+                  className="text-[9px] bg-red-50 text-red-600 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
+                >
+                  Broken
+                </Badge>
+              )}
+              {bookmark.status === 'REDIRECTED' && (
+                <Badge
+                  variant="outline"
+                  className="text-[9px] bg-blue-50 text-blue-600 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
+                  title="URL updated automatically to new address"
+                >
+                  Redirected
+                </Badge>
+              )}
             </div>
             <p className="text-[10px] text-brand-muted/70 font-mono truncate">{bookmark.url}</p>
           </div>

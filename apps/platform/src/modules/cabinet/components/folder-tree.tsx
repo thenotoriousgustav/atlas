@@ -48,6 +48,11 @@ export function FolderTree({
                 >
                   <FolderSimple className="w-3.5 h-3.5 shrink-0" />
                   <span className="truncate">{folder.name}</span>
+                  {folder._count?.bookmarks !== undefined && (
+                    <span className="text-[10px] text-brand-muted/70 font-mono">
+                      ({folder._count.bookmarks})
+                    </span>
+                  )}
                 </span>
                 <div className="flex items-center gap-1 shrink-0">
                   <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
@@ -120,6 +125,11 @@ export function FolderTree({
               <span className="flex items-center gap-2 truncate">
                 <FolderSimple className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{folder.name}</span>
+                {folder._count?.bookmarks !== undefined && (
+                  <span className="text-[10px] text-brand-muted/70 font-mono">
+                    ({folder._count.bookmarks})
+                  </span>
+                )}
               </span>
               <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity shrink-0">
                 <Button

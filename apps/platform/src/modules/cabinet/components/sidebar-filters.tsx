@@ -1,4 +1,5 @@
 import React from 'react';
+import { Spinner } from '@atlas/ui/components/spinner';
 import {
   Dialog,
   DialogTrigger,
@@ -30,6 +31,9 @@ import {
   DownloadSimple,
   UploadSimple,
   X,
+  Copy,
+  Warning,
+  ArrowClockwise,
 } from '@phosphor-icons/react';
 import { FolderTree } from './folder-tree';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
@@ -53,6 +57,12 @@ interface SidebarFiltersProps {
   onEditFolder: (folder: any) => void;
   onDeleteFolder: (id: string) => void;
   onCreateSubfolder?: (parentId: string) => void;
+  filterBroken?: boolean;
+  onSelectBroken: (broken: boolean | undefined) => void;
+  filterDuplicates?: boolean;
+  onSelectDuplicates: (dup: boolean | undefined) => void;
+  healthSummary?: any;
+  onScan: () => void;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   resetFolderForm: () => void;
@@ -77,6 +87,12 @@ export function SidebarFilters({
   onEditFolder,
   onDeleteFolder,
   onCreateSubfolder,
+  filterBroken,
+  onSelectBroken,
+  filterDuplicates,
+  onSelectDuplicates,
+  healthSummary,
+  onScan,
   onExport,
   onImport,
   resetFolderForm,
@@ -93,8 +109,10 @@ export function SidebarFilters({
             onSelectTag(undefined);
             onSelectFavorite(undefined);
             onSelectArchived(false);
+            onSelectBroken(undefined);
+            onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             selectedFolderId === undefined &&
             filterFavorite === undefined &&
             filterArchived === false &&
@@ -103,8 +121,15 @@ export function SidebarFilters({
               : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
           }`}
         >
-          <BookmarkSimple className="w-3.5 h-3.5" />
-          All Bookmarks
+          <span className="flex items-center gap-2">
+            <BookmarkSimple className="w-3.5 h-3.5" />
+            All Bookmarks
+          </span>
+          {healthSummary && healthSummary.total !== undefined && (
+            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
+              {healthSummary.total}
+            </span>
+          )}
         </button>
 
         <button
@@ -113,15 +138,24 @@ export function SidebarFilters({
             onSelectTag(undefined);
             onSelectFavorite(true);
             onSelectArchived(false);
+            onSelectBroken(undefined);
+            onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             filterFavorite === true
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
               : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
           }`}
         >
-          <Star className="w-3.5 h-3.5 text-[#956400]" />
-          Favorites
+          <span className="flex items-center gap-2">
+            <Star className="w-3.5 h-3.5 text-[#956400]" />
+            Favorites
+          </span>
+          {healthSummary && healthSummary.favorites !== undefined && (
+            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
+              {healthSummary.favorites}
+            </span>
+          )}
         </button>
 
         <button
@@ -130,15 +164,89 @@ export function SidebarFilters({
             onSelectTag(undefined);
             onSelectFavorite(undefined);
             onSelectArchived(true);
+            onSelectBroken(undefined);
+            onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             filterArchived === true
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
               : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
           }`}
         >
-          <Archive className="w-3.5 h-3.5" />
-          Archive
+          <span className="flex items-center gap-2">
+            <Archive className="w-3.5 h-3.5" />
+            Archive
+          </span>
+          {healthSummary && healthSummary.archived !== undefined && (
+            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
+              {healthSummary.archived}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Health / Maintenance (Duplicates & Broken) */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between px-2 pb-1">
+          <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Health</h3>
+          <button 
+            onClick={onScan}
+            title="Scan links status now"
+            className="text-brand-muted hover:text-brand-charcoal hover:bg-brand-charcoal/5 p-1 rounded-none transition-colors"
+          >
+            <ArrowClockwise className="w-3 h-3" />
+          </button>
+        </div>
+         <button
+          onClick={() => {
+            onSelectFolder(undefined);
+            onSelectTag(undefined);
+            onSelectFavorite(undefined);
+            onSelectArchived(undefined);
+            onSelectBroken(true);
+            onSelectDuplicates(undefined);
+          }}
+          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+            filterBroken === true
+              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
+              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Warning className="w-3.5 h-3.5 text-red-500" />
+            Broken Links
+          </span>
+          {healthSummary && healthSummary.broken !== undefined && (
+            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
+              {healthSummary.broken}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            onSelectFolder(undefined);
+            onSelectTag(undefined);
+            onSelectFavorite(undefined);
+            onSelectArchived(undefined);
+            onSelectBroken(undefined);
+            onSelectDuplicates(true);
+          }}
+          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
+            filterDuplicates === true
+              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
+              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Copy className="w-3.5 h-3.5" />
+            Duplicates
+          </span>
+          {healthSummary && healthSummary.duplicates !== undefined && (
+            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
+              {healthSummary.duplicates}
+            </span>
+          )}
         </button>
       </div>
 
@@ -246,12 +354,19 @@ export function SidebarFilters({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90"
-                  >
-                    Save Folder
-                  </Button>
+                  <folderForm.Subscribe
+                    selector={(state: any) => [state.isSubmitting]}
+                    children={([isSubmitting]: [boolean]) => (
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90 gap-1.5 flex items-center justify-center"
+                      >
+                        {isSubmitting && <Spinner className="w-3.5 h-3.5" />}
+                        Save Folder
+                      </Button>
+                    )}
+                  />
                 </div>
               </form>
             </DialogContent>
@@ -269,6 +384,8 @@ export function SidebarFilters({
                 onSelectFolder(id);
                 onSelectTag(undefined);
                 onSelectFavorite(undefined);
+                onSelectBroken(undefined);
+                onSelectDuplicates(undefined);
               }}
               onEditFolder={onEditFolder}
               onDeleteFolder={onDeleteFolder}
@@ -302,6 +419,8 @@ export function SidebarFilters({
                       onSelectTag(isSelected ? undefined : tag.name);
                       onSelectFolder(undefined);
                       onSelectFavorite(undefined);
+                      onSelectBroken(undefined);
+                      onSelectDuplicates(undefined);
                     }}
                     className="flex items-center gap-1 px-2 py-0.5 hover:text-brand-charcoal hover:bg-brand-charcoal/5"
                   >

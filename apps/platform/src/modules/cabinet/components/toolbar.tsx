@@ -38,8 +38,8 @@ interface ToolbarProps {
   bookmarkForm: any;
   folders: any[];
   resetBookmarkForm: () => void;
-  viewMode: 'card' | 'list' | 'moodboard';
-  onViewModeChange: (mode: 'card' | 'list' | 'moodboard') => void;
+  viewMode: 'list' | 'moodboard';
+  onViewModeChange: (mode: 'list' | 'moodboard') => void;
 }
 
 export function Toolbar({
@@ -55,13 +55,17 @@ export function Toolbar({
   onViewModeChange,
 }: ToolbarProps) {
   const [isScraping, setIsScraping] = React.useState(false);
-
   const handleScrape = async (url: string) => {
     if (!url) return;
+    let targetUrl = url.trim();
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = 'https://' + targetUrl;
+      bookmarkForm.setFieldValue('url', targetUrl);
+    }
     setIsScraping(true);
     try {
       const res = await AXIOS_INSTANCE.get('/v1/bookmarks/scrape', {
-        params: { url },
+        params: { url: targetUrl },
       });
       const data = res.data;
       if (data && data.success && data.data) {
@@ -127,20 +131,6 @@ export function Toolbar({
               </Button>
 </TooltipTrigger>
             <TooltipContent>List View</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-  <Button
-                onClick={() => onViewModeChange('card')}
-                variant={viewMode === 'card' ? 'default' : 'ghost'}
-                size="icon-xs"
-                className="size-7"
-              >
-                <Cards className="w-4 h-4" />
-              </Button>
-</TooltipTrigger>
-            <TooltipContent>Card View</TooltipContent>
           </Tooltip>
 
         </ButtonGroup>
@@ -304,12 +294,19 @@ export function Toolbar({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90"
-              >
-                Save Bookmark
-              </Button>
+              <bookmarkForm.Subscribe
+                selector={(state: any) => [state.isSubmitting]}
+                children={([isSubmitting]: [boolean]) => (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90 gap-1.5 flex items-center justify-center"
+                  >
+                    {isSubmitting && <Spinner className="w-3.5 h-3.5" />}
+                    Save Bookmark
+                  </Button>
+                )}
+              />
             </div>
           </form>
         </DialogContent>

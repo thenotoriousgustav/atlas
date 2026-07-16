@@ -154,6 +154,25 @@ function MoodboardCard({
             {bookmark.title || bookmark.url}
             <ArrowSquareOut className="inline-block ml-1 w-3 h-3 text-brand-muted opacity-0 group-hover/link:opacity-100 transition-opacity" />
           </a>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {bookmark.status === 'BROKEN' && (
+              <Badge
+                variant="outline"
+                className="text-[9px] bg-red-50 text-red-600 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
+              >
+                Broken
+              </Badge>
+            )}
+            {bookmark.status === 'REDIRECTED' && (
+              <Badge
+                variant="outline"
+                className="text-[9px] bg-blue-50 text-blue-600 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
+                title="URL updated automatically to new address"
+              >
+                Redirected
+              </Badge>
+            )}
+          </div>
           {bookmark.description && (
             <p className="text-[11px] text-brand-muted leading-relaxed mt-1">
               {bookmark.description}
@@ -278,7 +297,7 @@ interface BookmarkListProps {
   filterFavorite?: boolean;
   filterArchived?: boolean;
   folders: any[];
-  viewMode: 'card' | 'list' | 'moodboard';
+  viewMode: 'list' | 'moodboard';
   selectedBookmarkIds: string[];
   onToggleSelect: (id: string) => void;
   onSelectTag: (tagName: string) => void;
@@ -287,6 +306,9 @@ interface BookmarkListProps {
   onEditBookmark: (bookmark: any) => void;
   onDeleteBookmark: (id: string) => void;
   onDuplicateBookmark: (bookmark: any) => void;
+  isDuplicatesView?: boolean;
+  duplicateGroups?: Array<{ url: string; bookmarks: any[] }>;
+  onCleanDuplicates?: () => void;
 }
 
 export function BookmarkList({
@@ -306,6 +328,9 @@ export function BookmarkList({
   onEditBookmark,
   onDeleteBookmark,
   onDuplicateBookmark,
+  isDuplicatesView,
+  duplicateGroups,
+  onCleanDuplicates,
 }: BookmarkListProps) {
   const [columnCount, setColumnCount] = React.useState(3);
   const [mounted, setMounted] = React.useState(false);
@@ -384,10 +409,10 @@ export function BookmarkList({
       <div className="flex items-center justify-between">
         <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider flex items-center gap-2">
           <BookmarkSimple className="w-4 h-4 text-brand-charcoal" />
-          {getHeaderTitle()}
+          {isDuplicatesView ? 'Duplicate Bookmark Groups' : getHeaderTitle()}
         </h2>
         <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
-          {bookmarks.length} Items
+          {isDuplicatesView ? `${duplicateGroups?.length || 0} Groups` : `${bookmarks.length} Items`}
         </Badge>
       </div>
 
@@ -415,28 +440,214 @@ export function BookmarkList({
             <EmptyDescription>No bookmarks found matching the filters.</EmptyDescription>
           </EmptyHeader>
         </Empty>
+      ) : isDuplicatesView ? (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-brand-charcoal/5 border border-brand-border p-3.5">
+            <span className="text-xs font-mono text-brand-charcoal">
+              Found {duplicateGroups?.length || 0} duplicate URL groups.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCleanDuplicates}
+              className="font-mono text-[10px] uppercase h-8 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+            >
+              Auto-Clean Duplicates
+            </Button>
+          </div>
+          
+          {duplicateGroups?.map((group, index) => (
+            <Card key={index} className="border border-brand-border shadow-none rounded-none p-4 bg-white space-y-4">
+              <div className="border-b border-brand-border pb-2 flex items-center justify-between">
+                <span className="text-[10px] font-mono text-brand-muted truncate max-w-xl">
+                  URL: {group.url}
+                </span>
+                <Badge variant="outline" className="text-[9px] font-mono shrink-0 bg-brand-charcoal/5 border-none">
+                  {group.bookmarks.length} instances
+                </Badge>
+              </div>
+              {viewMode === 'moodboard' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {group.bookmarks.map((bookmark) => (
+                    <MoodboardCard
+                      key={bookmark.id}
+                      bookmark={bookmark}
+                      onSelectTag={onSelectTag}
+                      onToggleFavorite={onToggleFavorite}
+                      onToggleArchive={onToggleArchive}
+                      onEditBookmark={onEditBookmark}
+                      onDeleteBookmark={onDeleteBookmark}
+                      onDuplicateBookmark={onDuplicateBookmark}
+                      getHostname={getHostname}
+                      getPastelColor={getPastelColor}
+                      isSelected={selectedBookmarkIds.includes(bookmark.id)}
+                      onToggleSelect={() => onToggleSelect(bookmark.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-brand-border divide-y divide-brand-border">
+                  {group.bookmarks.map((bookmark) => {
+                    const hostname = getHostname(bookmark.url);
+                    const isSelected = selectedBookmarkIds.includes(bookmark.id);
+                    return (
+                      <div
+                        key={bookmark.id}
+                        className={`flex items-center justify-between py-2.5 px-3 bg-white transition-all hover:bg-brand-charcoal/5 gap-4 text-xs group/item ${
+                          isSelected ? 'bg-brand-charcoal/5' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`transition-opacity shrink-0 ${
+                            isSelected ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100 focus-within:opacity-100'
+                          }`}>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => onToggleSelect(bookmark.id)}
+                            />
+                          </div>
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <a
+                              href={bookmark.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-brand-charcoal hover:underline truncate shrink-0"
+                            >
+                              {bookmark.title || bookmark.url}
+                            </a>
+                            <span className="text-[10px] text-brand-muted/70 font-mono truncate hidden md:inline">
+                              ({hostname})
+                            </span>
+                          </span>
+                          {bookmark.folder && (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] bg-brand-green-bg text-brand-green-text border-none py-0.5 px-1.5 uppercase shrink-0 font-mono"
+                            >
+                              {bookmark.folder.name}
+                            </Badge>
+                          )}
+                          {bookmark.status === 'BROKEN' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] bg-red-50 text-red-600 border-none py-0.5 px-1.5 uppercase shrink-0 font-mono"
+                            >
+                              Broken
+                            </Badge>
+                          )}
+                          {bookmark.status === 'REDIRECTED' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] bg-blue-50 text-blue-600 border-none py-0.5 px-1.5 uppercase shrink-0 font-mono"
+                              title="URL updated automatically to new address"
+                            >
+                              Redirected
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 shrink-0">
+                          {/* Tags */}
+                          {bookmark.tags && bookmark.tags.length > 0 && (
+                            <div className="hidden sm:flex items-center gap-1">
+                              {bookmark.tags.slice(0, 3).map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  onClick={() => onSelectTag(tag.name)}
+                                  className="px-1.5 py-0.5 bg-brand-blue-bg text-brand-blue-text text-[9px] font-mono cursor-pointer hover:opacity-80 shrink-0"
+                                >
+                                  #{tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Date */}
+                          <span className="text-[10px] text-brand-muted/80 font-mono hidden lg:inline-block">
+                            {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-0.5">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => onToggleFavorite(bookmark)}
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="size-7"
+                                >
+                                  <Star
+                                    className={`w-3.5 h-3.5 ${
+                                      bookmark.isFavorite ? 'text-[#956400] fill-[#956400]' : 'text-brand-muted'
+                                    }`}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Favorite</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => onToggleArchive(bookmark)}
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="size-7"
+                                >
+                                  <Archive
+                                    className={`w-3.5 h-3.5 ${
+                                      bookmark.isArchived ? 'text-brand-charcoal' : 'text-brand-muted'
+                                    }`}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Archive</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => onEditBookmark(bookmark)}
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="size-7"
+                                >
+                                  <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => onDeleteBookmark(bookmark.id)}
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="size-7 hover:bg-brand-red-bg hover:text-brand-red-text"
+                                >
+                                  <Trash className="w-3.5 h-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
       ) : (
         /* Render according to Selected View Mode */
         <div>
-          {viewMode === 'card' && (
-            <div className="space-y-4">
-              {bookmarks.map((bookmark: any) => (
-                <BookmarkCard
-                  key={bookmark.id}
-                  bookmark={bookmark}
-                  onSelectTag={onSelectTag}
-                  onToggleFavorite={onToggleFavorite}
-                  onToggleArchive={onToggleArchive}
-                  onEditBookmark={onEditBookmark}
-                  onDeleteBookmark={onDeleteBookmark}
-                  onDuplicateBookmark={onDuplicateBookmark}
-                  isSelected={selectedBookmarkIds.includes(bookmark.id)}
-                  onToggleSelect={() => onToggleSelect(bookmark.id)}
-                />
-              ))}
-            </div>
-          )}
-
           {viewMode === 'list' && (
             <div className="border border-brand-border divide-y divide-brand-border">
               {bookmarks.map((bookmark: any) => {
@@ -477,6 +688,23 @@ export function BookmarkList({
                           className="text-[9px] bg-brand-green-bg text-brand-green-text border-none py-0.5 px-1.5 uppercase shrink-0 font-mono"
                         >
                           {bookmark.folder.name}
+                        </Badge>
+                      )}
+                      {bookmark.status === 'BROKEN' && (
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] bg-red-50 text-red-600 border-none py-0.5 px-1.5 uppercase shrink-0 font-mono"
+                        >
+                          Broken
+                        </Badge>
+                      )}
+                      {bookmark.status === 'REDIRECTED' && (
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] bg-blue-50 text-blue-600 border-none shrink-0 font-mono py-0.5 px-1.5 uppercase shrink-0 font-mono"
+                          title="URL updated automatically to new address"
+                        >
+                          Redirected
                         </Badge>
                       )}
                     </div>

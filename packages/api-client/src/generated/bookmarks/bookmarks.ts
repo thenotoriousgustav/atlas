@@ -461,6 +461,314 @@ export const useBookmarksControllerImport = <TError = unknown,
       return useMutation(getBookmarksControllerImportMutationOptions(options), queryClient);
     }
     /**
+ * @summary Get bookmark health status count summary
+ */
+export const bookmarksControllerGetHealthSummary = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/health`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerGetHealthSummaryQueryKey = () => {
+    return [
+    `/v1/bookmarks/health`
+    ] as const;
+    }
+
+
+export const getBookmarksControllerGetHealthSummaryQueryOptions = <TData = Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBookmarksControllerGetHealthSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>> = ({ signal }) => bookmarksControllerGetHealthSummary(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BookmarksControllerGetHealthSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>>
+export type BookmarksControllerGetHealthSummaryQueryError = unknown
+
+
+export function useBookmarksControllerGetHealthSummary<TData = Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerGetHealthSummary<TData = Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerGetHealthSummary<TData = Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get bookmark health status count summary
+ */
+
+export function useBookmarksControllerGetHealthSummary<TData = Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetHealthSummary>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBookmarksControllerGetHealthSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Get groups of duplicate bookmarks
+ */
+export const bookmarksControllerGetDuplicates = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/duplicates`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerGetDuplicatesQueryKey = () => {
+    return [
+    `/v1/bookmarks/duplicates`
+    ] as const;
+    }
+
+
+export const getBookmarksControllerGetDuplicatesQueryOptions = <TData = Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBookmarksControllerGetDuplicatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>> = ({ signal }) => bookmarksControllerGetDuplicates(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BookmarksControllerGetDuplicatesQueryResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>>
+export type BookmarksControllerGetDuplicatesQueryError = unknown
+
+
+export function useBookmarksControllerGetDuplicates<TData = Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerGetDuplicates<TData = Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerGetDuplicates<TData = Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get groups of duplicate bookmarks
+ */
+
+export function useBookmarksControllerGetDuplicates<TData = Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerGetDuplicates>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBookmarksControllerGetDuplicatesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Auto-clean duplicate bookmarks
+ */
+export const bookmarksControllerCleanDuplicates = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/duplicates/clean`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerCleanDuplicatesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerCleanDuplicates>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerCleanDuplicates>>, TError,void, TContext> => {
+
+const mutationKey = ['bookmarksControllerCleanDuplicates'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarksControllerCleanDuplicates>>, void> = () => {
+
+
+          return  bookmarksControllerCleanDuplicates(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarksControllerCleanDuplicatesMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerCleanDuplicates>>>
+
+    export type BookmarksControllerCleanDuplicatesMutationError = unknown
+
+    /**
+ * @summary Auto-clean duplicate bookmarks
+ */
+export const useBookmarksControllerCleanDuplicates = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerCleanDuplicates>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarksControllerCleanDuplicates>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBookmarksControllerCleanDuplicatesMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Trigger manual scan of bookmark links status
+ */
+export const bookmarksControllerTriggerHealthCheck = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/health/check`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerTriggerHealthCheckMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerTriggerHealthCheck>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerTriggerHealthCheck>>, TError,void, TContext> => {
+
+const mutationKey = ['bookmarksControllerTriggerHealthCheck'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarksControllerTriggerHealthCheck>>, void> = () => {
+
+
+          return  bookmarksControllerTriggerHealthCheck(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarksControllerTriggerHealthCheckMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerTriggerHealthCheck>>>
+
+    export type BookmarksControllerTriggerHealthCheckMutationError = unknown
+
+    /**
+ * @summary Trigger manual scan of bookmark links status
+ */
+export const useBookmarksControllerTriggerHealthCheck = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerTriggerHealthCheck>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarksControllerTriggerHealthCheck>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBookmarksControllerTriggerHealthCheckMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Get bookmark details by ID
  */
 export const bookmarksControllerFindOne = (

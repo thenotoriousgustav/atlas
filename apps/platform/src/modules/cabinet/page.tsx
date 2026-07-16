@@ -18,6 +18,10 @@ import {
   useTagsControllerFindAll,
   useTagsControllerRemove,
   useBookmarksControllerImport,
+  useBookmarksControllerGetHealthSummary,
+  useBookmarksControllerGetDuplicates,
+  useBookmarksControllerCleanDuplicates,
+  useBookmarksControllerTriggerHealthCheck,
   AXIOS_INSTANCE,
 } from '@atlas/api-client';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -60,20 +64,30 @@ export function CabinetDashboard() {
   const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchDebounced, setSearchDebounced] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'card' | 'list' | 'moodboard'>('card');
+  const [viewMode, setViewMode] = useState<'list' | 'moodboard'>('list');
   const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([]);
+  const [filterBroken, setFilterBroken] = useState<boolean | undefined>(undefined);
+  const [filterDuplicates, setFilterDuplicates] = useState<boolean | undefined>(undefined);
 
   // Load viewMode from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('cabinet_view_mode');
-    if (saved === 'card' || saved === 'list' || saved === 'moodboard') {
+    if (saved === 'list' || saved === 'moodboard') {
       setViewMode(saved as any);
     }
   }, []);
 
-  const handleViewModeChange = (mode: 'card' | 'list' | 'moodboard') => {
+  const handleViewModeChange = (mode: 'list' | 'moodboard') => {
     setViewMode(mode);
     localStorage.setItem('cabinet_view_mode', mode);
+  };
+
+  const invalidateAllQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+    queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks/health'] });
+    queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks/duplicates'] });
+    queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
+    queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
   };
 
   // Modals state
@@ -110,7 +124,7 @@ export function CabinetDashboard() {
             },
           });
         }
-        queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
+        invalidateAllQueries();
         setIsFolderModalOpen(false);
         resetFolderForm();
       } catch {
@@ -133,12 +147,17 @@ export function CabinetDashboard() {
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
 
+      let targetUrl = value.url.trim();
+      if (!/^https?:\/\//i.test(targetUrl)) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
       try {
         if (bookmarkToEdit) {
           await updateBookmarkMutation.mutateAsync({
             id: bookmarkToEdit.id,
             data: {
-              url: value.url,
+              url: targetUrl,
               title: value.title || undefined,
               description: value.description || undefined,
               folderId: value.folderId || undefined,
@@ -148,7 +167,7 @@ export function CabinetDashboard() {
         } else {
           await createBookmarkMutation.mutateAsync({
             data: {
-              url: value.url,
+              url: targetUrl,
               title: value.title || undefined,
               description: value.description || undefined,
               folderId: value.folderId || undefined,
@@ -156,8 +175,7 @@ export function CabinetDashboard() {
             },
           });
         }
-        queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-        queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+        invalidateAllQueries();
         setIsBookmarkModalOpen(false);
         resetBookmarkForm();
       } catch {
@@ -205,7 +223,17 @@ export function CabinetDashboard() {
       search: searchDebounced || undefined,
     } as any
   );
-  const bookmarks = (bookmarksData as any)?.data || [];
+  const bookmarks = (bookmarksData as any)?.data || bookmarksData || [];
+  const filteredBookmarks = bookmarks.filter((b: any) => filterBroken ? b.status === 'BROKEN' : true);
+
+  // Health and Duplicates Queries
+  const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary();
+  const healthSummary = (healthSummaryData as any)?.data || healthSummaryData;
+
+  const { data: duplicatesData, refetch: refetchDuplicates } = useBookmarksControllerGetDuplicates({
+    query: { enabled: !!filterDuplicates },
+  });
+  const duplicateGroups = (duplicatesData as any)?.data || duplicatesData || [];
 
   // Mutations
   const createFolderMutation = useFoldersControllerCreate();
@@ -217,6 +245,9 @@ export function CabinetDashboard() {
   const removeBookmarkMutation = useBookmarksControllerRemove();
   const removeTagMutation = useTagsControllerRemove();
   const importBookmarksMutation = useBookmarksControllerImport();
+
+  const scanHealthMutation = useBookmarksControllerTriggerHealthCheck();
+  const cleanDuplicatesMutation = useBookmarksControllerCleanDuplicates();
 
   // Sync mount status
   useEffect(() => {
@@ -268,9 +299,7 @@ export function CabinetDashboard() {
     if (isConfirmed) {
       try {
         await removeFolderMutation.mutateAsync({ id });
-        queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
-        queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-        queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+        invalidateAllQueries();
         if (selectedFolderId === id) {
           setSelectedFolderId(undefined);
         }
@@ -285,6 +314,32 @@ export function CabinetDashboard() {
     folderForm.reset();
     folderForm.setFieldValue('parentId', parentId);
     setIsFolderModalOpen(true);
+  };
+
+  const handleScan = async () => {
+    try {
+      await scanHealthMutation.mutateAsync();
+      invalidateAllQueries();
+      alert('Link status check started in the background!');
+    } catch {
+      alert('Failed to start link status scan.');
+    }
+  };
+
+  const handleCleanDuplicates = async () => {
+    const confirmed = await confirm({
+      title: 'Clean Duplicate Bookmarks?',
+      description: 'This will automatically delete duplicate bookmark copies and keep the single oldest instance per URL.',
+    });
+    if (confirmed) {
+      try {
+        await cleanDuplicatesMutation.mutateAsync();
+        invalidateAllQueries();
+        alert('Duplicate bookmarks successfully cleaned!');
+      } catch {
+        alert('Failed to clean duplicate bookmarks.');
+      }
+    }
   };
 
   const resetFolderForm = () => {
@@ -312,8 +367,7 @@ export function CabinetDashboard() {
     if (isConfirmed) {
       try {
         await removeBookmarkMutation.mutateAsync({ id });
-        queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-        queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+        invalidateAllQueries();
       } catch {
         alert('Failed to delete bookmark');
       }
@@ -323,8 +377,7 @@ export function CabinetDashboard() {
   const handleDeleteTag = async (id: string) => {
     try {
       await removeTagMutation.mutateAsync({ id });
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      invalidateAllQueries();
       const tagToDelete = tags.find((t: any) => t.id === id);
       if (tagToDelete && selectedTag === tagToDelete.name) {
         setSelectedTag(undefined);
@@ -342,7 +395,7 @@ export function CabinetDashboard() {
           isFavorite: !bookmark.isFavorite,
         },
       });
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      invalidateAllQueries();
     } catch {
       alert('Failed to update favorite status');
     }
@@ -356,8 +409,7 @@ export function CabinetDashboard() {
           isArchived: !bookmark.isArchived,
         },
       });
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      invalidateAllQueries();
     } catch {
       alert('Failed to update archive status');
     }
@@ -374,8 +426,7 @@ export function CabinetDashboard() {
           tags: bookmark.tags?.map((t: any) => t.name) || [],
         },
       });
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      invalidateAllQueries();
     } catch {
       alert('Failed to duplicate bookmark');
     }
@@ -408,8 +459,7 @@ export function CabinetDashboard() {
       await Promise.all(
         selectedBookmarkIds.map((id) => removeBookmarkMutation.mutateAsync({ id }))
       );
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      invalidateAllQueries();
       setSelectedBookmarkIds([]);
     } catch {
       alert('Failed to delete some bookmarks');
@@ -426,8 +476,7 @@ export function CabinetDashboard() {
           })
         )
       );
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      invalidateAllQueries();
       setSelectedBookmarkIds([]);
     } catch {
       alert('Failed to archive some bookmarks');
@@ -444,7 +493,7 @@ export function CabinetDashboard() {
           })
         )
       );
-      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      invalidateAllQueries();
       setSelectedBookmarkIds([]);
     } catch {
       alert('Failed to move some bookmarks');
@@ -480,9 +529,7 @@ export function CabinetDashboard() {
         await importBookmarksMutation.mutateAsync({
           data: { htmlContent: content },
         });
-        queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-        queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
-        queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+        invalidateAllQueries();
         alert('Bookmarks imported successfully!');
       } catch {
         alert('Failed to import bookmarks. Ensure it is a valid Netscape Bookmark HTML file.');
@@ -531,6 +578,30 @@ export function CabinetDashboard() {
             onEditFolder={handleEditFolder}
             onDeleteFolder={handleDeleteFolder}
             onCreateSubfolder={handleCreateSubfolder}
+            filterBroken={filterBroken}
+            onSelectBroken={(val) => {
+              setFilterBroken(val);
+              if (val) {
+                setSelectedFolderId(undefined);
+                setSelectedTag(undefined);
+                setFilterFavorite(undefined);
+                setFilterArchived(undefined);
+                setFilterDuplicates(undefined);
+              }
+            }}
+            filterDuplicates={filterDuplicates}
+            onSelectDuplicates={(val) => {
+              setFilterDuplicates(val);
+              if (val) {
+                setSelectedFolderId(undefined);
+                setSelectedTag(undefined);
+                setFilterFavorite(undefined);
+                setFilterArchived(undefined);
+                setFilterBroken(undefined);
+              }
+            }}
+            healthSummary={healthSummary}
+            onScan={handleScan}
             onExport={handleExport}
             onImport={handleImport}
             resetFolderForm={resetFolderForm}
@@ -553,9 +624,9 @@ export function CabinetDashboard() {
               onViewModeChange={handleViewModeChange}
             />
 
-            {/* Bookmarks Grid / List */}
+             {/* Bookmarks Grid / List */}
             <BookmarkList
-              bookmarks={bookmarks}
+              bookmarks={filteredBookmarks}
               isBookmarksLoading={isBookmarksLoading}
               selectedFolderId={selectedFolderId}
               selectedTag={selectedTag}
@@ -569,12 +640,17 @@ export function CabinetDashboard() {
                 setSelectedTag(tag);
                 setSelectedFolderId(undefined);
                 setFilterFavorite(undefined);
+                setFilterBroken(undefined);
+                setFilterDuplicates(undefined);
               }}
               onToggleFavorite={toggleFavorite}
               onToggleArchive={toggleArchive}
               onEditBookmark={handleEditBookmark}
               onDeleteBookmark={handleDeleteBookmark}
               onDuplicateBookmark={handleDuplicateBookmark}
+              isDuplicatesView={filterDuplicates}
+              duplicateGroups={duplicateGroups}
+              onCleanDuplicates={handleCleanDuplicates}
             />
 
           </section>

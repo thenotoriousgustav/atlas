@@ -92,6 +92,30 @@ export class BookmarksController {
     return this.bookmarksService.importBookmarks(user.id, importBookmarksDto.htmlContent);
   }
 
+  @Get('health')
+  @ApiOperation({ summary: 'Get bookmark health status count summary' })
+  async getHealthSummary(@CurrentUser() user: any) {
+    return this.bookmarksService.getHealthSummary(user.id);
+  }
+
+  @Get('duplicates')
+  @ApiOperation({ summary: 'Get groups of duplicate bookmarks' })
+  async getDuplicates(@CurrentUser() user: any) {
+    return this.bookmarksService.getDuplicates(user.id);
+  }
+
+  @Delete('duplicates/clean')
+  @ApiOperation({ summary: 'Auto-clean duplicate bookmarks' })
+  async cleanDuplicates(@CurrentUser() user: any) {
+    return this.bookmarksService.cleanDuplicates(user.id);
+  }
+
+  @Post('health/check')
+  @ApiOperation({ summary: 'Trigger manual scan of bookmark links status' })
+  async triggerHealthCheck(@CurrentUser() user: any) {
+    return this.bookmarksService.triggerHealthCheck(user.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get bookmark details by ID' })
   async findOne(@CurrentUser() user: any, @Param('id') id: string) {
