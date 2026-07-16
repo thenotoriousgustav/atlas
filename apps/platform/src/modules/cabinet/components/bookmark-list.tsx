@@ -21,6 +21,7 @@ import {
   Copy,
 } from '@phosphor-icons/react';
 import { BookmarkCard } from './bookmark-card';
+import { Checkbox } from '@atlas/ui/components/checkbox';
 
 interface MoodboardCardProps {
   bookmark: any;
@@ -32,6 +33,8 @@ interface MoodboardCardProps {
   onDuplicateBookmark: (bookmark: any) => void;
   getHostname: (url: string) => string;
   getPastelColor: (str: string) => { bg: string; text: string };
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }
 
 function MoodboardCard({
@@ -44,6 +47,8 @@ function MoodboardCard({
   onDuplicateBookmark,
   getHostname,
   getPastelColor,
+  isSelected,
+  onToggleSelect,
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url);
   const color = getPastelColor(hostname);
@@ -78,9 +83,18 @@ function MoodboardCard({
   };
 
   return (
-    <Card className="border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-[#111111]/30 transition-all h-auto w-full group shadow-none [--card-spacing:0px]">
+    <Card className={`border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-[#111111]/30 transition-all h-auto w-full group/card shadow-none [--card-spacing:0px] ${isSelected ? 'border-[#111111]' : ''}`}>
       {/* Visual Top Header - Screenshot / Fallback */}
       <div className="relative w-full bg-[#FBFBFA] border-b border-brand-border overflow-hidden aspect-[16/10] shrink-0">
+        {/* Checkbox Overlay */}
+        <div className={`absolute top-2 left-2 z-10 bg-white p-1 border border-brand-border shadow-sm transition-opacity ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100 focus-within:opacity-100'
+        }`}>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={onToggleSelect}
+          />
+        </div>
         {imageStatus === 'loading' && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 animate-pulse">
             <Clock className="w-5 h-5 text-gray-400 animate-spin" />
@@ -265,6 +279,8 @@ interface BookmarkListProps {
   filterArchived?: boolean;
   folders: any[];
   viewMode: 'card' | 'list' | 'moodboard';
+  selectedBookmarkIds: string[];
+  onToggleSelect: (id: string) => void;
   onSelectTag: (tagName: string) => void;
   onToggleFavorite: (bookmark: any) => void;
   onToggleArchive: (bookmark: any) => void;
@@ -282,6 +298,8 @@ export function BookmarkList({
   filterArchived,
   folders,
   viewMode,
+  selectedBookmarkIds,
+  onToggleSelect,
   onSelectTag,
   onToggleFavorite,
   onToggleArchive,
@@ -412,6 +430,8 @@ export function BookmarkList({
                   onEditBookmark={onEditBookmark}
                   onDeleteBookmark={onDeleteBookmark}
                   onDuplicateBookmark={onDuplicateBookmark}
+                  isSelected={selectedBookmarkIds.includes(bookmark.id)}
+                  onToggleSelect={() => onToggleSelect(bookmark.id)}
                 />
               ))}
             </div>
@@ -421,12 +441,23 @@ export function BookmarkList({
             <div className="border border-brand-border divide-y divide-brand-border">
               {bookmarks.map((bookmark: any) => {
                 const hostname = getHostname(bookmark.url);
+                const isSelected = selectedBookmarkIds.includes(bookmark.id);
                 return (
                   <div
                     key={bookmark.id}
-                    className="flex items-center justify-between py-2.5 px-3 bg-white transition-all hover:bg-[#111111]/5 gap-4 text-xs"
+                    className={`flex items-center justify-between py-2.5 px-3 bg-white transition-all hover:bg-[#111111]/5 gap-4 text-xs group/item ${
+                      isSelected ? 'bg-[#111111]/5' : ''
+                    }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`transition-opacity shrink-0 ${
+                        isSelected ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100 focus-within:opacity-100'
+                      }`}>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => onToggleSelect(bookmark.id)}
+                        />
+                      </div>
                       <span className="flex items-center gap-1.5 min-w-0">
                         <a
                           href={bookmark.url}
@@ -575,6 +606,8 @@ export function BookmarkList({
                       onDuplicateBookmark={onDuplicateBookmark}
                       getHostname={getHostname}
                       getPastelColor={getPastelColor}
+                      isSelected={selectedBookmarkIds.includes(bookmark.id)}
+                      onToggleSelect={() => onToggleSelect(bookmark.id)}
                     />
                   ))}
                 </div>
@@ -598,6 +631,8 @@ export function BookmarkList({
                             onDuplicateBookmark={onDuplicateBookmark}
                             getHostname={getHostname}
                             getPastelColor={getPastelColor}
+                            isSelected={selectedBookmarkIds.includes(bookmark.id)}
+                            onToggleSelect={() => onToggleSelect(bookmark.id)}
                           />
                         ))}
                       </div>

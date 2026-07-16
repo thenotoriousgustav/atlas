@@ -9,6 +9,7 @@
 export * from './authControllerCheckPasskeyParams.js';
 export * from './authControllerGenerateLoginOptionsParams.js';
 export * from './bookmarksControllerFindAllParams.js';
+export * from './bookmarksControllerScrapeParams.js';
 export * from './createBookmarkDto.js';
 export * from './createCollectionDto.js';
 export * from './createDocumentDto.js';

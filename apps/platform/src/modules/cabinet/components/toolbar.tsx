@@ -23,7 +23,9 @@ import {
   SelectContent,
   SelectItem,
 } from '@atlas/ui/components/select';
-import { MagnifyingGlass, Plus, SquaresFour, List, Cards } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Sparkle } from '@phosphor-icons/react';
+import { AXIOS_INSTANCE } from '@atlas/api-client';
+import { Spinner } from '@atlas/ui/components/spinner';
 
 interface ToolbarProps {
   searchQuery: string;
@@ -50,6 +52,35 @@ export function Toolbar({
   viewMode,
   onViewModeChange,
 }: ToolbarProps) {
+  const [isScraping, setIsScraping] = React.useState(false);
+
+  const handleScrape = async (url: string) => {
+    if (!url) return;
+    setIsScraping(true);
+    try {
+      const res = await AXIOS_INSTANCE.get('/v1/bookmarks/scrape', {
+        params: { url },
+      });
+      const data = res.data;
+      if (data && data.success && data.data) {
+        const metadata = data.data;
+        if (metadata.title) {
+          bookmarkForm.setFieldValue('title', metadata.title);
+        }
+        if (metadata.description) {
+          bookmarkForm.setFieldValue('description', metadata.description);
+        }
+        if (metadata.tags && metadata.tags.length > 0) {
+          bookmarkForm.setFieldValue('tags', metadata.tags.join(', '));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to scrape URL:', err);
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-3.5 rounded-none border border-brand-border shadow-sm">
       <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -142,24 +173,46 @@ export function Toolbar({
             className="space-y-4"
           >
             <FieldGroup>
-              <bookmarkForm.Field
-                name="url"
-                children={(field: any) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>URL</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="https://example.com"
-                      type="url"
-                      required
-                    />
-                  </Field>
-                )}
-              />
+               <bookmarkForm.Field
+                 name="url"
+                 children={(field: any) => (
+                   <Field>
+                     <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+                     <div className="flex gap-2">
+                       <Input
+                         id={field.name}
+                         name={field.name}
+                         value={field.state.value}
+                         onBlur={field.handleBlur}
+                         onChange={(e) => field.handleChange(e.target.value)}
+                         placeholder="https://example.com"
+                         type="url"
+                         required
+                         className="flex-1"
+                       />
+                       <Button
+                         type="button"
+                         variant="outline"
+                         disabled={!field.state.value || isScraping}
+                         onClick={() => handleScrape(field.state.value)}
+                         className="shrink-0 h-8 px-3 font-mono text-[10px] uppercase font-semibold flex items-center gap-1.5 border border-brand-border hover:bg-[#FBFBFA]"
+                       >
+                         {isScraping ? (
+                           <>
+                             <Spinner className="w-3.5 h-3.5" />
+                             Scraping...
+                           </>
+                         ) : (
+                           <>
+                             <Sparkle className="w-3.5 h-3.5" />
+                             Auto Fill
+                           </>
+                         )}
+                       </Button>
+                     </div>
+                   </Field>
+                 )}
+               />
 
               <bookmarkForm.Field
                 name="title"

@@ -26,6 +26,7 @@ import type {
 
 import type {
   BookmarksControllerFindAllParams,
+  BookmarksControllerScrapeParams,
   CreateBookmarkDto,
   ImportBookmarksDto,
   UpdateBookmarkDto
@@ -52,6 +53,99 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+/**
+ * @summary Scrape metadata and generate tags for a URL
+ */
+export const bookmarksControllerScrape = (
+    params: BookmarksControllerScrapeParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/scrape`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerScrapeQueryKey = (params?: BookmarksControllerScrapeParams,) => {
+    return [
+    `/v1/bookmarks/scrape`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getBookmarksControllerScrapeQueryOptions = <TData = Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError = unknown>(params: BookmarksControllerScrapeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBookmarksControllerScrapeQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof bookmarksControllerScrape>>> = ({ signal }) => bookmarksControllerScrape(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BookmarksControllerScrapeQueryResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerScrape>>>
+export type BookmarksControllerScrapeQueryError = unknown
+
+
+export function useBookmarksControllerScrape<TData = Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError = unknown>(
+ params: BookmarksControllerScrapeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerScrape>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerScrape>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerScrape<TData = Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError = unknown>(
+ params: BookmarksControllerScrapeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerScrape>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerScrape>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerScrape<TData = Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError = unknown>(
+ params: BookmarksControllerScrapeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Scrape metadata and generate tags for a URL
+ */
+
+export function useBookmarksControllerScrape<TData = Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError = unknown>(
+ params: BookmarksControllerScrapeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerScrape>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBookmarksControllerScrapeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 /**
  * @summary Create a new bookmark (extracts title/metadata if omitted)

@@ -348,6 +348,35 @@
         ]
       }
     },
+    "/v1/bookmarks/scrape": {
+      "get": {
+        "operationId": "BookmarksController_scrape",
+        "parameters": [
+          {
+            "name": "url",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Scrape metadata and generate tags for a URL",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks": {
       "post": {
         "operationId": "BookmarksController_create",

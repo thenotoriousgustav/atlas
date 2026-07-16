@@ -9,6 +9,7 @@ allowBuilds:
   argon2: true
   esbuild: true
   prisma: true
+  protobufjs: true
   sharp: true
   unrs-resolver: true
 minimumReleaseAgeExclude:

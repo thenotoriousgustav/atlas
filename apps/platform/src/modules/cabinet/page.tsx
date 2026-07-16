@@ -24,6 +24,22 @@ import { WorkspaceHeader } from './components/workspace-header';
 import { SidebarFilters } from './components/sidebar-filters';
 import { Toolbar } from './components/toolbar';
 import { BookmarkList } from './components/bookmark-list';
+import { Archive, Trash } from '@phosphor-icons/react';
+import { Button } from '@atlas/ui/components/button';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@atlas/ui/components/select';
+import {
+  ActionBar,
+  ActionBarSelection,
+  ActionBarGroup,
+  ActionBarItem,
+  ActionBarSeparator,
+} from '@atlas/ui/components/action-bar';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +58,7 @@ export function CabinetDashboard() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchDebounced, setSearchDebounced] = useState<string>('');
   const [viewMode, setViewMode] = useState<'card' | 'list' | 'moodboard'>('card');
+  const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([]);
 
   // Load viewMode from localStorage on mount
   useEffect(() => {
@@ -332,6 +349,70 @@ export function CabinetDashboard() {
     bookmarkForm.reset();
   };
 
+  const handleToggleSelectBookmark = (id: string) => {
+    setSelectedBookmarkIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleClearSelection = () => {
+    setSelectedBookmarkIds([]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (
+      !confirm(
+        `Are you sure you want to delete ${selectedBookmarkIds.length} selected bookmarks?`
+      )
+    )
+      return;
+    try {
+      await Promise.all(
+        selectedBookmarkIds.map((id) => removeBookmarkMutation.mutateAsync({ id }))
+      );
+      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      setSelectedBookmarkIds([]);
+    } catch {
+      alert('Failed to delete some bookmarks');
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    try {
+      await Promise.all(
+        selectedBookmarkIds.map((id) =>
+          updateBookmarkMutation.mutateAsync({
+            id,
+            data: { isArchived: true },
+          })
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      setSelectedBookmarkIds([]);
+    } catch {
+      alert('Failed to archive some bookmarks');
+    }
+  };
+
+  const handleBulkMove = async (folderId: string | null) => {
+    try {
+      await Promise.all(
+        selectedBookmarkIds.map((id) =>
+          updateBookmarkMutation.mutateAsync({
+            id,
+            data: { folderId: folderId || undefined },
+          })
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      setSelectedBookmarkIds([]);
+    } catch {
+      alert('Failed to move some bookmarks');
+    }
+  };
+
   // Import / Export handlers
   const handleExport = async () => {
     try {
@@ -442,6 +523,8 @@ export function CabinetDashboard() {
               filterArchived={filterArchived}
               folders={folders}
               viewMode={viewMode}
+              selectedBookmarkIds={selectedBookmarkIds}
+              onToggleSelect={handleToggleSelectBookmark}
               onSelectTag={(tag) => {
                 setSelectedTag(tag);
                 setSelectedFolderId(undefined);
@@ -459,6 +542,61 @@ export function CabinetDashboard() {
         </main>
       </div>
 
+      <ActionBar
+        open={selectedBookmarkIds.length > 0}
+        align="center"
+        className="rounded-none border border-brand-border bg-white shadow-md p-1.5 gap-1.5"
+      >
+        <ActionBarSelection className="border-none text-[10px] font-mono text-[#787774] uppercase tracking-wider px-2 py-0 bg-transparent">
+          {selectedBookmarkIds.length} Selected
+        </ActionBarSelection>
+        <ActionBarSeparator />
+        <ActionBarGroup className="gap-1.5">
+          <Select
+            value=""
+            onValueChange={(val) => handleBulkMove(val || null)}
+          >
+            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] tracking-wider uppercase font-bold text-[#111111] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#111111]/30 rounded-none w-40 px-2.5">
+              <SelectValue placeholder="MOVE TO..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">None (Root)</SelectItem>
+              {folders.map((f: any) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <ActionBarItem
+            onClick={handleBulkArchive}
+            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-white text-[#111111] border border-brand-border hover:bg-[#FBFBFA] px-3 rounded-none"
+          >
+            <Archive className="w-3.5 h-3.5 mr-1" />
+            Archive
+          </ActionBarItem>
+
+          <ActionBarItem
+            onClick={handleBulkDelete}
+            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-brand-red-bg text-brand-red-text border border-brand-red-text/20 hover:bg-[#fff0f2] px-3 rounded-none"
+          >
+            <Trash className="w-3.5 h-3.5 mr-1" />
+            Delete
+          </ActionBarItem>
+
+          <ActionBarSeparator />
+          
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={handleClearSelection}
+            className="h-8 font-mono text-[10px] uppercase font-bold text-[#787774] hover:text-[#111111] px-2.5 rounded-none"
+          >
+            Cancel
+          </Button>
+        </ActionBarGroup>
+      </ActionBar>
     </div>
   );
 }

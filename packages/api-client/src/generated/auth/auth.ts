@@ -53,7 +53,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 /**
- * @summary Authenticate user and set cookies
+ * @summary Authenticate user and check for 2FA requirements
  */
 export const authControllerLogin = (
     loginDto: LoginDto,
@@ -104,7 +104,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type AuthControllerLoginMutationError = void
 
     /**
- * @summary Authenticate user and set cookies
+ * @summary Authenticate user and check for 2FA requirements
  */
 export const useAuthControllerLogin = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerLogin>>, TError,{data: LoginDto}, TContext>, request?: SecondParameter<typeof customInstance>}

@@ -50,6 +50,24 @@ export class MetadataService {
     }
   }
 
+  async generateTags(title: string, description?: string): Promise<string[]> {
+    // Local Tag Extraction
+    const stopWords = new Set([
+      'the', 'and', 'or', 'a', 'an', 'to', 'in', 'of', 'for', 'with', 'is', 'on', 'that', 'this',
+      'these', 'those', 'it', 'its', 'code', 'web', 'site', 'home', 'page', 'app', 'application',
+      'welcome', 'official', 'online', 'free', 'best', 'new', 'how', 'why', 'what', 'who', 'where'
+    ]);
+    const words = `${title} ${description || ''}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .map(w => w.trim())
+      .filter(w => w.length > 3 && !stopWords.has(w));
+
+    const uniqueWords = Array.from(new Set(words)).slice(0, 4);
+    return uniqueWords;
+  }
+
   private getDomain(url: string): string {
     try {
       const domain = new URL(url).hostname;

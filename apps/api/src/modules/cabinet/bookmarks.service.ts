@@ -285,4 +285,13 @@ export class BookmarksService {
 
     return { imported: importCount };
   }
+
+  async scrapeUrl(url: string) {
+    const extracted = await this.metadataService.extract(url);
+    const tags = await this.metadataService.generateTags(extracted.title, extracted.description);
+    return {
+      ...extracted,
+      tags,
+    };
+  }
 }

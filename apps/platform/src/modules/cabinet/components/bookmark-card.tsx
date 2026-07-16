@@ -3,6 +3,7 @@ import { Card } from '@atlas/ui/components/card';
 import { Badge } from '@atlas/ui/components/badge';
 import { Button } from '@atlas/ui/components/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
+import { Checkbox } from '@atlas/ui/components/checkbox';
 import {
   ArrowSquareOut,
   Clock,
@@ -21,6 +22,8 @@ interface BookmarkCardProps {
   onEditBookmark: (bookmark: any) => void;
   onDeleteBookmark: (id: string) => void;
   onDuplicateBookmark: (bookmark: any) => void;
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }
 
 export function BookmarkCard({
@@ -31,66 +34,80 @@ export function BookmarkCard({
   onEditBookmark,
   onDeleteBookmark,
   onDuplicateBookmark,
+  isSelected,
+  onToggleSelect,
 }: BookmarkCardProps) {
   return (
-    <Card className="border-brand-border bg-white rounded-none p-5 transition-all hover:border-[#111111]/30 flex flex-col sm:flex-row gap-4 justify-between items-start">
-      <div className="space-y-2.5 flex-1 min-w-0">
-        {/* URL / Title / Category */}
-        <div className="space-y-1">
-          <div className="flex items-start gap-2.5 flex-wrap">
-            <a
-              href={bookmark.url}
-              target="_blank"
-              rel="noreferrer"
-              className="group flex items-center gap-1 text-sm font-semibold text-[#111111] hover:underline break-all"
-            >
-              {bookmark.title || bookmark.url}
-              <ArrowSquareOut className="w-3.5 h-3.5 text-[#787774] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-            </a>
-            {bookmark.folder && (
-              <Badge
-                variant="outline"
-                className="text-[9px] bg-brand-green-bg text-brand-green-text border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
-              >
-                {bookmark.folder.name}
-              </Badge>
-            )}
-          </div>
-          <p className="text-[10px] text-[#787774]/70 font-mono truncate">{bookmark.url}</p>
+    <Card className={`border-brand-border bg-white rounded-none p-5 transition-all hover:border-[#111111]/30 flex flex-col sm:flex-row gap-4 justify-between items-start group/card ${isSelected ? 'border-[#111111]' : ''}`}>
+      <div className="flex items-start gap-3 flex-1 min-w-0 w-full">
+        {/* Selection Checkbox */}
+        <div className={`pt-1 transition-opacity shrink-0 ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100 focus-within:opacity-100'
+        }`}>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={onToggleSelect}
+          />
         </div>
 
-        {/* Description */}
-        {bookmark.description && (
-          <p className="text-xs text-[#787774] leading-relaxed max-w-[65ch]">
-            {bookmark.description}
-          </p>
-        )}
-
-        {/* Tags */}
-        {bookmark.tags && bookmark.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 pt-1">
-            {bookmark.tags.map((tag: any) => (
-              <span
-                key={tag.id}
-                onClick={() => onSelectTag(tag.name)}
-                className="px-1.5 py-0.5 bg-brand-blue-bg text-brand-blue-text rounded-none text-[9px] font-mono border-none cursor-pointer hover:opacity-80 transition-opacity"
+        <div className="space-y-2.5 flex-1 min-w-0">
+          {/* URL / Title / Category */}
+          <div className="space-y-1">
+            <div className="flex items-start gap-2.5 flex-wrap">
+              <a
+                href={bookmark.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-1 text-sm font-semibold text-[#111111] hover:underline break-all"
               >
-                #{tag.name}
-              </span>
-            ))}
+                {bookmark.title || bookmark.url}
+                <ArrowSquareOut className="w-3.5 h-3.5 text-[#787774] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </a>
+              {bookmark.folder && (
+                <Badge
+                  variant="outline"
+                  className="text-[9px] bg-brand-green-bg text-brand-green-text border-none shrink-0 font-mono py-0.5 px-1.5 uppercase"
+                >
+                  {bookmark.folder.name}
+                </Badge>
+              )}
+            </div>
+            <p className="text-[10px] text-[#787774]/70 font-mono truncate">{bookmark.url}</p>
           </div>
-        )}
 
-        {/* Footer Info */}
-        <div className="flex items-center gap-3 pt-1 text-[9px] text-[#787774]/80 font-mono">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </span>
+          {/* Description */}
+          {bookmark.description && (
+            <p className="text-xs text-[#787774] leading-relaxed max-w-[65ch]">
+              {bookmark.description}
+            </p>
+          )}
+
+          {/* Tags */}
+          {bookmark.tags && bookmark.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {bookmark.tags.map((tag: any) => (
+                <span
+                  key={tag.id}
+                  onClick={() => onSelectTag(tag.name)}
+                  className="px-1.5 py-0.5 bg-brand-blue-bg text-brand-blue-text rounded-none text-[9px] font-mono border-none cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  #{tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Footer Info */}
+          <div className="flex items-center gap-3 pt-1 text-[9px] text-[#787774]/80 font-mono">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
+          </div>
         </div>
       </div>
 

@@ -26,6 +26,13 @@ import { ImportBookmarksDto } from './dto/import-bookmarks.dto';
 export class BookmarksController {
   constructor(private readonly bookmarksService: BookmarksService) {}
 
+  @Get('scrape')
+  @ApiOperation({ summary: 'Scrape metadata and generate tags for a URL' })
+  @ApiQuery({ name: 'url', required: true })
+  async scrape(@Query('url') url: string) {
+    return this.bookmarksService.scrapeUrl(url);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new bookmark (extracts title/metadata if omitted)' })
   async create(
