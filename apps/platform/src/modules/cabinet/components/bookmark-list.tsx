@@ -188,8 +188,8 @@ function MoodboardCard({
             </span>
             <div className="flex items-center gap-0.5">
               <Tooltip>
-                <TooltipTrigger render={
-                  <Button
+                <TooltipTrigger asChild>
+  <Button
                     onClick={() => onToggleFavorite(bookmark)}
                     variant="ghost"
                     size="icon-xs"
@@ -200,13 +200,13 @@ function MoodboardCard({
                       weight={bookmark.isFavorite ? 'fill' : 'regular'}
                     />
                   </Button>
-                } />
+</TooltipTrigger>
                 <TooltipContent>Favorite</TooltipContent>
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger render={
-                  <Button
+                <TooltipTrigger asChild>
+  <Button
                     onClick={() => onToggleArchive(bookmark)}
                     variant="ghost"
                     size="icon-xs"
@@ -217,13 +217,13 @@ function MoodboardCard({
                       weight={bookmark.isArchived ? 'fill' : 'regular'}
                     />
                   </Button>
-                } />
+</TooltipTrigger>
                 <TooltipContent>Archive</TooltipContent>
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger render={
-                  <Button
+                <TooltipTrigger asChild>
+  <Button
                     onClick={() => onDuplicateBookmark(bookmark)}
                     variant="ghost"
                     size="icon-xs"
@@ -231,13 +231,13 @@ function MoodboardCard({
                   >
                     <Copy className="w-3.5 h-3.5 text-brand-muted" />
                   </Button>
-                } />
+</TooltipTrigger>
                 <TooltipContent>Duplicate</TooltipContent>
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger render={
-                  <Button
+                <TooltipTrigger asChild>
+  <Button
                     onClick={() => onEditBookmark(bookmark)}
                     variant="ghost"
                     size="icon-xs"
@@ -245,13 +245,13 @@ function MoodboardCard({
                   >
                     <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                   </Button>
-                } />
+</TooltipTrigger>
                 <TooltipContent>Edit</TooltipContent>
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger render={
-                  <Button
+                <TooltipTrigger asChild>
+  <Button
                     onClick={() => onDeleteBookmark(bookmark.id)}
                     variant="ghost"
                     size="icon-xs"
@@ -259,7 +259,7 @@ function MoodboardCard({
                   >
                     <Trash className="w-3.5 h-3.5" />
                   </Button>
-                } />
+</TooltipTrigger>
                 <TooltipContent>Delete</TooltipContent>
               </Tooltip>
             </div>
@@ -508,8 +508,8 @@ export function BookmarkList({
                       {/* Actions */}
                       <div className="flex items-center gap-0.5">
                         <Tooltip>
-                          <TooltipTrigger render={
-                            <Button
+                          <TooltipTrigger asChild>
+  <Button
                               onClick={() => onToggleFavorite(bookmark)}
                               variant="ghost"
                               size="icon-xs"
@@ -520,13 +520,13 @@ export function BookmarkList({
                                 weight={bookmark.isFavorite ? 'fill' : 'regular'}
                               />
                             </Button>
-                          } />
+</TooltipTrigger>
                           <TooltipContent>Favorite</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
-                          <TooltipTrigger render={
-                            <Button
+                          <TooltipTrigger asChild>
+  <Button
                               onClick={() => onToggleArchive(bookmark)}
                               variant="ghost"
                               size="icon-xs"
@@ -537,13 +537,13 @@ export function BookmarkList({
                                 weight={bookmark.isArchived ? 'fill' : 'regular'}
                               />
                             </Button>
-                          } />
+</TooltipTrigger>
                           <TooltipContent>Archive</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
-                          <TooltipTrigger render={
-                            <Button
+                          <TooltipTrigger asChild>
+  <Button
                               onClick={() => onDuplicateBookmark(bookmark)}
                               variant="ghost"
                               size="icon-xs"
@@ -551,13 +551,13 @@ export function BookmarkList({
                             >
                               <Copy className="w-3.5 h-3.5 text-brand-muted" />
                             </Button>
-                          } />
+</TooltipTrigger>
                           <TooltipContent>Duplicate</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
-                          <TooltipTrigger render={
-                            <Button
+                          <TooltipTrigger asChild>
+  <Button
                               onClick={() => onEditBookmark(bookmark)}
                               variant="ghost"
                               size="icon-xs"
@@ -565,13 +565,13 @@ export function BookmarkList({
                             >
                               <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                             </Button>
-                          } />
+</TooltipTrigger>
                           <TooltipContent>Edit</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
-                          <TooltipTrigger render={
-                            <Button
+                          <TooltipTrigger asChild>
+  <Button
                               onClick={() => onDeleteBookmark(bookmark.id)}
                               variant="ghost"
                               size="icon-xs"
@@ -579,7 +579,7 @@ export function BookmarkList({
                             >
                               <Trash className="w-3.5 h-3.5" />
                             </Button>
-                          } />
+</TooltipTrigger>
                           <TooltipContent>Delete</TooltipContent>
                         </Tooltip>
                       </div>

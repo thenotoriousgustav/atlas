@@ -114,8 +114,8 @@ export function BookmarkCard({
       {/* Bookmark actions */}
       <div className="flex sm:flex-col items-center gap-1.5 shrink-0 self-end sm:self-start w-full sm:w-auto justify-end">
         <Tooltip>
-          <TooltipTrigger render={
-            <Button
+          <TooltipTrigger asChild>
+  <Button
               onClick={() => onToggleFavorite(bookmark)}
               variant="outline"
               size="icon"
@@ -123,13 +123,13 @@ export function BookmarkCard({
             >
               <Star className="w-4 h-4" weight={bookmark.isFavorite ? 'fill' : 'regular'} />
             </Button>
-          } />
+</TooltipTrigger>
           <TooltipContent>Mark as favorite</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={
-            <Button
+          <TooltipTrigger asChild>
+  <Button
               onClick={() => onToggleArchive(bookmark)}
               variant="outline"
               size="icon"
@@ -137,39 +137,39 @@ export function BookmarkCard({
             >
               <Archive className="w-4 h-4" weight={bookmark.isArchived ? 'fill' : 'regular'} />
             </Button>
-          } />
+</TooltipTrigger>
           <TooltipContent>Archive bookmark</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={
-            <Button
+          <TooltipTrigger asChild>
+  <Button
               onClick={() => onDuplicateBookmark(bookmark)}
               variant="outline"
               size="icon"
             >
               <Copy className="w-4 h-4 text-brand-muted" />
             </Button>
-          } />
+</TooltipTrigger>
           <TooltipContent>Duplicate bookmark</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={
-            <Button
+          <TooltipTrigger asChild>
+  <Button
               onClick={() => onEditBookmark(bookmark)}
               variant="outline"
               size="icon"
             >
               <PencilSimple className="w-4 h-4 text-brand-muted" />
             </Button>
-          } />
+</TooltipTrigger>
           <TooltipContent>Edit bookmark</TooltipContent>
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger render={
-            <Button
+          <TooltipTrigger asChild>
+  <Button
               onClick={() => onDeleteBookmark(bookmark.id)}
               variant="outline"
               size="icon"
@@ -177,7 +177,7 @@ export function BookmarkCard({
             >
               <Trash className="w-4 h-4" />
             </Button>
-          } />
+</TooltipTrigger>
           <TooltipContent>Delete bookmark</TooltipContent>
         </Tooltip>
       </div>

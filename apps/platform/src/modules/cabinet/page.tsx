@@ -16,10 +16,12 @@ import {
   useBookmarksControllerUpdate,
   useBookmarksControllerRemove,
   useTagsControllerFindAll,
+  useTagsControllerRemove,
   useBookmarksControllerImport,
   AXIOS_INSTANCE,
 } from '@atlas/api-client';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import { WorkspaceHeader } from './components/workspace-header';
 import { SidebarFilters } from './components/sidebar-filters';
 import { Toolbar } from './components/toolbar';
@@ -47,6 +49,7 @@ export function CabinetDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, setUser, logout } = useAuthStore();
+  const confirm = useConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -212,6 +215,7 @@ export function CabinetDashboard() {
   const createBookmarkMutation = useBookmarksControllerCreate();
   const updateBookmarkMutation = useBookmarksControllerUpdate();
   const removeBookmarkMutation = useBookmarksControllerRemove();
+  const removeTagMutation = useTagsControllerRemove();
   const importBookmarksMutation = useBookmarksControllerImport();
 
   // Sync mount status
@@ -255,7 +259,13 @@ export function CabinetDashboard() {
   };
 
   const handleDeleteFolder = async (id: string) => {
-    if (confirm('Are you sure you want to delete this folder? All subfolders and bookmarks inside it will be soft-deleted.')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Folder',
+      description: 'Are you sure you want to delete this folder? All subfolders and bookmarks inside it will be soft-deleted.',
+      actionLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (isConfirmed) {
       try {
         await removeFolderMutation.mutateAsync({ id });
         queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
@@ -268,6 +278,13 @@ export function CabinetDashboard() {
         alert('Failed to delete folder');
       }
     }
+  };
+
+  const handleCreateSubfolder = (parentId: string) => {
+    setFolderToEdit(null);
+    folderForm.reset();
+    folderForm.setFieldValue('parentId', parentId);
+    setIsFolderModalOpen(true);
   };
 
   const resetFolderForm = () => {
@@ -286,7 +303,13 @@ export function CabinetDashboard() {
   };
 
   const handleDeleteBookmark = async (id: string) => {
-    if (confirm('Are you sure you want to delete this bookmark?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Bookmark',
+      description: 'Are you sure you want to delete this bookmark?',
+      actionLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (isConfirmed) {
       try {
         await removeBookmarkMutation.mutateAsync({ id });
         queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
@@ -294,6 +317,20 @@ export function CabinetDashboard() {
       } catch {
         alert('Failed to delete bookmark');
       }
+    }
+  };
+
+  const handleDeleteTag = async (id: string) => {
+    try {
+      await removeTagMutation.mutateAsync({ id });
+      queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+      const tagToDelete = tags.find((t: any) => t.id === id);
+      if (tagToDelete && selectedTag === tagToDelete.name) {
+        setSelectedTag(undefined);
+      }
+    } catch {
+      alert('Failed to delete tag');
     }
   };
 
@@ -360,12 +397,13 @@ export function CabinetDashboard() {
   };
 
   const handleBulkDelete = async () => {
-    if (
-      !confirm(
-        `Are you sure you want to delete ${selectedBookmarkIds.length} selected bookmarks?`
-      )
-    )
-      return;
+    const isConfirmed = await confirm({
+      title: 'Delete Selected Bookmarks',
+      description: `Are you sure you want to delete ${selectedBookmarkIds.length} selected bookmarks?`,
+      actionLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await Promise.all(
         selectedBookmarkIds.map((id) => removeBookmarkMutation.mutateAsync({ id }))
@@ -485,12 +523,14 @@ export function CabinetDashboard() {
             onSelectArchived={setFilterArchived}
             folders={folders}
             tags={tags}
+            onDeleteTag={handleDeleteTag}
             isFolderModalOpen={isFolderModalOpen}
             setIsFolderModalOpen={setIsFolderModalOpen}
             folderToEdit={folderToEdit}
             folderForm={folderForm}
             onEditFolder={handleEditFolder}
             onDeleteFolder={handleDeleteFolder}
+            onCreateSubfolder={handleCreateSubfolder}
             onExport={handleExport}
             onImport={handleImport}
             resetFolderForm={resetFolderForm}

@@ -861,8 +861,8 @@ export function GarageDashboard() {
                           <div className="flex items-center gap-1 ml-4 shrink-0">
                             {rem.status === 'ACTIVE' && (
                               <Tooltip>
-                                <TooltipTrigger render={
-                                  <Button
+                                <TooltipTrigger asChild>
+  <Button
                                     onClick={() => handleToggleReminderStatus(rem)}
                                     variant="ghost"
                                     size="icon-xs"
@@ -870,13 +870,13 @@ export function GarageDashboard() {
                                   >
                                     <Clock className="w-3.5 h-3.5" />
                                   </Button>
-                                } />
+</TooltipTrigger>
                                 <TooltipContent>Complete</TooltipContent>
                               </Tooltip>
                             )}
                             <Tooltip>
-                              <TooltipTrigger render={
-                                <Button
+                              <TooltipTrigger asChild>
+  <Button
                                   onClick={() => handleRemoveReminder(rem.id)}
                                   variant="ghost"
                                   size="icon-xs"
@@ -884,7 +884,7 @@ export function GarageDashboard() {
                                 >
                                   <Trash className="w-3.5 h-3.5" />
                                 </Button>
-                              } />
+</TooltipTrigger>
                               <TooltipContent>Delete</TooltipContent>
                             </Tooltip>
                           </div>

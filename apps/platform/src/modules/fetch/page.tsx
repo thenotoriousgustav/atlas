@@ -871,8 +871,8 @@ export function FetchDashboard() {
                       </Select>
 
                       <Tooltip>
-                        <TooltipTrigger render={
-                          <Button
+                        <TooltipTrigger asChild>
+  <Button
                             onClick={() => handleToggleFavorite(item)}
                             variant="ghost"
                             size="icon-xs"
@@ -882,13 +882,13 @@ export function FetchDashboard() {
                           >
                             <Heart className="w-4 h-4" weight={item.isFavorite ? 'fill' : 'regular'} />
                           </Button>
-                        } />
+</TooltipTrigger>
                         <TooltipContent>Favorite</TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
-                        <TooltipTrigger render={
-                          <Button
+                        <TooltipTrigger asChild>
+  <Button
                             onClick={() => handleRedownload(item)}
                             variant="ghost"
                             size="icon-xs"
@@ -896,13 +896,13 @@ export function FetchDashboard() {
                           >
                             <Download className="w-4 h-4" />
                           </Button>
-                        } />
+</TooltipTrigger>
                         <TooltipContent>Re-fetch</TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
-                        <TooltipTrigger render={
-                          <Button
+                        <TooltipTrigger asChild>
+  <Button
                             onClick={() => handleRemoveHistoryItem(item.id)}
                             variant="ghost"
                             size="icon-xs"
@@ -910,7 +910,7 @@ export function FetchDashboard() {
                           >
                             <Trash className="w-4 h-4" />
                           </Button>
-                        } />
+</TooltipTrigger>
                         <TooltipContent>Delete record</TooltipContent>
                       </Tooltip>
                     </div>

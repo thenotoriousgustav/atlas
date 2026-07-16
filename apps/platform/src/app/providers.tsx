@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { TooltipProvider } from '@atlas/ui/components/tooltip';
+import { ConfirmProvider } from '@atlas/ui/hooks/use-confirm';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,7 +23,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {children}
+        <ConfirmProvider>
+          {children}
+        </ConfirmProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

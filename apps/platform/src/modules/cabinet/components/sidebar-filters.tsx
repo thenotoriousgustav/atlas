@@ -29,8 +29,10 @@ import {
   Tag as TagIcon,
   DownloadSimple,
   UploadSimple,
+  X,
 } from '@phosphor-icons/react';
 import { FolderTree } from './folder-tree';
+import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 
 interface SidebarFiltersProps {
   selectedFolderId?: string;
@@ -43,12 +45,14 @@ interface SidebarFiltersProps {
   onSelectArchived: (arch: boolean | undefined) => void;
   folders: any[];
   tags: any[];
+  onDeleteTag: (id: string) => void;
   isFolderModalOpen: boolean;
   setIsFolderModalOpen: (open: boolean) => void;
   folderToEdit: any;
   folderForm: any;
   onEditFolder: (folder: any) => void;
   onDeleteFolder: (id: string) => void;
+  onCreateSubfolder?: (parentId: string) => void;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   resetFolderForm: () => void;
@@ -65,16 +69,19 @@ export function SidebarFilters({
   onSelectArchived,
   folders,
   tags,
+  onDeleteTag,
   isFolderModalOpen,
   setIsFolderModalOpen,
   folderToEdit,
   folderForm,
   onEditFolder,
   onDeleteFolder,
+  onCreateSubfolder,
   onExport,
   onImport,
   resetFolderForm,
 }: SidebarFiltersProps) {
+  const confirm = useConfirm();
   return (
     <aside className="md:col-span-1 space-y-6">
       {/* Quick Filters */}
@@ -265,6 +272,7 @@ export function SidebarFilters({
               }}
               onEditFolder={onEditFolder}
               onDeleteFolder={onDeleteFolder}
+              onCreateSubfolder={onCreateSubfolder}
             />
           )}
         </div>
@@ -279,26 +287,53 @@ export function SidebarFilters({
           ) : (
             tags.map((tag: any) => {
               const isSelected = selectedTag === tag.name;
+              // ponytail: compound button split allows clean tag selection and deletion without nested buttons
               return (
-                <button
+                <div
                   key={tag.id}
-                  onClick={() => {
-                    onSelectTag(isSelected ? undefined : tag.name);
-                    onSelectFolder(undefined);
-                    onSelectFavorite(undefined);
-                  }}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-mono transition-colors border ${
+                  className={`inline-flex items-center rounded-none text-[10px] font-mono border transition-colors ${
                     isSelected
                       ? 'bg-brand-charcoal text-white border-brand-charcoal'
-                      : 'bg-white text-brand-muted border-brand-border hover:border-brand-charcoal/30 hover:text-brand-charcoal'
+                      : 'bg-white text-brand-muted border-brand-border'
                   }`}
                 >
-                  <TagIcon className="w-2.5 h-2.5" />
-                  {tag.name}
-                  <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-brand-muted/70'}`}>
-                    ({tag.bookmarkCount})
-                  </span>
-                </button>
+                  <button
+                    onClick={() => {
+                      onSelectTag(isSelected ? undefined : tag.name);
+                      onSelectFolder(undefined);
+                      onSelectFavorite(undefined);
+                    }}
+                    className="flex items-center gap-1 px-2 py-0.5 hover:text-brand-charcoal hover:bg-brand-charcoal/5"
+                  >
+                    <TagIcon className="w-2.5 h-2.5" />
+                    {tag.name}
+                    <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-brand-muted/70'}`}>
+                      ({tag.bookmarkCount})
+                    </span>
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const isConfirmed = await confirm({
+                        title: 'Delete Tag',
+                        description: `Are you sure you want to delete tag "${tag.name}"? This will untag all associated bookmarks.`,
+                        actionLabel: 'Delete',
+                        variant: 'destructive',
+                      });
+                      if (isConfirmed) {
+                        onDeleteTag(tag.id);
+                      }
+                    }}
+                    className={`h-full px-1.5 border-l flex items-center justify-center transition-colors ${
+                      isSelected
+                        ? 'border-white/20 hover:bg-white/10 hover:text-white'
+                        : 'border-brand-border hover:bg-red-50 hover:text-red-600'
+                    }`}
+                    title="Delete tag"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </div>
               );
             })
           )}

@@ -605,8 +605,8 @@ export function LedgerDashboard() {
                         {/* Subscription Actions */}
                         <div className="flex items-center gap-0.5 shrink-0 ml-4">
                           <Tooltip>
-                            <TooltipTrigger render={
-                              <Button
+                            <TooltipTrigger asChild>
+  <Button
                                 onClick={() => handleEditSubscription(sub)}
                                 variant="ghost"
                                 size="icon-xs"
@@ -614,13 +614,13 @@ export function LedgerDashboard() {
                               >
                                 <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                               </Button>
-                            } />
+</TooltipTrigger>
                             <TooltipContent>Edit</TooltipContent>
                           </Tooltip>
 
                           <Tooltip>
-                            <TooltipTrigger render={
-                              <Button
+                            <TooltipTrigger asChild>
+  <Button
                                 onClick={() => handleDeleteSubscription(sub.id)}
                                 variant="ghost"
                                 size="icon-xs"
@@ -628,7 +628,7 @@ export function LedgerDashboard() {
                               >
                                 <Trash className="w-3.5 h-3.5" />
                               </Button>
-                            } />
+</TooltipTrigger>
                             <TooltipContent>Delete</TooltipContent>
                           </Tooltip>
                         </div>
@@ -748,8 +748,8 @@ export function LedgerDashboard() {
                         
                         <div className="flex items-center gap-0.5">
                           <Tooltip>
-                            <TooltipTrigger render={
-                              <Button
+                            <TooltipTrigger asChild>
+  <Button
                                 onClick={() => handleEditTransaction(tx)}
                                 variant="ghost"
                                 size="icon-xs"
@@ -757,13 +757,13 @@ export function LedgerDashboard() {
                               >
                                 <PencilSimple className="w-3.5 h-3.5 text-brand-muted" />
                               </Button>
-                            } />
+</TooltipTrigger>
                             <TooltipContent>Edit</TooltipContent>
                           </Tooltip>
 
                           <Tooltip>
-                            <TooltipTrigger render={
-                              <Button
+                            <TooltipTrigger asChild>
+  <Button
                                 onClick={() => handleDeleteTransaction(tx.id)}
                                 variant="ghost"
                                 size="icon-xs"
@@ -771,7 +771,7 @@ export function LedgerDashboard() {
                               >
                                 <Trash className="w-3.5 h-3.5" />
                               </Button>
-                            } />
+</TooltipTrigger>
                             <TooltipContent>Delete</TooltipContent>
                           </Tooltip>
                         </div>

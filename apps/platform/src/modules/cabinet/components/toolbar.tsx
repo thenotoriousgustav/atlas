@@ -26,6 +26,8 @@ import {
 import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Sparkle } from '@phosphor-icons/react';
 import { AXIOS_INSTANCE } from '@atlas/api-client';
 import { Spinner } from '@atlas/ui/components/spinner';
+import { Item } from '@atlas/ui/components/item';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@atlas/ui/components/input-group';
 
 interface ToolbarProps {
   searchQuery: string;
@@ -82,26 +84,26 @@ export function Toolbar({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-3.5 rounded-none border border-brand-border shadow-sm">
-      <div className="flex items-center gap-3 w-full sm:w-auto">
-        <div className="relative w-full sm:max-w-xs">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <MagnifyingGlass className="w-4 h-4 text-brand-muted" />
-          </span>
-          <Input
+    <Item variant="outline" className="flex-col sm:flex-row gap-3 justify-between bg-white p-3.5 shadow-none rounded-none">
+      <div className="flex items-center gap-3 w-full sm:flex-1">
+        <InputGroup className="w-full sm:max-w-md h-9">
+          <InputGroupInput
             type="text"
             placeholder="Search titles, descriptions, URLs..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 h-9 text-xs"
+            className="text-xs"
           />
-        </div>
+          <InputGroupAddon align="inline-start">
+            <MagnifyingGlass className="text-brand-muted" />
+          </InputGroupAddon>
+        </InputGroup>
 
         {/* View Mode Toggle Group */}
         <ButtonGroup className="shrink-0 bg-brand-charcoal/5 border border-brand-border p-0.5">
           <Tooltip>
-            <TooltipTrigger render={
-              <Button
+            <TooltipTrigger asChild>
+  <Button
                 onClick={() => onViewModeChange('moodboard')}
                 variant={viewMode === 'moodboard' ? 'default' : 'ghost'}
                 size="icon-xs"
@@ -109,13 +111,13 @@ export function Toolbar({
               >
                 <SquaresFour className="w-4 h-4" />
               </Button>
-            } />
+</TooltipTrigger>
             <TooltipContent>Moodboard View</TooltipContent>
           </Tooltip>
 
           <Tooltip>
-            <TooltipTrigger render={
-              <Button
+            <TooltipTrigger asChild>
+  <Button
                 onClick={() => onViewModeChange('list')}
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="icon-xs"
@@ -123,13 +125,13 @@ export function Toolbar({
               >
                 <List className="w-4 h-4" />
               </Button>
-            } />
+</TooltipTrigger>
             <TooltipContent>List View</TooltipContent>
           </Tooltip>
 
           <Tooltip>
-            <TooltipTrigger render={
-              <Button
+            <TooltipTrigger asChild>
+  <Button
                 onClick={() => onViewModeChange('card')}
                 variant={viewMode === 'card' ? 'default' : 'ghost'}
                 size="icon-xs"
@@ -137,7 +139,7 @@ export function Toolbar({
               >
                 <Cards className="w-4 h-4" />
               </Button>
-            } />
+</TooltipTrigger>
             <TooltipContent>Card View</TooltipContent>
           </Tooltip>
 
@@ -145,8 +147,8 @@ export function Toolbar({
       </div>
 
       <Dialog open={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen}>
-        <DialogTrigger render={
-          <Button
+        <DialogTrigger asChild>
+  <Button
             onClick={() => {
               resetBookmarkForm();
               setIsBookmarkModalOpen(true);
@@ -156,7 +158,7 @@ export function Toolbar({
             <Plus className="w-4 h-4" />
             Add Bookmark
           </Button>
-        } />
+</DialogTrigger>
 
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -312,6 +314,6 @@ export function Toolbar({
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </Item>
   );
 }
