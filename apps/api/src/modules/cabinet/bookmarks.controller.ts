@@ -51,6 +51,7 @@ export class BookmarksController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'cursor', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false })
   async findAll(
     @CurrentUser() user: any,
     @Query('folderId') folderId?: string,
@@ -60,6 +61,7 @@ export class BookmarksController {
     @Query('search') search?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Query('status') status?: string,
   ) {
     const parseBool = (val?: string) => {
       if (val === 'true') return true;
@@ -74,6 +76,7 @@ export class BookmarksController {
       search,
       cursor,
       limit: limit ? parseInt(limit, 10) : undefined,
+      status,
     });
   }
 

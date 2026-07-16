@@ -309,6 +309,7 @@ interface BookmarkListProps {
   isDuplicatesView?: boolean;
   duplicateGroups?: Array<{ url: string; bookmarks: any[] }>;
   onCleanDuplicates?: () => void;
+  totalBookmarks?: number;
 }
 
 export function BookmarkList({
@@ -331,6 +332,7 @@ export function BookmarkList({
   isDuplicatesView,
   duplicateGroups,
   onCleanDuplicates,
+  totalBookmarks,
 }: BookmarkListProps) {
   const [columnCount, setColumnCount] = React.useState(3);
   const [mounted, setMounted] = React.useState(false);
@@ -412,7 +414,7 @@ export function BookmarkList({
           {isDuplicatesView ? 'Duplicate Bookmark Groups' : getHeaderTitle()}
         </h2>
         <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
-          {isDuplicatesView ? `${duplicateGroups?.length || 0} Groups` : `${bookmarks.length} Items`}
+          {isDuplicatesView ? `${duplicateGroups?.length || 0} Groups` : `${totalBookmarks !== undefined ? totalBookmarks : bookmarks.length} Items`}
         </Badge>
       </div>
 

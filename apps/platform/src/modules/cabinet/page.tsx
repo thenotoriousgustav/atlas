@@ -222,6 +222,7 @@ export function CabinetDashboard() {
       tag: selectedTag,
       search: searchDebounced || undefined,
       limit: 20,
+      status: filterBroken ? 'BROKEN' : undefined,
     },
     {
       query: {
@@ -232,7 +233,7 @@ export function CabinetDashboard() {
   );
   const rawBookmarks = bookmarksInfiniteData?.pages.flatMap((page: any) => page?.data?.data || []) || [];
   const bookmarks = Array.from(new Map(rawBookmarks.map((b: any) => [b.id, b])).values());
-  const filteredBookmarks = bookmarks.filter((b: any) => filterBroken ? b.status === 'BROKEN' : true);
+  const filteredBookmarks = bookmarks;
 
   // Health and Duplicates Queries
   const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary();
@@ -646,6 +647,7 @@ export function CabinetDashboard() {
             <BookmarkList
               bookmarks={filteredBookmarks}
               isBookmarksLoading={isBookmarksLoading}
+              totalBookmarks={(bookmarksInfiniteData as any)?.pages?.[0]?.data?.totalCount || 0}
               selectedFolderId={selectedFolderId}
               selectedTag={selectedTag}
               filterFavorite={filterFavorite}

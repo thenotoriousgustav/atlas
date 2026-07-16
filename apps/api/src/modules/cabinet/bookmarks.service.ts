@@ -66,6 +66,7 @@ export class BookmarksService {
       search?: string;
       cursor?: string;
       limit?: number;
+      status?: string;
     },
   ) {
     const where: any = {
@@ -83,6 +84,10 @@ export class BookmarksService {
 
     if (filters.isArchived !== undefined) {
       where.isArchived = filters.isArchived;
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
     }
 
     if (filters.tag) {
@@ -122,6 +127,7 @@ export class BookmarksService {
     }
 
     const items = await this.prisma.bookmark.findMany(findParams);
+    const totalCount = await this.prisma.bookmark.count({ where });
 
     let nextCursor: string | null = null;
     let slicedItems = items;
@@ -135,6 +141,7 @@ export class BookmarksService {
     return {
       data: slicedItems,
       nextCursor,
+      totalCount,
     };
   }
 

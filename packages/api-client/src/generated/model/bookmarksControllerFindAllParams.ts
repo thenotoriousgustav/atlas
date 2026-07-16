@@ -14,4 +14,5 @@ tag?: string;
 search?: string;
 cursor?: string;
 limit?: number;
+status?: string;
 };
