@@ -144,6 +144,7 @@ export class BookmarksController {
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete a bookmark by ID' })
   async remove(@CurrentUser() user: any, @Param('id') id: string) {
+    console.log('[DEBUG DELETE] User ID:', user?.id, 'Bookmark ID:', id);
     return this.bookmarksService.remove(user.id, id);
   }
 }

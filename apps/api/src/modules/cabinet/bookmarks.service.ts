@@ -146,6 +146,7 @@ export class BookmarksService {
   }
 
   async findOne(userId: string, id: string) {
+    console.log('[DEBUG FINDONE] User ID:', userId, 'Bookmark ID:', id);
     const bookmark = await this.prisma.bookmark.findFirst({
       where: {
         id,
@@ -159,6 +160,7 @@ export class BookmarksService {
     });
 
     if (!bookmark) {
+      console.log('[DEBUG FINDONE] NOT FOUND OR SOFT DELETED');
       throw new NotFoundException('Bookmark not found');
     }
 

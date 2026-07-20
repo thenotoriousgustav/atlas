@@ -99,6 +99,7 @@ export function CabinetDashboard() {
 
   const invalidateAllQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+    queryClient.invalidateQueries({ queryKey: ['infinite', '/v1/bookmarks'] });
     queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks/health'] });
     queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks/duplicates'] });
     queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
