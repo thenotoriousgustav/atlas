@@ -12,4 +12,5 @@ export type TransactionsControllerFindAllType = typeof TransactionsControllerFin
 export const TransactionsControllerFindAllType = {
   EXPENSE: 'EXPENSE',
   INCOME: 'INCOME',
+  TRANSFER: 'TRANSFER',
 } as const;

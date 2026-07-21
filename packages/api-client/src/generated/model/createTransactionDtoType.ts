@@ -15,4 +15,5 @@ export type CreateTransactionDtoType = typeof CreateTransactionDtoType[keyof typ
 export const CreateTransactionDtoType = {
   EXPENSE: 'EXPENSE',
   INCOME: 'INCOME',
+  TRANSFER: 'TRANSFER',
 } as const;

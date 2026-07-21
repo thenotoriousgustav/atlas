@@ -53,7 +53,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 /**
- * @summary Create a new transaction
+ * @summary Create a new transaction (supports expense, income, or transfer)
  */
 export const transactionsControllerCreate = (
     createTransactionDto: CreateTransactionDto,
@@ -104,7 +104,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type TransactionsControllerCreateMutationError = unknown
 
     /**
- * @summary Create a new transaction
+ * @summary Create a new transaction (supports expense, income, or transfer)
  */
 export const useTransactionsControllerCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transactionsControllerCreate>>, TError,{data: CreateTransactionDto}, TContext>, request?: SecondParameter<typeof customInstance>}
@@ -117,7 +117,7 @@ export const useTransactionsControllerCreate = <TError = unknown,
       return useMutation(getTransactionsControllerCreateMutationOptions(options), queryClient);
     }
     /**
- * @summary Get transactions with optional filtering
+ * @summary Get transactions with filtering
  */
 export const transactionsControllerFindAll = (
     params?: TransactionsControllerFindAllParams,
@@ -189,7 +189,7 @@ export function useTransactionsControllerFindAll<TData = Awaited<ReturnType<type
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get transactions with optional filtering
+ * @summary Get transactions with filtering
  */
 
 export function useTransactionsControllerFindAll<TData = Awaited<ReturnType<typeof transactionsControllerFindAll>>, TError = unknown>(

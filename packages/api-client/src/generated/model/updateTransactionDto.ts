@@ -16,7 +16,13 @@ export interface UpdateTransactionDto {
   title?: string;
   /** Description of transaction */
   description?: string;
-  /** Category */
+  /** Account UUID */
+  accountId?: string;
+  /** Category UUID */
+  categoryId?: string;
+  /** Transfer Destination Account UUID */
+  transferAccountId?: string;
+  /** Deprecated free-text category */
   category?: string;
   /** Date */
   date?: string;

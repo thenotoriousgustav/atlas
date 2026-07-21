@@ -15,4 +15,5 @@ export type UpdateTransactionDtoType = typeof UpdateTransactionDtoType[keyof typ
 export const UpdateTransactionDtoType = {
   EXPENSE: 'EXPENSE',
   INCOME: 'INCOME',
+  TRANSFER: 'TRANSFER',
 } as const;

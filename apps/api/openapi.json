@@ -786,7 +786,7 @@
             "bearer": []
           }
         ],
-        "summary": "Create a new transaction",
+        "summary": "Create a new transaction (supports expense, income, or transfer)",
         "tags": [
           "transactions"
         ]
@@ -801,13 +801,22 @@
             "schema": {
               "enum": [
                 "EXPENSE",
-                "INCOME"
+                "INCOME",
+                "TRANSFER"
               ],
               "type": "string"
             }
           },
           {
-            "name": "category",
+            "name": "accountId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
             "required": false,
             "in": "query",
             "schema": {
@@ -821,6 +830,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -833,7 +858,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get transactions with optional filtering",
+        "summary": "Get transactions with filtering",
         "tags": [
           "transactions"
         ]
@@ -1105,6 +1130,749 @@
         "summary": "Soft delete a subscription by ID",
         "tags": [
           "subscriptions"
+        ]
+      }
+    },
+    "/v1/accounts": {
+      "post": {
+        "operationId": "AccountsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new account",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "get": {
+        "operationId": "AccountsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all accounts",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/accounts/{id}": {
+      "get": {
+        "operationId": "AccountsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get account details by ID",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "patch": {
+        "operationId": "AccountsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an account",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "delete": {
+        "operationId": "AccountsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/category-groups": {
+      "post": {
+        "operationId": "CategoryGroupsController_createGroup",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new category group",
+        "tags": [
+          "category-groups"
+        ]
+      },
+      "get": {
+        "operationId": "CategoryGroupsController_findAllGroups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all category groups with categories",
+        "tags": [
+          "category-groups"
+        ]
+      }
+    },
+    "/v1/category-groups/{id}": {
+      "patch": {
+        "operationId": "CategoryGroupsController_updateGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a category group",
+        "tags": [
+          "category-groups"
+        ]
+      },
+      "delete": {
+        "operationId": "CategoryGroupsController_removeGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a category group",
+        "tags": [
+          "category-groups"
+        ]
+      }
+    },
+    "/v1/categories": {
+      "post": {
+        "operationId": "CategoriesController_createCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/v1/categories/{id}": {
+      "patch": {
+        "operationId": "CategoriesController_updateCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a category",
+        "tags": [
+          "categories"
+        ]
+      },
+      "delete": {
+        "operationId": "CategoriesController_removeCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/v1/budget": {
+      "get": {
+        "operationId": "BudgetController_getBudget",
+        "parameters": [
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "year",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get budget entries and calculation details",
+        "tags": [
+          "budget"
+        ]
+      },
+      "put": {
+        "operationId": "BudgetController_updateBudgetEntry",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBudgetEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update or create a budget allocation entry",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/v1/budget/trends": {
+      "get": {
+        "operationId": "BudgetController_getTrends",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get budget and spending trends for the last N months",
+        "tags": [
+          "budget"
+        ]
+      }
+    },
+    "/v1/recurring-transactions": {
+      "post": {
+        "operationId": "RecurringTransactionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRecurringTransactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new recurring transaction schedule",
+        "tags": [
+          "recurring-transactions"
+        ]
+      },
+      "get": {
+        "operationId": "RecurringTransactionsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all active recurring transaction schedules",
+        "tags": [
+          "recurring-transactions"
+        ]
+      }
+    },
+    "/v1/recurring-transactions/{id}": {
+      "get": {
+        "operationId": "RecurringTransactionsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get recurring transaction details by ID",
+        "tags": [
+          "recurring-transactions"
+        ]
+      },
+      "patch": {
+        "operationId": "RecurringTransactionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRecurringTransactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a recurring transaction schedule",
+        "tags": [
+          "recurring-transactions"
+        ]
+      },
+      "delete": {
+        "operationId": "RecurringTransactionsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a recurring transaction schedule",
+        "tags": [
+          "recurring-transactions"
+        ]
+      }
+    },
+    "/v1/budget-shares": {
+      "post": {
+        "operationId": "BudgetSharesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBudgetShareDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "BudgetShares"
+        ]
+      },
+      "get": {
+        "operationId": "BudgetSharesController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "BudgetShares"
+        ]
+      }
+    },
+    "/v1/budget-shares/{id}": {
+      "delete": {
+        "operationId": "BudgetSharesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "BudgetShares"
+        ]
+      }
+    },
+    "/v1/email-sync/config": {
+      "get": {
+        "operationId": "EmailSyncController_getConfig",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current email sync configuration",
+        "tags": [
+          "email-sync"
+        ]
+      },
+      "post": {
+        "operationId": "EmailSyncController_saveConfig",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailSyncConfigDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save email sync configuration",
+        "tags": [
+          "email-sync"
+        ]
+      }
+    },
+    "/v1/email-sync/sync": {
+      "post": {
+        "operationId": "EmailSyncController_syncEmails",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncEmailsBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sync transactions from email (real IMAP fetch or simulated templates)",
+        "tags": [
+          "email-sync"
+        ]
+      }
+    },
+    "/v1/email-sync/test": {
+      "post": {
+        "operationId": "EmailSyncController_testConnection",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Test IMAP connection",
+        "tags": [
+          "email-sync"
         ]
       }
     },
@@ -2185,7 +2953,8 @@
             "description": "Transaction type",
             "enum": [
               "EXPENSE",
-              "INCOME"
+              "INCOME",
+              "TRANSFER"
             ]
           },
           "amount": {
@@ -2203,10 +2972,25 @@
             "example": "Venti Latte at Starbucks",
             "description": "Description of transaction"
           },
+          "accountId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Account UUID"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+            "description": "Category UUID (optional for income/transfers)"
+          },
+          "transferAccountId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
+            "description": "Transfer Destination Account UUID"
+          },
           "category": {
             "type": "string",
             "example": "Food",
-            "description": "Category"
+            "description": "Deprecated free-text category"
           },
           "date": {
             "type": "string",
@@ -2218,7 +3002,7 @@
           "type",
           "amount",
           "title",
-          "category"
+          "accountId"
         ]
       },
       "UpdateTransactionDto": {
@@ -2230,7 +3014,8 @@
             "description": "Transaction type",
             "enum": [
               "EXPENSE",
-              "INCOME"
+              "INCOME",
+              "TRANSFER"
             ]
           },
           "amount": {
@@ -2248,10 +3033,25 @@
             "example": "Venti Latte at Starbucks",
             "description": "Description of transaction"
           },
+          "accountId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Account UUID"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+            "description": "Category UUID"
+          },
+          "transferAccountId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
+            "description": "Transfer Destination Account UUID"
+          },
           "category": {
             "type": "string",
             "example": "Food",
-            "description": "Category"
+            "description": "Deprecated free-text category"
           },
           "date": {
             "type": "string",
@@ -2353,6 +3153,422 @@
               "PAUSED",
               "CANCELLED"
             ]
+          }
+        }
+      },
+      "CreateAccountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "BCA Account",
+            "description": "Account name"
+          },
+          "type": {
+            "type": "string",
+            "example": "CHECKING",
+            "description": "Account type",
+            "enum": [
+              "CHECKING",
+              "SAVINGS",
+              "CASH",
+              "CREDIT_CARD",
+              "E_WALLET"
+            ]
+          },
+          "balance": {
+            "type": "number",
+            "example": 1000000,
+            "description": "Initial balance"
+          },
+          "currency": {
+            "type": "string",
+            "example": "IDR",
+            "description": "Currency code"
+          },
+          "isOnBudget": {
+            "type": "boolean",
+            "example": true,
+            "description": "Is on-budget account"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "UpdateAccountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "BCA Account",
+            "description": "Account name"
+          },
+          "type": {
+            "type": "string",
+            "example": "CHECKING",
+            "description": "Account type",
+            "enum": [
+              "CHECKING",
+              "SAVINGS",
+              "CASH",
+              "CREDIT_CARD",
+              "E_WALLET"
+            ]
+          },
+          "balance": {
+            "type": "number",
+            "example": 1200000,
+            "description": "Balance of account"
+          },
+          "currency": {
+            "type": "string",
+            "example": "IDR",
+            "description": "Currency code"
+          },
+          "isOnBudget": {
+            "type": "boolean",
+            "example": true,
+            "description": "Is on-budget account"
+          }
+        }
+      },
+      "CreateCategoryGroupDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kebutuhan Harian",
+            "description": "Category group name"
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 0,
+            "description": "Sorting order"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateCategoryGroupDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kebutuhan Harian",
+            "description": "Category group name"
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 0,
+            "description": "Sorting order"
+          },
+          "isHidden": {
+            "type": "boolean",
+            "example": false,
+            "description": "Is hidden"
+          }
+        }
+      },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Makanan & Minuman",
+            "description": "Category name"
+          },
+          "categoryGroupId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Category Group UUID"
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 0,
+            "description": "Sorting order"
+          },
+          "targetAmount": {
+            "type": "number",
+            "example": 500000,
+            "description": "Target savings amount"
+          },
+          "targetType": {
+            "type": "string",
+            "example": "MONTHLY_SPENDING",
+            "description": "Target type"
+          },
+          "targetMonth": {
+            "type": "number",
+            "example": 12,
+            "description": "Target month"
+          },
+          "targetYear": {
+            "type": "number",
+            "example": 2026,
+            "description": "Target year"
+          }
+        },
+        "required": [
+          "name",
+          "categoryGroupId"
+        ]
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Makanan & Minuman",
+            "description": "Category name"
+          },
+          "categoryGroupId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Category Group UUID"
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 0,
+            "description": "Sorting order"
+          },
+          "isHidden": {
+            "type": "boolean",
+            "example": false,
+            "description": "Is hidden"
+          },
+          "targetAmount": {
+            "type": "number",
+            "example": 500000,
+            "description": "Target savings amount"
+          },
+          "targetType": {
+            "type": "string",
+            "example": "MONTHLY_SPENDING",
+            "description": "Target type"
+          },
+          "targetMonth": {
+            "type": "number",
+            "example": 12,
+            "description": "Target month"
+          },
+          "targetYear": {
+            "type": "number",
+            "example": 2026,
+            "description": "Target year"
+          }
+        }
+      },
+      "UpdateBudgetEntryDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Category UUID"
+          },
+          "month": {
+            "type": "number",
+            "example": 7,
+            "description": "Month (1-12)"
+          },
+          "year": {
+            "type": "number",
+            "example": 2026,
+            "description": "Year"
+          },
+          "assigned": {
+            "type": "number",
+            "example": 500000,
+            "description": "Assigned amount"
+          }
+        },
+        "required": [
+          "categoryId",
+          "month",
+          "year",
+          "assigned"
+        ]
+      },
+      "CreateRecurringTransactionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Sewa Apartemen Bulanan",
+            "description": "Transaction title"
+          },
+          "amount": {
+            "type": "number",
+            "example": 3500000,
+            "description": "Amount of money"
+          },
+          "type": {
+            "type": "string",
+            "example": "EXPENSE",
+            "enum": [
+              "EXPENSE",
+              "INCOME",
+              "TRANSFER"
+            ]
+          },
+          "frequency": {
+            "type": "string",
+            "example": "MONTHLY",
+            "enum": [
+              "DAILY",
+              "WEEKLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
+          "nextDate": {
+            "type": "string",
+            "example": "2026-08-01T00:00:00.000Z",
+            "description": "Next date to post"
+          },
+          "accountId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Source Account UUID"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+            "description": "Category UUID"
+          },
+          "transferAccountId": {
+            "type": "string",
+            "example": "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
+            "description": "Destination Account UUID (only for TRANSFER)"
+          }
+        },
+        "required": [
+          "title",
+          "amount",
+          "type",
+          "frequency",
+          "nextDate",
+          "accountId"
+        ]
+      },
+      "UpdateRecurringTransactionDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Sewa Apartemen Bulanan",
+            "description": "Transaction title"
+          },
+          "amount": {
+            "type": "number",
+            "example": 3500000,
+            "description": "Amount of money"
+          },
+          "type": {
+            "type": "string",
+            "example": "EXPENSE",
+            "enum": [
+              "EXPENSE",
+              "INCOME",
+              "TRANSFER"
+            ]
+          },
+          "frequency": {
+            "type": "string",
+            "example": "MONTHLY",
+            "enum": [
+              "DAILY",
+              "WEEKLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
+          "nextDate": {
+            "type": "string",
+            "example": "2026-08-01T00:00:00.000Z",
+            "description": "Next date to post"
+          },
+          "accountId": {
+            "type": "string",
+            "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+            "description": "Source Account UUID"
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+            "description": "Category UUID"
+          },
+          "transferAccountId": {
+            "type": "string",
+            "example": "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
+            "description": "Destination Account UUID (only for TRANSFER)"
+          }
+        }
+      },
+      "CreateBudgetShareDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateEmailSyncConfigDto": {
+        "type": "object",
+        "properties": {
+          "imapHost": {
+            "type": "string",
+            "example": "imap.gmail.com"
+          },
+          "imapPort": {
+            "type": "number",
+            "example": 993
+          },
+          "username": {
+            "type": "string",
+            "example": "user@gmail.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "your-app-password"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "imapHost",
+          "imapPort",
+          "username",
+          "password",
+          "isActive"
+        ]
+      },
+      "SimulateEmailDto": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "example": "Bank Jago: Uang keluar Rp 75.000 ke Kopi Kenangan"
+          },
+          "body": {
+            "type": "string",
+            "example": "Hai Gustam, transaksi Uang keluar sebesar Rp 75.000 ke Kopi Kenangan berhasil didebet dari kantong utama Anda pada 2026-07-20."
+          }
+        },
+        "required": [
+          "subject",
+          "body"
+        ]
+      },
+      "SyncEmailsBodyDto": {
+        "type": "object",
+        "properties": {
+          "emails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulateEmailDto"
+            }
           }
         }
       },

@@ -15,16 +15,17 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { BudgetShareGuard } from './budget-share.guard';
 
 @ApiTags('transactions')
 @ApiBearerAuth()
 @Controller('v1/transactions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, BudgetShareGuard)
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new transaction' })
+  @ApiOperation({ summary: 'Create a new transaction (supports expense, income, or transfer)' })
   async create(
     @CurrentUser() user: any,
     @Body() createTransactionDto: CreateTransactionDto,
@@ -33,17 +34,32 @@ export class TransactionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get transactions with optional filtering' })
-  @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'] })
-  @ApiQuery({ name: 'category', required: false })
+  @ApiOperation({ summary: 'Get transactions with filtering' })
+  @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME', 'TRANSFER'] })
+  @ApiQuery({ name: 'accountId', required: false })
+  @ApiQuery({ name: 'categoryId', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'month', required: false, type: Number })
+  @ApiQuery({ name: 'year', required: false, type: Number })
   async findAll(
     @CurrentUser() user: any,
-    @Query('type') type?: 'EXPENSE' | 'INCOME',
-    @Query('category') category?: string,
+    @Query('type') type?: 'EXPENSE' | 'INCOME' | 'TRANSFER',
+    @Query('accountId') accountId?: string,
+    @Query('categoryId') categoryId?: string,
     @Query('search') search?: string,
+    @Query('month') month?: string,
+    @Query('year') year?: string,
   ) {
-    return this.transactionsService.findAll(user.id, { type, category, search });
+    const m = month ? parseInt(month, 10) : undefined;
+    const y = year ? parseInt(year, 10) : undefined;
+    return this.transactionsService.findAll(user.id, {
+      type,
+      accountId,
+      categoryId,
+      search,
+      month: m,
+      year: y,
+    });
   }
 
   @Get(':id')

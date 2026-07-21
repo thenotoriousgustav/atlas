@@ -9,6 +9,9 @@ import type { TransactionsControllerFindAllType } from './transactionsController
 
 export type TransactionsControllerFindAllParams = {
 type?: TransactionsControllerFindAllType;
-category?: string;
+accountId?: string;
+categoryId?: string;
 search?: string;
+month?: number;
+year?: number;
 };

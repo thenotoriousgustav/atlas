@@ -24,6 +24,14 @@ model User {
   fetchHistories FetchHistory[]
   fetchCollections FetchCollection[]
   credentials   UserCredential[]
+  accounts        Account[]
+  categoryGroups  CategoryGroup[]
+  categories      Category[]
+  budgetEntries   BudgetEntry[]
+  recurringTransactions RecurringTransaction[]
+  ownedShares     BudgetShare[]  @relation("OwnedShares")
+  receivedShares  BudgetShare[]  @relation("ReceivedShares")
+  emailSyncConfig EmailSyncConfig?
 
   @@map("users")
 }
@@ -93,19 +101,25 @@ model Tag {
 }
 
 model Transaction {
-  id          String    @id @default(uuid()) @db.Uuid
-  type        String    // "EXPENSE" or "INCOME"
-  amount      Float
-  title       String
-  description String?
-  category    String
-  date        DateTime  @default(now())
-  userId      String    @db.Uuid
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id                String    @id @default(uuid()) @db.Uuid
+  type              String    // "EXPENSE", "INCOME", "TRANSFER"
+  amount            Float
+  title             String
+  description       String?
+  category          String?   // deprecated, keep optional for migration
+  date              DateTime  @default(now())
+  accountId         String    @db.Uuid
+  categoryId        String?   @db.Uuid
+  transferAccountId String?   @db.Uuid
+  transferPairId    String?   @db.Uuid
+  userId            String    @db.Uuid
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account           Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryRel       Category? @relation(fields: [categoryId], references: [id])
 
   @@map("transactions")
 }
@@ -126,6 +140,108 @@ model Subscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+model Account {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String        // "Cash", "BCA", "GoPay"
+  type         String        // "CHECKING", "SAVINGS", "CASH", "CREDIT_CARD", "E_WALLET"
+  balance      Float         @default(0)
+  currency     String        @default("IDR")
+  isOnBudget   Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  userId       String        @db.Uuid
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  recurringTransactions RecurringTransaction[]
+
+  @@map("accounts")
+}
+
+model CategoryGroup {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String     // "Kebutuhan Harian", "Tagihan Bulanan"
+  sortOrder  Int        @default(0)
+  isHidden   Boolean    @default(false)
+  userId     String     @db.Uuid
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deletedAt  DateTime?
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories Category[]
+
+  @@map("category_groups")
+}
+
+model Category {
+  id              String        @id @default(uuid()) @db.Uuid
+  name            String        // "Makanan", "Transport"
+  categoryGroupId String        @db.Uuid
+  sortOrder       Int           @default(0)
+  isHidden        Boolean       @default(false)
+  userId          String        @db.Uuid
+  targetAmount    Float?
+  targetType      String?       // "MONTHLY_SPENDING", "SAVINGS_BALANCE", "MONTHLY_BUILDER"
+  targetMonth     Int?
+  targetYear      Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryGroup   CategoryGroup @relation(fields: [categoryGroupId], references: [id], onDelete: Cascade)
+  budgetEntries   BudgetEntry[]
+  transactions    Transaction[]
+  recurringTransactions RecurringTransaction[]
+
+  @@map("categories")
+}
+
+model BudgetEntry {
+  id         String   @id @default(uuid()) @db.Uuid
+  categoryId String   @db.Uuid
+  month      Int      // 1-12
+  year       Int      // 2026
+  assigned   Float    @default(0)
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, month, year])
+  @@map("budget_entries")
+}
+
+model RecurringTransaction {
+  id                String    @id @default(uuid()) @db.Uuid
+  title             String
+  amount            Float
+  type              String    // "EXPENSE", "INCOME", "TRANSFER"
+  frequency         String    // "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
+  nextDate          DateTime  // next date this should be posted
+  lastPostedAt      DateTime? // when it was last posted
+  
+  accountId         String    @db.Uuid
+  categoryId        String?   @db.Uuid
+  transferAccountId String?   @db.Uuid
+  
+  userId            String    @db.Uuid
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account           Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category          Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("recurring_transactions")
 }
 
 model Vehicle {
@@ -317,4 +433,34 @@ model UserCredential {
   createdAt    DateTime @default(now())
 
   @@map("user_credentials")
+}
+
+model BudgetShare {
+  id           String   @id @default(uuid()) @db.Uuid
+  ownerId      String   @db.Uuid
+  grantedToId  String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  owner        User     @relation("OwnedShares", fields: [ownerId], references: [id], onDelete: Cascade)
+  grantedTo    User     @relation("ReceivedShares", fields: [grantedToId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, grantedToId])
+  @@map("budget_shares")
+}
+
+model EmailSyncConfig {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @unique @db.Uuid
+  imapHost   String
+  imapPort   Int       @default(993)
+  username   String
+  password   String
+  isActive   Boolean   @default(false)
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_sync_configs")
 }

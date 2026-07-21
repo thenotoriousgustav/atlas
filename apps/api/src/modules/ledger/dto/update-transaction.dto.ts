@@ -1,11 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString, IsISO8601 } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsISO8601, IsUUID } from 'class-validator';
 
 export class UpdateTransactionDto {
-  @ApiPropertyOptional({ example: 'EXPENSE', description: 'Transaction type', enum: ['EXPENSE', 'INCOME'] })
-  @IsEnum(['EXPENSE', 'INCOME'])
+  @ApiPropertyOptional({ example: 'EXPENSE', description: 'Transaction type', enum: ['EXPENSE', 'INCOME', 'TRANSFER'] })
+  @IsEnum(['EXPENSE', 'INCOME', 'TRANSFER'])
   @IsOptional()
-  type?: 'EXPENSE' | 'INCOME';
+  type?: 'EXPENSE' | 'INCOME' | 'TRANSFER';
 
   @ApiPropertyOptional({ example: 12.5, description: 'Amount of transaction' })
   @IsNumber()
@@ -22,7 +22,22 @@ export class UpdateTransactionDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'Food', description: 'Category' })
+  @ApiPropertyOptional({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', description: 'Account UUID' })
+  @IsUUID()
+  @IsOptional()
+  accountId?: string;
+
+  @ApiPropertyOptional({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', description: 'Category UUID' })
+  @IsUUID()
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', description: 'Transfer Destination Account UUID' })
+  @IsUUID()
+  @IsOptional()
+  transferAccountId?: string;
+
+  @ApiPropertyOptional({ example: 'Food', description: 'Deprecated free-text category' })
   @IsString()
   @IsOptional()
   category?: string;

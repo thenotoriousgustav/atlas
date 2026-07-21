@@ -276,7 +276,7 @@ export default function HomePortalPage() {
             className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-brand-charcoal"
           >
             <Fingerprint className="w-3.5 h-3.5" />
-            {isRegisteringPasskey ? 'Registering...' : hasPasskey ? 'Add Passkey Device' : 'Setup Passkey'}
+            {isRegisteringPasskey ? 'Registering...' : hasPasskey ? 'Passkey Registered' : 'Setup Passkey'}
           </Button>
           <ThemeToggle />
           <Button

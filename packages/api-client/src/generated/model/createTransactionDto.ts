@@ -16,8 +16,14 @@ export interface CreateTransactionDto {
   title: string;
   /** Description of transaction */
   description?: string;
-  /** Category */
-  category: string;
+  /** Account UUID */
+  accountId: string;
+  /** Category UUID (optional for income/transfers) */
+  categoryId?: string;
+  /** Transfer Destination Account UUID */
+  transferAccountId?: string;
+  /** Deprecated free-text category */
+  category?: string;
   /** Date */
   date?: string;
 }
