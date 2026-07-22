@@ -10,6 +10,7 @@ import {
   Clock,
   UploadSimple,
   Vault,
+  EnvelopeSimple,
 } from '@phosphor-icons/react';
 
 export type LedgerView =
@@ -25,6 +26,7 @@ interface LedgerSidebarFiltersProps {
   activeView: LedgerView;
   readyToAssign?: number;
   onImportCsv: () => void;
+  onSyncEmail?: () => void;
   accountsCount?: number;
   transactionsCount?: number;
   goalsCount?: number;
@@ -34,6 +36,7 @@ export function LedgerSidebarFilters({
   activeView,
   readyToAssign = 0,
   onImportCsv,
+  onSyncEmail,
   accountsCount = 0,
   transactionsCount = 0,
   goalsCount = 0,
@@ -188,8 +191,16 @@ export function LedgerSidebarFilters({
       {/* Quick Sync / Utilities */}
       <div className="pt-4 border-t border-brand-border space-y-2">
         <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Sync
+          Sync & Import
         </h3>
+        <Button
+          onClick={onSyncEmail}
+          variant="outline"
+          className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
+        >
+          <EnvelopeSimple className="w-3.5 h-3.5" />
+          <span>Sync Email</span>
+        </Button>
         <Button
           onClick={onImportCsv}
           variant="outline"

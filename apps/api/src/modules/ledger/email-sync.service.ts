@@ -21,7 +21,7 @@ export class EmailSyncService {
         const socket = tls.connect({
           host,
           port: config.imapPort,
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
         });
 
         let resolved = false;
@@ -38,7 +38,11 @@ export class EmailSyncService {
               socket.end();
               resolve({ success: true, message: 'Connection to Gmail IMAP server successful!' });
             }
-          } else if (response.includes('A1 NO') || response.includes('A1 BAD') || response.includes('AUTHENTICATIONFAILED')) {
+          } else if (
+            response.includes('A1 NO') ||
+            response.includes('A1 BAD') ||
+            response.includes('AUTHENTICATIONFAILED')
+          ) {
             if (!resolved) {
               resolved = true;
               socket.end();
@@ -123,7 +127,7 @@ export class EmailSyncService {
         const socket = tls.connect({
           host,
           port: config.imapPort,
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
         });
 
         let step = 0;
@@ -136,7 +140,7 @@ export class EmailSyncService {
 
         socket.on('data', (data) => {
           buffer += data.toString();
-          
+
           if (step === 0 && buffer.includes('* OK')) {
             step = 1;
             buffer = '';
@@ -148,17 +152,17 @@ export class EmailSyncService {
           } else if (step === 2 && buffer.includes('A2 OK')) {
             step = 3;
             buffer = '';
-            socket.write(`A3 SEARCH OR TEXT "Mandiri" TEXT "Jago"\r\n`);
+            socket.write(`A3 SEARCH ALL\r\n`);
           } else if (step === 3 && buffer.includes('A3 OK')) {
             const searchMatch = buffer.match(/\*\s+SEARCH\s+([0-9\s]+)/i);
             if (searchMatch && searchMatch[1]) {
               const ids = searchMatch[1].trim().split(/\s+/).filter(Boolean);
-              targetMsgIds = ids.slice(-15);
+              targetMsgIds = ids.slice(-25); // Process up to 25 latest emails
             }
-            
+
             step = 4;
             buffer = '';
-            
+
             if (targetMsgIds.length > 0) {
               const sequenceList = targetMsgIds.join(',');
               socket.write(`A4 FETCH ${sequenceList} (BODY[HEADER.FIELDS (SUBJECT)] BODY[TEXT])\r\n`);
@@ -170,7 +174,10 @@ export class EmailSyncService {
                 resolve([]);
               }
             }
-          } else if (step === 4 && (buffer.includes('A4 OK') || buffer.includes('A4 BAD') || buffer.includes('A4 NO'))) {
+          } else if (
+            step === 4 &&
+            (buffer.includes('A4 OK') || buffer.includes('A4 BAD') || buffer.includes('A4 NO'))
+          ) {
             if (!resolved) {
               resolved = true;
               const blocks = buffer.split(/FETCH \(/i);
@@ -228,7 +235,7 @@ export class EmailSyncService {
     for (const email of emails) {
       const parsed = this.parseEmailContent(email.subject, email.body);
       if (parsed) {
-        // ponytail: use standard library crypto to prevent duplicate syncing
+        // SHA-256 Hash to prevent duplicate syncing
         const emailHash = crypto
           .createHash('sha256')
           .update(email.subject + email.body)
@@ -249,7 +256,7 @@ export class EmailSyncService {
           continue; // Skip duplicate transaction
         }
 
-        // Resolve account or create one
+        // Resolve account or create one for the bank
         let account = await this.prisma.account.findFirst({
           where: {
             userId,
@@ -283,7 +290,7 @@ export class EmailSyncService {
             amount: parsed.amount,
             title: parsed.title,
             description: `Auto-sync via Email: Bank ${parsed.bank} [hash:${emailHash}]`,
-            date: new Date(),
+            date: parsed.date || new Date(),
           },
           include: {
             account: true,
@@ -316,10 +323,13 @@ export class EmailSyncService {
     return results;
   }
 
-  private parseEmailContent(subject: string, body: string): { bank: string; type: 'EXPENSE' | 'INCOME'; amount: number; title: string } | null {
+  private parseEmailContent(
+    subject: string,
+    body: string
+  ): { bank: string; type: 'EXPENSE' | 'INCOME'; amount: number; title: string; date?: Date } | null {
     // 1. Decode Quoted-Printable
     let cleanBody = body
-      .replace(/=([0-[#9F2F2D]A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
       .replace(/=\r?\n/g, '');
 
     // 2. Strip HTML tags & decode common entities
@@ -333,69 +343,102 @@ export class EmailSyncService {
       .replace(/&gt;/gi, '>');
 
     const combined = `${subject} \n ${cleanBody}`;
-    
-    // Determine Bank
+
+    // 3. Determine Bank
     let bank = '';
     if (/jago/i.test(combined)) {
       bank = 'Jago';
     } else if (/mandiri/i.test(combined)) {
       bank = 'Mandiri';
+    } else if (/blu|bca/i.test(combined)) {
+      bank = 'blu (BCA)';
     } else {
-      return null; // Not Jago or Mandiri
+      return null; // Unsupported bank
     }
 
-    // Extract Amount (IDR or Rp followed by numbers, e.g. Rp 10.000,00 or IDR 250.000)
+    // 4. Extract Amount (handles "Rp 10.000", "Rp 70.000,00", "Nominal: Rp 10.000,00")
     let amount = 0;
-    const amountRegex = /(?:nominal|nominal\s*rp|rp|idr)\.?\s*([0-9\.,]+)/i;
-    const amountMatch = combined.match(amountRegex);
+    const amountRegex = /(?:nominal|total|amount)\s*:?\s*(?:rp|idr)?\.?\s*([0-9\.,]+)/i;
+    const amountMatch = combined.match(amountRegex) || combined.match(/(?:rp|idr)\.?\s*([0-9\.,]+)/i);
+
     if (amountMatch && amountMatch[1]) {
-      // Normalize number format (remove dots, replace comma with dot)
-      const rawNumber = amountMatch[1].replace(/\./g, '').replace(/,/g, '.');
-      amount = parseFloat(rawNumber);
+      let rawNumber = amountMatch[1].trim();
+      // If ends with ,00 or .00 decimal suffix
+      if (rawNumber.endsWith(',00') || rawNumber.endsWith('.00')) {
+        rawNumber = rawNumber.slice(0, -3);
+      }
+      // Strip thousand separator dots or commas
+      const cleanDigits = rawNumber.replace(/[\.,]/g, '');
+      amount = parseFloat(cleanDigits);
     }
 
     if (isNaN(amount) || amount <= 0) return null;
 
-    // Determine Type (Expense vs Income)
+    // 5. Determine Type (EXPENSE vs INCOME)
     let type: 'EXPENSE' | 'INCOME' = 'EXPENSE';
-    if (/uang masuk|kredit|credit|received|inflow|ditransfer dari|transfer masuk|pengirim|dana masuk|setoran/i.test(combined)) {
+    if (
+      /uang masuk|kredit|credit|received|inflow|ditransfer dari|transfer masuk|pengirim|dana masuk|setoran/i.test(
+        combined
+      )
+    ) {
       type = 'INCOME';
-    } else if (/transfer berhasil|uang keluar|debet|debit|payment|transfer ke|ke gopay|ke shopeepay|penerima/i.test(combined)) {
+    } else if (
+      /transfer berhasil|payment|uang keluar|debet|debit|transfer ke|ke gopay|ke shopeepay|penerima|you have made a payment/i.test(
+        combined
+      )
+    ) {
       type = 'EXPENSE';
     }
 
-    // Extract Merchant / Sender / Receiver Title
+    // 6. Extract Recipient / Merchant / Sender Title
     let title = '';
-    
-    // Check for Pengirim format (Income)
-    if (type === 'INCOME') {
-      const pengirimMatch = combined.match(/(?:pengirim|ditransfer dari|dari)\s*[\r\n]*\s*([^\r\n]+)/i);
+
+    // Check for "To" or "Penerima" (Jago & Mandiri format)
+    const toMatch = combined.match(/(?:to|penerima)\s*:?\s*([^\r\n]+)/i);
+    if (toMatch && toMatch[1]) {
+      let recipient = toMatch[1].trim();
+      // Remove trailing account numbers if present (e.g. "warkop Iwan camp java 9360000...")
+      recipient = recipient.replace(/[0-9]{8,}/g, '').trim();
+      if (recipient && !recipient.toLowerCase().includes('bank')) {
+        title = recipient;
+      }
+    }
+
+    // Check for "Pengirim" (Income format)
+    if (!title && type === 'INCOME') {
+      const pengirimMatch = combined.match(/(?:pengirim|ditransfer dari|dari)\s*:?\s*([^\r\n]+)/i);
       if (pengirimMatch && pengirimMatch[1]) {
-        const senderName = pengirimMatch[1].trim();
-        if (senderName && !senderName.toLowerCase().includes('bank')) {
-          title = `Transfer dari ${senderName}`;
-        }
-      }
-    }
-
-    // Check for Penerima format (Expense)
-    if (!title) {
-      const penerimaMatch = combined.match(/Penerima\s*[\r\n]*\s*([^\r\n]+)/i);
-      if (penerimaMatch && penerimaMatch[1]) {
-        const recipientName = penerimaMatch[1].trim();
-        if (recipientName && !recipientName.toLowerCase().includes('bank')) {
-          title = `Transfer ke ${recipientName}`;
+        let sender = pengirimMatch[1].trim().replace(/[0-9]{8,}/g, '').trim();
+        if (sender && !sender.toLowerCase().includes('bank')) {
+          title = `Transfer dari ${sender}`;
         }
       }
     }
 
     if (!title) {
-      const merchantRegex = /(?:ke|dari|gopay|shopeepay)\s+([a-z0-9\s]+)/i;
-      const merchantMatch = combined.match(merchantRegex);
+      const merchantMatch = combined.match(/(?:ke|dari|gopay|shopeepay)\s+([a-z0-9\s]+)/i);
       if (merchantMatch && merchantMatch[1]) {
         title = merchantMatch[1].trim().split('\n')[0].substring(0, 30);
       } else {
         title = type === 'EXPENSE' ? `Pengeluaran Bank ${bank}` : `Pemasukan Bank ${bank}`;
+      }
+    }
+
+    // 7. Extract Date if available (e.g. "21 July 2026", "27 Mei 2025", "20 Jul 2026")
+    let date: Date | undefined;
+    const dateMatch = combined.match(/([0-9]{1,2})\s+(jan|feb|mar|apr|mei|may|jun|jul|aug|agt|sep|okt|oct|nov|des|dec)[a-z]*\s+([0-9]{4})/i);
+    if (dateMatch) {
+      const day = parseInt(dateMatch[1], 10);
+      const monthStr = dateMatch[2].toLowerCase();
+      const year = parseInt(dateMatch[3], 10);
+
+      const monthsMap: Record<string, number> = {
+        jan: 0, feb: 1, mar: 2, apr: 3, mei: 4, may: 4, jun: 5,
+        jul: 6, aug: 7, agt: 7, sep: 8, okt: 9, oct: 9, nov: 10, des: 11, dec: 11,
+      };
+
+      if (monthsMap[monthStr] !== undefined) {
+        date = new Date(year, monthsMap[monthStr], day);
       }
     }
 
@@ -404,6 +447,7 @@ export class EmailSyncService {
       type,
       amount,
       title: title || (type === 'EXPENSE' ? 'Pengeluaran' : 'Pemasukan'),
+      date,
     };
   }
 }

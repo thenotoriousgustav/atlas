@@ -46,6 +46,7 @@ import { AddAccountDialog } from './components/accounts/add-account-dialog';
 import { TransactionTable } from './components/transactions/transaction-table';
 import { AddTransactionDialog } from './components/transactions/add-transaction-dialog';
 import { CsvImportModal } from './components/transactions/csv-import-modal';
+import { EmailSyncModal } from './components/shared/email-sync-modal';
 import { ZeroBasedBudgetGrid } from './components/budget/zero-based-budget-grid';
 import { AssignMoneyModal } from './components/budget/assign-money-modal';
 import { MoveBudgetDialog } from './components/budget/move-budget-dialog';
@@ -56,7 +57,7 @@ import { SubscriptionList } from './components/subscriptions/subscription-list';
 import { AddSubscriptionDialog } from './components/subscriptions/add-subscription-dialog';
 import { IncomeExpenseReport } from './components/reports/income-expense-report';
 import { Button } from '@atlas/ui/components/button';
-import { Plus, Coins, ArrowsLeftRight, UploadSimple, Shield } from '@phosphor-icons/react';
+import { Plus, Coins, ArrowsLeftRight, UploadSimple, Shield, EnvelopeSimple } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 
@@ -94,6 +95,7 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
   const [subscriptionToEdit, setSubscriptionToEdit] = useState<any | null>(null);
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isEmailSyncModalOpen, setIsEmailSyncModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isMoveBudgetModalOpen, setIsMoveBudgetModalOpen] = useState(false);
   const [moveBudgetSourceId, setMoveBudgetSourceId] = useState<string | undefined>(undefined);
@@ -484,6 +486,7 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
             <LedgerSidebarFilters
               activeView={activeView}
               readyToAssign={readyToAssign}
+              onSyncEmail={() => setIsEmailSyncModalOpen(true)}
               onImportCsv={() => setIsImportModalOpen(true)}
               accountsCount={accounts.length}
               transactionsCount={transactions.length}
@@ -525,15 +528,12 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
                         <span>Assign Money</span>
                       </Button>
                       <Button
-                        onClick={() => {
-                          setGoalToEdit(null);
-                          setIsGoalModalOpen(true);
-                        }}
+                        onClick={() => setIsEmailSyncModalOpen(true)}
                         variant="outline"
                         className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
                       >
-                        <Shield className="size-3.5" />
-                        <span>Create Goal</span>
+                        <EnvelopeSimple className="size-3.5" />
+                        <span>Sync Email</span>
                       </Button>
                       <Button
                         onClick={() => setIsImportModalOpen(true)}
@@ -640,6 +640,14 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
                   ]}
                   action={
                     <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setIsEmailSyncModalOpen(true)}
+                        variant="outline"
+                        className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
+                      >
+                        <EnvelopeSimple className="size-3.5" />
+                        <span>Sync Email</span>
+                      </Button>
                       <Button
                         onClick={() => setIsImportModalOpen(true)}
                         variant="outline"
@@ -850,6 +858,16 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
         onClose={() => setIsImportModalOpen(false)}
         accounts={accounts}
         onImportBulk={handleImportBulkTransactions}
+      />
+
+      <EmailSyncModal
+        isOpen={isEmailSyncModalOpen}
+        onClose={() => setIsEmailSyncModalOpen(false)}
+        onSuccessSync={() => {
+          queryClient.invalidateQueries({ queryKey: ['/v1/transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['/v1/accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
+        }}
       />
 
       <AssignMoneyModal
