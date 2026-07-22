@@ -37,10 +37,10 @@ import {
 import { useAuthStore } from '../../store/useAuthStore';
 import { LedgerWorkspaceHeader } from './components/shared/ledger-workspace-header';
 import { LedgerSidebarFilters, LedgerView } from './components/shared/ledger-sidebar-filters';
+import { LedgerPageHeaderCard } from './components/shared/ledger-page-header-card';
 import { ReadyToAssignBanner } from './components/shared/ready-to-assign-banner';
 import { KpiGrid } from './components/dashboard/kpi-grid';
 import { CashFlowChart } from './components/dashboard/cash-flow-chart';
-import { QuickActions } from './components/dashboard/quick-actions';
 import { AccountList } from './components/accounts/account-list';
 import { AddAccountDialog } from './components/accounts/add-account-dialog';
 import { TransactionTable } from './components/transactions/transaction-table';
@@ -55,6 +55,8 @@ import { AddGoalDialog } from './components/goals/add-goal-dialog';
 import { SubscriptionList } from './components/subscriptions/subscription-list';
 import { AddSubscriptionDialog } from './components/subscriptions/add-subscription-dialog';
 import { IncomeExpenseReport } from './components/reports/income-expense-report';
+import { Button } from '@atlas/ui/components/button';
+import { Plus, Coins, ArrowsLeftRight, UploadSimple, Shield } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 
@@ -161,6 +163,23 @@ export function LedgerDashboard() {
     .filter((t: any) => t.type === 'EXPENSE')
     .reduce((acc: number, t: any) => acc + (t.amount || 0), 0);
 
+  const monthlySubscriptionTotal = subscriptions
+    .filter((s: any) => s.isActive)
+    .reduce((acc: number, s: any) => {
+      const amt = s.billingCycle === 'ANNUAL' ? s.amount / 12 : s.amount;
+      return acc + amt;
+    }, 0);
+
+  const goalTotalTarget = goals.reduce((acc: number, g: any) => acc + (g.targetAmount || 0), 0);
+  const goalTotalAccumulated = goals.reduce((acc: number, g: any) => acc + (g.currentAmount || 0), 0);
+
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(val);
+
   // Mutations
   const createAccountMutation = useAccountsControllerCreate();
   const updateAccountMutation = useAccountsControllerUpdate();
@@ -205,31 +224,31 @@ export function LedgerDashboard() {
     try {
       if (accountToEdit) {
         await updateAccountMutation.mutateAsync({ id: accountToEdit.id, data });
-        toast.success('Account berhasil diperbarui!');
+        toast.success('Account updated successfully!');
       } else {
         await createAccountMutation.mutateAsync({ data });
-        toast.success('Account baru berhasil ditambahkan!');
+        toast.success('New account added successfully!');
       }
       setIsAccountModalOpen(false);
       setAccountToEdit(null);
       queryClient.invalidateQueries({ queryKey: ['/v1/accounts'] });
     } catch {
-      toast.error('Gagal menyimpan account.');
+      toast.error('Failed to save account.');
     }
   };
 
   const handleDeleteAccount = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Hapus Account',
-      description: 'Apakah Anda yakin ingin menghapus account ini?',
+      title: 'Delete Account',
+      description: 'Are you sure you want to delete this account?',
     });
     if (!isConfirmed) return;
     try {
       await removeAccountMutation.mutateAsync({ id });
-      toast.success('Account berhasil dihapus.');
+      toast.success('Account deleted successfully.');
       queryClient.invalidateQueries({ queryKey: ['/v1/accounts'] });
     } catch {
-      toast.error('Gagal menghapus account.');
+      toast.error('Failed to delete account.');
     }
   };
 
@@ -238,10 +257,10 @@ export function LedgerDashboard() {
     try {
       if (transactionToEdit) {
         await updateTransactionMutation.mutateAsync({ id: transactionToEdit.id, data });
-        toast.success('Transaksi berhasil diperbarui!');
+        toast.success('Transaction updated successfully!');
       } else {
         await createTransactionMutation.mutateAsync({ data });
-        toast.success('Transaksi baru berhasil dicatat!');
+        toast.success('New transaction recorded successfully!');
       }
       setIsTransactionModalOpen(false);
       setTransactionToEdit(null);
@@ -249,24 +268,24 @@ export function LedgerDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/v1/accounts'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
     } catch {
-      toast.error('Gagal menyimpan transaksi.');
+      toast.error('Failed to save transaction.');
     }
   };
 
   const handleDeleteTransaction = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Hapus Transaksi',
-      description: 'Apakah Anda yakin ingin menghapus transaksi ini?',
+      title: 'Delete Transaction',
+      description: 'Are you sure you want to delete this transaction?',
     });
     if (!isConfirmed) return;
     try {
       await removeTransactionMutation.mutateAsync({ id });
-      toast.success('Transaksi berhasil dihapus.');
+      toast.success('Transaction deleted successfully.');
       queryClient.invalidateQueries({ queryKey: ['/v1/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/accounts'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
     } catch {
-      toast.error('Gagal menghapus transaksi.');
+      toast.error('Failed to delete transaction.');
     }
   };
 
@@ -280,11 +299,11 @@ export function LedgerDashboard() {
         accountId,
       }));
       await bulkCreateTransactionMutation.mutateAsync({ data: payload } as any);
-      toast.success(`${txList.length} transaksi berhasil diimpor!`);
+      toast.success(`${txList.length} transactions imported successfully!`);
       queryClient.invalidateQueries({ queryKey: ['/v1/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/accounts'] });
     } catch {
-      toast.error('Gagal mengimpor transaksi dari CSV.');
+      toast.error('Failed to import transactions from CSV.');
     }
   };
 
@@ -294,10 +313,10 @@ export function LedgerDashboard() {
       await updateBudgetEntryMutation.mutateAsync({
         data: { categoryId, month: budgetMonth, year: budgetYear, assigned },
       });
-      toast.success('Alokasi anggaran diperbarui.');
+      toast.success('Budget allocation updated.');
       queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
     } catch {
-      toast.error('Gagal memperbarui anggaran.');
+      toast.error('Failed to update budget allocation.');
     }
   };
 
@@ -316,7 +335,7 @@ export function LedgerDashboard() {
 
     await handleUpdateAssigned(fromId, newFromAssigned);
     await handleUpdateAssigned(toId, newToAssigned);
-    toast.success('Anggaran berhasil dipindahkan (Rule 3)!');
+    toast.success('Budget moved successfully (Rule 3)!');
   };
 
   // Handlers - Category & Category Groups
@@ -324,15 +343,15 @@ export function LedgerDashboard() {
     try {
       if (id) {
         await updateCategoryGroupMutation.mutateAsync({ id, data: { name } });
-        toast.success('Category group diperbarui.');
+        toast.success('Category group updated.');
       } else {
         await createCategoryGroupMutation.mutateAsync({ data: { name } });
-        toast.success('Category group baru ditambahkan.');
+        toast.success('New category group added.');
       }
       queryClient.invalidateQueries({ queryKey: ['/v1/category-groups'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
     } catch {
-      toast.error('Gagal menyimpan category group.');
+      toast.error('Failed to save category group.');
     }
   };
 
@@ -340,33 +359,33 @@ export function LedgerDashboard() {
     try {
       if (id) {
         await updateCategoryMutation.mutateAsync({ id, data: { name, targetAmount } });
-        toast.success('Kategori diperbarui.');
+        toast.success('Category updated.');
       } else {
         await createCategoryMutation.mutateAsync({
           data: { name, categoryGroupId: groupId, targetAmount },
         });
-        toast.success('Kategori baru ditambahkan.');
+        toast.success('New category added.');
       }
       queryClient.invalidateQueries({ queryKey: ['/v1/category-groups'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
     } catch {
-      toast.error('Gagal menyimpan kategori.');
+      toast.error('Failed to save category.');
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Hapus Kategori',
-      description: 'Apakah Anda yakin ingin menghapus kategori ini?',
+      title: 'Delete Category',
+      description: 'Are you sure you want to delete this category?',
     });
     if (!isConfirmed) return;
     try {
       await removeCategoryMutation.mutateAsync({ id });
-      toast.success('Kategori dihapus.');
+      toast.success('Category deleted.');
       queryClient.invalidateQueries({ queryKey: ['/v1/category-groups'] });
       queryClient.invalidateQueries({ queryKey: ['/v1/budget'] });
     } catch {
-      toast.error('Gagal menghapus kategori.');
+      toast.error('Failed to delete category.');
     }
   };
 
@@ -375,31 +394,31 @@ export function LedgerDashboard() {
     try {
       if (goalToEdit) {
         await updateGoalMutation.mutateAsync({ id: goalToEdit.id, data });
-        toast.success('Goal diperbarui!');
+        toast.success('Goal updated successfully!');
       } else {
         await createGoalMutation.mutateAsync({ data });
-        toast.success('Goal baru berhasil dibuat!');
+        toast.success('New financial goal created successfully!');
       }
       setIsGoalModalOpen(false);
       setGoalToEdit(null);
       queryClient.invalidateQueries({ queryKey: ['/v1/goals'] });
     } catch {
-      toast.error('Gagal menyimpan goal.');
+      toast.error('Failed to save goal.');
     }
   };
 
   const handleDeleteGoal = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Hapus Goal',
-      description: 'Apakah Anda yakin ingin menghapus target finansial ini?',
+      title: 'Delete Goal',
+      description: 'Are you sure you want to delete this financial goal?',
     });
     if (!isConfirmed) return;
     try {
       await removeGoalMutation.mutateAsync({ id });
-      toast.success('Goal berhasil dihapus.');
+      toast.success('Goal deleted successfully.');
       queryClient.invalidateQueries({ queryKey: ['/v1/goals'] });
     } catch {
-      toast.error('Gagal menghapus goal.');
+      toast.error('Failed to delete goal.');
     }
   };
 
@@ -408,31 +427,31 @@ export function LedgerDashboard() {
     try {
       if (subscriptionToEdit) {
         await updateSubscriptionMutation.mutateAsync({ id: subscriptionToEdit.id, data });
-        toast.success('Subskripsi diperbarui!');
+        toast.success('Subscription updated successfully!');
       } else {
         await createSubscriptionMutation.mutateAsync({ data });
-        toast.success('Subskripsi baru ditambahkan!');
+        toast.success('New subscription added successfully!');
       }
       setIsSubscriptionModalOpen(false);
       setSubscriptionToEdit(null);
       queryClient.invalidateQueries({ queryKey: ['/v1/subscriptions'] });
     } catch {
-      toast.error('Gagal menyimpan subskripsi.');
+      toast.error('Failed to save subscription.');
     }
   };
 
   const handleDeleteSubscription = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Hapus Subskripsi',
-      description: 'Apakah Anda yakin ingin menghapus langganan ini?',
+      title: 'Delete Subscription',
+      description: 'Are you sure you want to delete this subscription?',
     });
     if (!isConfirmed) return;
     try {
       await removeSubscriptionMutation.mutateAsync({ id });
-      toast.success('Subskripsi dihapus.');
+      toast.success('Subscription deleted successfully.');
       queryClient.invalidateQueries({ queryKey: ['/v1/subscriptions'] });
     } catch {
-      toast.error('Gagal menghapus subskripsi.');
+      toast.error('Failed to delete subscription.');
     }
   };
 
@@ -441,7 +460,7 @@ export function LedgerDashboard() {
       <div className="flex h-screen items-center justify-center bg-brand-canvas">
         <div className="flex flex-col items-center gap-2 text-xs text-brand-muted font-mono">
           <div className="size-6 animate-spin rounded-none border-2 border-brand-charcoal border-t-transparent" />
-          <span>Memuat Atlas Ledger...</span>
+          <span>Loading Atlas Ledger...</span>
         </div>
       </div>
     );
@@ -483,17 +502,49 @@ export function LedgerDashboard() {
             {/* View Switcher */}
             {activeView === 'dashboard' && (
               <div className="flex flex-col gap-6">
-                <QuickActions
-                  onAddTransaction={() => {
-                    setTransactionToEdit(null);
-                    setIsTransactionModalOpen(true);
-                  }}
-                  onAssignMoney={() => setIsAssignModalOpen(true)}
-                  onAddGoal={() => {
-                    setGoalToEdit(null);
-                    setIsGoalModalOpen(true);
-                  }}
-                  onImportCsv={() => setIsImportModalOpen(true)}
+                <LedgerPageHeaderCard
+                  title="Dashboard Overview"
+                  description="Overview of your net worth, active cash, savings ratio, and monthly cash flow trends."
+                  action={
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        onClick={() => {
+                          setTransactionToEdit(null);
+                          setIsTransactionModalOpen(true);
+                        }}
+                        className="h-9 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Add Transaction</span>
+                      </Button>
+                      <Button
+                        onClick={() => setIsAssignModalOpen(true)}
+                        className="h-9 gap-1.5 rounded-none bg-[#346538] text-xs font-medium text-white hover:bg-[#28502c]"
+                      >
+                        <Coins className="size-3.5" />
+                        <span>Assign Money</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setGoalToEdit(null);
+                          setIsGoalModalOpen(true);
+                        }}
+                        variant="outline"
+                        className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
+                      >
+                        <Shield className="size-3.5" />
+                        <span>Create Goal</span>
+                      </Button>
+                      <Button
+                        onClick={() => setIsImportModalOpen(true)}
+                        variant="outline"
+                        className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
+                      >
+                        <UploadSimple className="size-3.5" />
+                        <span>Import CSV</span>
+                      </Button>
+                    </div>
+                  }
                 />
                 <KpiGrid
                   totalNetWorth={totalNetWorth}
@@ -508,108 +559,270 @@ export function LedgerDashboard() {
             )}
 
             {activeView === 'budget' && (
-              <ZeroBasedBudgetGrid
-                groups={budget.groups || []}
-                readyToAssign={readyToAssign}
-                budgetMonth={budgetMonth}
-                budgetYear={budgetYear}
-                onUpdateAssigned={handleUpdateAssigned}
-                onOpenAssignModal={() => setIsAssignModalOpen(true)}
-                onOpenMoveBudgetModal={(srcId) => {
-                  setMoveBudgetSourceId(srcId);
-                  setIsMoveBudgetModalOpen(true);
-                }}
-                onAddCategoryGroup={() => {
-                  setCategoryModalMode('createGroup');
-                  setCategoryModalTargetItem(null);
-                  setIsCategoryModalOpen(true);
-                }}
-                onAddCategory={(groupId) => {
-                  setCategoryModalMode('createCategory');
-                  setCategoryModalParentGroupId(groupId);
-                  setCategoryModalTargetItem(null);
-                  setIsCategoryModalOpen(true);
-                }}
-                onEditCategory={(cat) => {
-                  setCategoryModalMode('editCategory');
-                  setCategoryModalTargetItem(cat);
-                  setIsCategoryModalOpen(true);
-                }}
-                onDeleteCategory={handleDeleteCategory}
-              />
+              <div className="flex flex-col gap-6">
+                <LedgerPageHeaderCard
+                  title="Zero-Based Budgeting"
+                  description="Assign every rupiah of your cash to specific expense categories before spending (Rule 1 YNAB)."
+                  action={
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        onClick={() => setIsAssignModalOpen(true)}
+                        className="h-9 gap-1.5 rounded-none bg-[#346538] text-xs font-medium text-white hover:bg-[#28502c]"
+                      >
+                        <Coins className="size-3.5" />
+                        <span>Assign Money</span>
+                      </Button>
+                      <Button
+                        onClick={() => setIsMoveBudgetModalOpen(true)}
+                        variant="outline"
+                        className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
+                      >
+                        <ArrowsLeftRight className="size-3.5" />
+                        <span>Move Budget</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setCategoryModalMode('createGroup');
+                          setCategoryModalTargetItem(null);
+                          setIsCategoryModalOpen(true);
+                        }}
+                        variant="outline"
+                        className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Add Group</span>
+                      </Button>
+                    </div>
+                  }
+                />
+                <ZeroBasedBudgetGrid
+                  groups={budget.groups || []}
+                  readyToAssign={readyToAssign}
+                  budgetMonth={budgetMonth}
+                  budgetYear={budgetYear}
+                  onUpdateAssigned={handleUpdateAssigned}
+                  onOpenAssignModal={() => setIsAssignModalOpen(true)}
+                  onOpenMoveBudgetModal={(srcId) => {
+                    setMoveBudgetSourceId(srcId);
+                    setIsMoveBudgetModalOpen(true);
+                  }}
+                  onAddCategoryGroup={() => {
+                    setCategoryModalMode('createGroup');
+                    setCategoryModalTargetItem(null);
+                    setIsCategoryModalOpen(true);
+                  }}
+                  onAddCategory={(groupId) => {
+                    setCategoryModalMode('createCategory');
+                    setCategoryModalParentGroupId(groupId);
+                    setCategoryModalTargetItem(null);
+                    setIsCategoryModalOpen(true);
+                  }}
+                  onEditCategory={(cat) => {
+                    setCategoryModalMode('editCategory');
+                    setCategoryModalTargetItem(cat);
+                    setIsCategoryModalOpen(true);
+                  }}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </div>
             )}
 
             {activeView === 'transactions' && (
-              <TransactionTable
-                transactions={transactions}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                typeFilter={typeFilter}
-                setTypeFilter={setTypeFilter}
-                onAddTransaction={() => {
-                  setTransactionToEdit(null);
-                  setIsTransactionModalOpen(true);
-                }}
-                onEditTransaction={(tx) => {
-                  setTransactionToEdit(tx);
-                  setIsTransactionModalOpen(true);
-                }}
-                onDeleteTransaction={handleDeleteTransaction}
-                onImportCsv={() => setIsImportModalOpen(true)}
-              />
+              <div className="flex flex-col gap-6">
+                <LedgerPageHeaderCard
+                  title="All Transactions"
+                  description="History of your expense, income, and transfer records between accounts."
+                  stats={[
+                    {
+                      label: 'Total Records',
+                      value: String(transactions.length),
+                    },
+                  ]}
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setIsImportModalOpen(true)}
+                        variant="outline"
+                        className="h-9 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
+                      >
+                        <UploadSimple className="size-3.5" />
+                        <span>Import CSV</span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setTransactionToEdit(null);
+                          setIsTransactionModalOpen(true);
+                        }}
+                        className="h-9 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Add Transaction</span>
+                      </Button>
+                    </div>
+                  }
+                />
+                <TransactionTable
+                  transactions={transactions}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  typeFilter={typeFilter}
+                  setTypeFilter={setTypeFilter}
+                  onAddTransaction={() => {
+                    setTransactionToEdit(null);
+                    setIsTransactionModalOpen(true);
+                  }}
+                  onEditTransaction={(tx) => {
+                    setTransactionToEdit(tx);
+                    setIsTransactionModalOpen(true);
+                  }}
+                  onDeleteTransaction={handleDeleteTransaction}
+                  onImportCsv={() => setIsImportModalOpen(true)}
+                />
+              </div>
             )}
 
             {activeView === 'accounts' && (
-              <AccountList
-                accounts={accounts}
-                onAddAccount={() => {
-                  setAccountToEdit(null);
-                  setIsAccountModalOpen(true);
-                }}
-                onEditAccount={(acc) => {
-                  setAccountToEdit(acc);
-                  setIsAccountModalOpen(true);
-                }}
-                onDeleteAccount={handleDeleteAccount}
-              />
+              <div className="flex flex-col gap-6">
+                <LedgerPageHeaderCard
+                  title="Accounts & Balances"
+                  description="Manage your bank accounts, e-wallets, credit cards, and cash balances."
+                  stats={[
+                    {
+                      label: 'Total Account Balances',
+                      value: formatCurrency(totalNetWorth),
+                    },
+                  ]}
+                  action={
+                    <Button
+                      onClick={() => {
+                        setAccountToEdit(null);
+                        setIsAccountModalOpen(true);
+                      }}
+                      className="h-9 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Add Account</span>
+                    </Button>
+                  }
+                />
+                <AccountList
+                  accounts={accounts}
+                  onAddAccount={() => {
+                    setAccountToEdit(null);
+                    setIsAccountModalOpen(true);
+                  }}
+                  onEditAccount={(acc) => {
+                    setAccountToEdit(acc);
+                    setIsAccountModalOpen(true);
+                  }}
+                  onDeleteAccount={handleDeleteAccount}
+                />
+              </div>
             )}
 
             {activeView === 'goals' && (
-              <GoalGrid
-                goals={goals}
-                onAddGoal={() => {
-                  setGoalToEdit(null);
-                  setIsGoalModalOpen(true);
-                }}
-                onEditGoal={(g) => {
-                  setGoalToEdit(g);
-                  setIsGoalModalOpen(true);
-                }}
-                onDeleteGoal={handleDeleteGoal}
-              />
+              <div className="flex flex-col gap-6">
+                <LedgerPageHeaderCard
+                  title="Financial Goals"
+                  description="Track long-term savings goals such as Emergency Funds, Property, and Retirement."
+                  stats={[
+                    {
+                      label: 'Total Target',
+                      value: formatCurrency(goalTotalTarget),
+                    },
+                    {
+                      label: 'Accumulated',
+                      value: formatCurrency(goalTotalAccumulated),
+                      highlight: true,
+                    },
+                  ]}
+                  action={
+                    <Button
+                      onClick={() => {
+                        setGoalToEdit(null);
+                        setIsGoalModalOpen(true);
+                      }}
+                      className="h-9 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Create Goal</span>
+                    </Button>
+                  }
+                />
+                <GoalGrid
+                  goals={goals}
+                  onAddGoal={() => {
+                    setGoalToEdit(null);
+                    setIsGoalModalOpen(true);
+                  }}
+                  onEditGoal={(g) => {
+                    setGoalToEdit(g);
+                    setIsGoalModalOpen(true);
+                  }}
+                  onDeleteGoal={handleDeleteGoal}
+                />
+              </div>
             )}
 
             {activeView === 'subscriptions' && (
-              <SubscriptionList
-                subscriptions={subscriptions}
-                onAddSubscription={() => {
-                  setSubscriptionToEdit(null);
-                  setIsSubscriptionModalOpen(true);
-                }}
-                onEditSubscription={(sub) => {
-                  setSubscriptionToEdit(sub);
-                  setIsSubscriptionModalOpen(true);
-                }}
-                onDeleteSubscription={handleDeleteSubscription}
-              />
+              <div className="flex flex-col gap-6">
+                <LedgerPageHeaderCard
+                  title="Subscription List"
+                  description="Manage your list of monthly and annual routine subscription services."
+                  stats={[
+                    {
+                      label: 'Estimated Monthly Cost',
+                      value: formatCurrency(monthlySubscriptionTotal),
+                      subtext: '/ month',
+                    },
+                  ]}
+                  action={
+                    <Button
+                      onClick={() => {
+                        setSubscriptionToEdit(null);
+                        setIsSubscriptionModalOpen(true);
+                      }}
+                      className="h-9 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Add Subscription</span>
+                    </Button>
+                  }
+                />
+                <SubscriptionList
+                  subscriptions={subscriptions}
+                  onAddSubscription={() => {
+                    setSubscriptionToEdit(null);
+                    setIsSubscriptionModalOpen(true);
+                  }}
+                  onEditSubscription={(sub) => {
+                    setSubscriptionToEdit(sub);
+                    setIsSubscriptionModalOpen(true);
+                  }}
+                  onDeleteSubscription={handleDeleteSubscription}
+                />
+              </div>
             )}
 
             {activeView === 'reports' && (
-              <IncomeExpenseReport
-                trends={trends}
-                totalIncome={monthlyIncome}
-                totalExpense={monthlyExpenses}
-              />
+              <div className="flex flex-col gap-6">
+                <LedgerPageHeaderCard
+                  title="Cash Flow & Reports"
+                  description="Historical analysis of income, expenses, and savings rates over time."
+                  stats={[
+                    {
+                      label: 'Net Surplus',
+                      value: formatCurrency(monthlyIncome - monthlyExpenses),
+                      highlight: monthlyIncome >= monthlyExpenses,
+                    },
+                  ]}
+                />
+                <IncomeExpenseReport
+                  trends={trends}
+                  totalIncome={monthlyIncome}
+                  totalExpense={monthlyExpenses}
+                />
+              </div>
             )}
           </section>
         </div>

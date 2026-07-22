@@ -51,7 +51,7 @@ export function CashFlowChart({ trendsData = [], categoryData = [] }: CashFlowCh
           <div className="flex items-center gap-2">
             <ChartBar className="size-4 text-[#111111]" />
             <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#111111]">
-              Arus Kas & Tren Bulanan (Cash Flow)
+              Cash Flow & Monthly Trends
             </h3>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium text-[#787774]">
@@ -99,7 +99,7 @@ export function CashFlowChart({ trendsData = [], categoryData = [] }: CashFlowCh
             </ResponsiveContainer>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-[#787774]">
-              <p className="text-xs font-medium">Belum ada data transaksi bulanan</p>
+              <p className="text-xs font-medium">No monthly transaction data available</p>
             </div>
           )}
         </div>
@@ -110,7 +110,7 @@ export function CashFlowChart({ trendsData = [], categoryData = [] }: CashFlowCh
         <div className="flex items-center gap-2 border-b border-[#EAEAEA] pb-3">
           <PieIcon className="size-4 text-[#111111]" />
           <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#111111]">
-            Pengeluaran Per Kategori
+            Expenses by Category
           </h3>
         </div>
 
@@ -147,7 +147,7 @@ export function CashFlowChart({ trendsData = [], categoryData = [] }: CashFlowCh
             </ResponsiveContainer>
           ) : (
             <p className="text-xs font-medium text-[#787774]">
-              Belum ada data pengeluaran kategori
+              No category expense data available
             </p>
           )}
         </div>

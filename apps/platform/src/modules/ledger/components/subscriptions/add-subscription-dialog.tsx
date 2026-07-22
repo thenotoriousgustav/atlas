@@ -4,26 +4,39 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@atlas/ui/components/dialog';
 import { Button } from '@atlas/ui/components/button';
 import { Input } from '@atlas/ui/components/input';
+import { Label } from '@atlas/ui/components/label';
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-  SelectGroup,
+  SelectTrigger,
+  SelectValue,
 } from '@atlas/ui/components/select';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupInput,
+} from '@atlas/ui/components/input-group';
+import { formatNumberWithDots, parseDotsToNumber } from '../../utils/currency-format';
+import { DatePicker } from '../shared/date-picker';
 
 interface AddSubscriptionDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: {
+    name: string;
+    amount: number;
+    billingCycle: 'MONTHLY' | 'ANNUAL';
+    nextBillingDate: string;
+    category?: string;
+    isActive: boolean;
+  }) => void;
   subscriptionToEdit?: any | null;
-  isPending?: boolean;
 }
 
 export function AddSubscriptionDialog({
@@ -31,138 +44,168 @@ export function AddSubscriptionDialog({
   onClose,
   onSubmit,
   subscriptionToEdit,
-  isPending = false,
 }: AddSubscriptionDialogProps) {
   const [name, setName] = useState('');
-  const [cost, setCost] = useState('');
-  const [billingCycle, setBillingCycle] = useState('MONTHLY');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0] || '');
-  const [category, setCategory] = useState('ENTERTAINMENT');
+  const [amount, setAmount] = useState('');
+  const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
+  const [nextBillingDate, setNextBillingDate] = useState<Date | undefined>(new Date());
+  const [category, setCategory] = useState('');
+  const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     if (subscriptionToEdit) {
       setName(subscriptionToEdit.name || '');
-      setCost(subscriptionToEdit.cost?.toString() || '');
+      setAmount(formatNumberWithDots(subscriptionToEdit.amount ?? ''));
       setBillingCycle(subscriptionToEdit.billingCycle || 'MONTHLY');
-      setStartDate(
-        subscriptionToEdit.startDate
-          ? (subscriptionToEdit.startDate.split('T')[0] || '')
-          : (new Date().toISOString().split('T')[0] || '')
+      setNextBillingDate(
+        subscriptionToEdit.nextBillingDate
+          ? new Date(subscriptionToEdit.nextBillingDate)
+          : new Date()
       );
-      setCategory(subscriptionToEdit.category || 'ENTERTAINMENT');
+      setCategory(subscriptionToEdit.category || '');
+      setIsActive(subscriptionToEdit.isActive ?? true);
     } else {
       setName('');
-      setCost('');
+      setAmount('');
       setBillingCycle('MONTHLY');
-      setStartDate(new Date().toISOString().split('T')[0] || '');
-      setCategory('ENTERTAINMENT');
+      setNextBillingDate(new Date());
+      setCategory('');
+      setIsActive(true);
     }
   }, [subscriptionToEdit, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !cost) return;
+    const numAmount = parseDotsToNumber(amount);
+    if (!name.trim() || numAmount <= 0 || !nextBillingDate) return;
 
     onSubmit({
       name: name.trim(),
-      cost: parseFloat(cost) || 0,
+      amount: numAmount,
       billingCycle,
-      startDate,
-      category,
-      status: 'ACTIVE',
+      nextBillingDate: nextBillingDate.toISOString(),
+      category: category.trim() || undefined,
+      isActive,
     });
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md rounded-none border-[#EAEAEA] bg-white p-6 shadow-lg">
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
+      <DialogContent className="rounded-none border border-[#EAEAEA] bg-white p-6 shadow-lg sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-sans text-sm font-semibold uppercase tracking-wider text-[#111111]">
-            {subscriptionToEdit ? 'Edit Subskripsi' : 'Tambah Subskripsi Rutin'}
+          <DialogTitle className="font-serif text-lg font-bold text-[#111111]">
+            {subscriptionToEdit ? 'Edit Subscription' : 'Add New Subscription'}
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#787774]">
-            Pantau pengeluaran berlangganan berulang bulanan atau tahunan Anda.
-          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#111111]">Nama Subskripsi</label>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">
+              Service / Subscription Name
+            </Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Netflix Premium, Spotify Family, ChatGPT Plus"
-              className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-1 focus-visible:ring-[#111111]"
+              placeholder="e.g. Netflix, Spotify, ChatGPT Plus, iCloud"
+              className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-[#111111]"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#111111]">Biaya Tagihan (IDR)</label>
-              <Input
-                type="number"
-                value={cost}
-                onChange={(e) => setCost(e.target.value)}
-                placeholder="0"
-                className="h-9 rounded-none border-[#EAEAEA] font-mono text-xs font-bold focus-visible:ring-1 focus-visible:ring-[#111111]"
-                required
-              />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-[#111111]">Cost (IDR)</Label>
+              <InputGroup className="h-9 rounded-none border-[#EAEAEA]">
+                <InputGroupAddon>
+                  <InputGroupText className="font-mono text-xs font-semibold text-[#111111]">
+                    Rp
+                  </InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  type="text"
+                  inputMode="numeric"
+                  value={amount}
+                  onChange={(e) => setAmount(formatNumberWithDots(e.target.value))}
+                  placeholder="0"
+                  className="font-mono text-xs text-[#111111]"
+                  required
+                />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText className="font-mono text-[10px] text-[#787774]">
+                    IDR
+                  </InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#111111]">Siklus Penagihan</label>
-              <Select value={billingCycle} onValueChange={setBillingCycle}>
-                <SelectTrigger className="h-9 w-full rounded-none border-[#EAEAEA] text-xs">
-                  <SelectValue />
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-[#111111]">Billing Cycle</Label>
+              <Select
+                value={billingCycle}
+                onValueChange={(val: any) => setBillingCycle(val)}
+              >
+                <SelectTrigger className="w-full h-9 rounded-none border-[#EAEAEA] text-xs">
+                  <SelectValue placeholder="Cycle" />
                 </SelectTrigger>
-                <SelectContent className="rounded-none">
-                  <SelectGroup>
-                    <SelectItem value="MONTHLY">Bulanan (Monthly)</SelectItem>
-                    <SelectItem value="YEARLY">Tahunan (Yearly)</SelectItem>
-                    <SelectItem value="WEEKLY">Mingguan (Weekly)</SelectItem>
-                  </SelectGroup>
+                <SelectContent className="rounded-none border-[#EAEAEA]">
+                  <SelectItem value="MONTHLY">Monthly</SelectItem>
+                  <SelectItem value="ANNUAL">Annual</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#111111]">Tanggal Mulai / Tagihan</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 rounded-none border-[#EAEAEA] font-mono text-xs focus-visible:ring-1 focus-visible:ring-[#111111]"
-                required
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-[#111111]">Next Renewal Date</Label>
+              <DatePicker
+                date={nextBillingDate}
+                setDate={setNextBillingDate}
+                placeholder="Select renewal date"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#111111]">Kategori</label>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-[#111111]">Category</Label>
               <Input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="ENTERTAINMENT, SOFTWARE"
-                className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-1 focus-visible:ring-[#111111]"
+                placeholder="e.g. Entertainment, Software"
+                className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-[#111111]"
               />
             </div>
           </div>
 
-          <DialogFooter className="mt-2 flex items-center gap-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">Status</Label>
+            <Select
+              value={isActive ? 'ACTIVE' : 'PAUSED'}
+              onValueChange={(val) => setIsActive(val === 'ACTIVE')}
+            >
+              <SelectTrigger className="w-full h-9 rounded-none border-[#EAEAEA] text-xs">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-none border-[#EAEAEA]">
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="PAUSED">Paused</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter className="pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="h-8.5 rounded-none border-[#EAEAEA] text-xs text-[#787774] hover:bg-[#F7F6F3]"
+              className="h-9 rounded-none border-[#EAEAEA] text-xs text-[#787774] hover:bg-[#F7F6F3]"
             >
-              Batal
+              Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isPending}
-              className="h-8.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+              className="h-9 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
             >
-              {isPending ? 'Menyimpan...' : subscriptionToEdit ? 'Simpan Perubahan' : 'Tambah Subskripsi'}
+              Save Subscription
             </Button>
           </DialogFooter>
         </form>

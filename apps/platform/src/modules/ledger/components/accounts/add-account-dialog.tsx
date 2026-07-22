@@ -4,20 +4,26 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@atlas/ui/components/dialog';
 import { Button } from '@atlas/ui/components/button';
 import { Input } from '@atlas/ui/components/input';
+import { Label } from '@atlas/ui/components/label';
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-  SelectGroup,
+  SelectTrigger,
+  SelectValue,
 } from '@atlas/ui/components/select';
-import { AccountItem } from './account-card';
+import { Checkbox } from '@atlas/ui/components/checkbox';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupInput,
+} from '@atlas/ui/components/input-group';
+import { formatNumberWithDots, parseDotsToNumber } from '../../utils/currency-format';
 
 interface AddAccountDialogProps {
   isOpen: boolean;
@@ -26,11 +32,9 @@ interface AddAccountDialogProps {
     name: string;
     type: string;
     balance: number;
-    currency: string;
     isOnBudget: boolean;
   }) => void;
-  accountToEdit?: AccountItem | null;
-  isPending?: boolean;
+  accountToEdit?: any | null;
 }
 
 export function AddAccountDialog({
@@ -38,135 +42,129 @@ export function AddAccountDialog({
   onClose,
   onSubmit,
   accountToEdit,
-  isPending = false,
 }: AddAccountDialogProps) {
   const [name, setName] = useState('');
-  const [type, setType] = useState('CHECKING');
-  const [balance, setBalance] = useState('');
-  const [currency, setCurrency] = useState('IDR');
+  const [type, setType] = useState('BANK');
+  const [balance, setBalance] = useState('0');
   const [isOnBudget, setIsOnBudget] = useState(true);
 
   useEffect(() => {
     if (accountToEdit) {
       setName(accountToEdit.name || '');
-      setType(accountToEdit.type || 'CHECKING');
-      setBalance(accountToEdit.balance?.toString() || '0');
-      setCurrency(accountToEdit.currency || 'IDR');
+      setType(accountToEdit.type || 'BANK');
+      setBalance(formatNumberWithDots(accountToEdit.balance ?? '0'));
       setIsOnBudget(accountToEdit.isOnBudget ?? true);
     } else {
       setName('');
-      setType('CHECKING');
-      setBalance('');
-      setCurrency('IDR');
+      setType('BANK');
+      setBalance('0');
       setIsOnBudget(true);
     }
   }, [accountToEdit, isOpen]);
 
+  const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBalance(formatNumberWithDots(e.target.value));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
     onSubmit({
       name: name.trim(),
       type,
-      balance: parseFloat(balance) || 0,
-      currency,
+      balance: parseDotsToNumber(balance),
       isOnBudget,
     });
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md rounded-none border-[#EAEAEA] bg-white p-6 shadow-lg">
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
+      <DialogContent className="rounded-none border border-[#EAEAEA] bg-white p-6 shadow-lg sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-sans text-sm font-semibold uppercase tracking-wider text-[#111111]">
-            {accountToEdit ? 'Edit Account' : 'Tambah Account Baru'}
+          <DialogTitle className="font-serif text-lg font-bold text-[#111111]">
+            {accountToEdit ? 'Edit Account' : 'Add New Account'}
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#787774]">
-            Kelola rekening bank, e-wallet, kartu kredit, atau kas tunai Anda.
-          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#111111]">Account Name</label>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">Account Name</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. BCA Checking, GoPay, Cash"
-              className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-1 focus-visible:ring-[#111111]"
+              placeholder="e.g. Bank Mandiri, GoPay, BCA"
+              className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-[#111111]"
               required
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#111111]">Account Type</label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">Account Type</Label>
             <Select value={type} onValueChange={setType}>
-              <SelectTrigger className="h-9 w-full rounded-none border-[#EAEAEA] text-xs">
-                <SelectValue placeholder="Pilih Jenis Account" />
+              <SelectTrigger className="w-full h-9 rounded-none border-[#EAEAEA] text-xs">
+                <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent className="rounded-none">
-                <SelectGroup>
-                  <SelectItem value="CHECKING">Checking / Tabungan Utama</SelectItem>
-                  <SelectItem value="SAVINGS">Savings / Deposito</SelectItem>
-                  <SelectItem value="CASH">Cash / Kas Tunai</SelectItem>
-                  <SelectItem value="CREDIT_CARD">Credit Card / Kartu Kredit</SelectItem>
-                  <SelectItem value="E_WALLET">E-Wallet (GoPay, OVO, ShopeePay)</SelectItem>
-                  <SelectItem value="INVESTMENT">Investment Account</SelectItem>
-                </SelectGroup>
+              <SelectContent className="rounded-none border-[#EAEAEA]">
+                <SelectItem value="BANK">Bank Account</SelectItem>
+                <SelectItem value="E_WALLET">E-Wallet</SelectItem>
+                <SelectItem value="CASH">Cash</SelectItem>
+                <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                <SelectItem value="INVESTMENT">Investment</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#111111]">Saldo Awal</label>
-              <Input
-                type="number"
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">Current Balance (IDR)</Label>
+            <InputGroup className="h-9 rounded-none border-[#EAEAEA]">
+              <InputGroupAddon>
+                <InputGroupText className="font-mono text-xs font-semibold text-[#111111]">
+                  Rp
+                </InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                type="text"
+                inputMode="numeric"
                 value={balance}
-                onChange={(e) => setBalance(e.target.value)}
+                onChange={handleBalanceChange}
                 placeholder="0"
-                className="h-9 rounded-none border-[#EAEAEA] font-mono text-xs focus-visible:ring-1 focus-visible:ring-[#111111]"
+                className="font-mono text-xs text-[#111111]"
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[#111111]">Mata Uang</label>
-              <Input
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                placeholder="IDR"
-                className="h-9 rounded-none border-[#EAEAEA] text-xs focus-visible:ring-1 focus-visible:ring-[#111111]"
-              />
-            </div>
+              <InputGroupAddon align="inline-end">
+                <InputGroupText className="font-mono text-[10px] text-[#787774]">
+                  IDR
+                </InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
           </div>
 
-          <div className="flex items-center gap-2 rounded-none border border-[#EAEAEA] bg-[#F7F6F3] p-2.5">
-            <input
-              type="checkbox"
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
               id="isOnBudget"
               checked={isOnBudget}
-              onChange={(e) => setIsOnBudget(e.target.checked)}
-              className="size-4 rounded-none border-[#EAEAEA] text-[#111111] accent-[#111111]"
+              onCheckedChange={(checked) => setIsOnBudget(!!checked)}
+              className="rounded-none border-[#CCCCCC] data-[state=checked]:bg-[#111111]"
             />
-            <label htmlFor="isOnBudget" className="cursor-pointer text-xs font-medium text-[#111111]">
-              Termasuk dalam Budget (On-Budget Account)
-            </label>
+            <Label htmlFor="isOnBudget" className="text-xs text-[#111111]">
+              Include in Budget (On-Budget)
+            </Label>
           </div>
 
-          <DialogFooter className="mt-2 flex items-center gap-2">
+          <DialogFooter className="pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="h-8.5 rounded-none border-[#EAEAEA] text-xs text-[#787774] hover:bg-[#F7F6F3]"
+              className="h-9 rounded-none border-[#EAEAEA] text-xs text-[#787774] hover:bg-[#F7F6F3]"
             >
-              Batal
+              Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isPending}
-              className="h-8.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+              className="h-9 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
             >
-              {isPending ? 'Menyimpan...' : accountToEdit ? 'Simpan Perubahan' : 'Tambah Account'}
+              Save Account
             </Button>
           </DialogFooter>
         </form>

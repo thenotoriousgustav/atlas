@@ -1,17 +1,19 @@
 import React from 'react';
 import { Card } from '@atlas/ui/components/card';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-} from 'recharts';
-import { Vault, ChartBar, PiggyBank } from '@phosphor-icons/react';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@atlas/ui/components/table';
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Vault,
+  PiggyBank,
+} from '@phosphor-icons/react';
 
 interface IncomeExpenseReportProps {
   trends: Array<{ month: string; income: number; expense: number }>;
@@ -21,9 +23,13 @@ interface IncomeExpenseReportProps {
 
 export function IncomeExpenseReport({
   trends = [],
-  totalIncome = 0,
-  totalExpense = 0,
+  totalIncome,
+  totalExpense,
 }: IncomeExpenseReportProps) {
+  const netSavings = totalIncome - totalExpense;
+  const savingsRate =
+    totalIncome > 0 ? Math.max(0, Math.round((netSavings / totalIncome) * 100)) : 0;
+
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -31,81 +37,113 @@ export function IncomeExpenseReport({
       maximumFractionDigits: 0,
     }).format(val);
 
-  const netSavings = totalIncome - totalExpense;
-  const savingsRatio =
-    totalIncome > 0 ? Math.max(0, Math.round((netSavings / totalIncome) * 100)) : 0;
-
   return (
     <div className="flex flex-col gap-6">
-      {/* Summary KPI */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Report KPI Summary */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#787774]">
-            Total Income (Periode)
-          </span>
-          <div className="mt-1 font-mono text-xl font-bold text-[#346538]">
+          <div className="flex items-center justify-between text-xs text-[#787774]">
+            <span>Total Income</span>
+            <ArrowDownLeft className="size-4 text-[#346538]" />
+          </div>
+          <div className="mt-2 font-mono text-lg font-bold text-[#346538]">
             {formatCurrency(totalIncome)}
           </div>
         </Card>
 
         <Card className="rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#787774]">
-            Total Expense (Periode)
-          </span>
-          <div className="mt-1 font-mono text-xl font-bold text-[#9F2F2D]">
+          <div className="flex items-center justify-between text-xs text-[#787774]">
+            <span>Total Expenses</span>
+            <ArrowUpRight className="size-4 text-[#9F2F2D]" />
+          </div>
+          <div className="mt-2 font-mono text-lg font-bold text-[#9F2F2D]">
             {formatCurrency(totalExpense)}
           </div>
         </Card>
 
         <Card className="rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#787774]">
-            Net Savings & Ratio
-          </span>
-          <div className="mt-1 flex items-center justify-between">
-            <span className="font-mono text-xl font-bold text-[#111111]">
-              {formatCurrency(netSavings)}
-            </span>
-            <span className="rounded-none bg-[#EDF3EC] px-2 py-0.5 font-mono text-xs font-bold text-[#346538]">
-              {savingsRatio}%
-            </span>
+          <div className="flex items-center justify-between text-xs text-[#787774]">
+            <span>Net Surplus</span>
+            <Vault className="size-4 text-[#111111]" />
+          </div>
+          <div
+            className={`mt-2 font-mono text-lg font-bold ${
+              netSavings >= 0 ? 'text-[#346538]' : 'text-[#9F2F2D]'
+            }`}
+          >
+            {formatCurrency(netSavings)}
+          </div>
+        </Card>
+
+        <Card className="rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs">
+          <div className="flex items-center justify-between text-xs text-[#787774]">
+            <span>Savings Rate</span>
+            <PiggyBank className="size-4 text-[#346538]" />
+          </div>
+          <div className="mt-2 font-mono text-lg font-bold text-[#111111]">
+            {savingsRate}%
           </div>
         </Card>
       </div>
 
-      {/* Main Chart */}
-      <Card className="flex flex-col rounded-none border border-[#EAEAEA] bg-white p-5 shadow-2xs">
-        <div className="flex items-center gap-2 border-b border-[#EAEAEA] pb-3">
-          <ChartBar className="size-4 text-[#111111]" />
-          <h3 className="font-sans text-xs font-semibold uppercase tracking-wider text-[#111111]">
-            Laporan Arus Kas Historis
-          </h3>
-        </div>
+      {/* Historical Breakdown Table */}
+      <Card className="rounded-none border border-[#EAEAEA] bg-white p-5 shadow-2xs">
+        <h3 className="font-serif text-sm font-bold text-[#111111] border-b border-[#EAEAEA] pb-3">
+          Monthly Cash Flow History Summary
+        </h3>
 
-        <div className="mt-4 h-72 w-full">
-          {trends.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trends} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EAEAEA" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#787774' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#787774' }} />
-                <Tooltip
-                  formatter={(val: any) => [formatCurrency(Number(val)), '']}
-                  contentStyle={{
-                    backgroundColor: '#FFFFFF',
-                    borderColor: '#EAEAEA',
-                    borderRadius: '0px',
-                    fontSize: '12px',
-                  }}
-                />
-                <Bar dataKey="income" fill="#346538" radius={0} maxBarSize={36} />
-                <Bar dataKey="expense" fill="#9F2F2D" radius={0} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-xs text-[#787774]">
-              Belum ada tren historis transaksi
-            </div>
-          )}
+        <div className="mt-4 rounded-none border border-[#EAEAEA] overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-[#F7F6F3]">
+              <TableRow className="border-[#EAEAEA]">
+                <TableHead className="font-mono text-[11px] font-semibold text-[#787774]">
+                  Month
+                </TableHead>
+                <TableHead className="text-right font-mono text-[11px] font-semibold text-[#787774]">
+                  Income
+                </TableHead>
+                <TableHead className="text-right font-mono text-[11px] font-semibold text-[#787774]">
+                  Expenses
+                </TableHead>
+                <TableHead className="text-right font-mono text-[11px] font-semibold text-[#787774]">
+                  Net Surplus
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {trends.length > 0 ? (
+                trends.map((item, idx) => {
+                  const net = item.income - item.expense;
+                  return (
+                    <TableRow key={idx} className="border-[#EAEAEA] hover:bg-[#F7F6F3]/50">
+                      <TableCell className="font-mono text-xs font-semibold text-[#111111]">
+                        {item.month}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs text-[#346538]">
+                        {formatCurrency(item.income)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs text-[#9F2F2D]">
+                        {formatCurrency(item.expense)}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-mono text-xs font-bold ${
+                          net >= 0 ? 'text-[#346538]' : 'text-[#9F2F2D]'
+                        }`}
+                      >
+                        {formatCurrency(net)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-xs text-[#787774]">
+                    No historical data available.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </Card>
     </div>

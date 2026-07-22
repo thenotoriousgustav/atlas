@@ -35,7 +35,7 @@ export function ReadyToAssignBanner({
               </span>
             </div>
             <p className="text-xs text-[#346538]/90">
-              Setiap rupiah harus memiliki tujuan (Rule 1: Give Every Rupiah a Job).
+              Give every rupiah a job before spending (Rule 1: Zero-Based Allocation).
             </p>
           </div>
         </div>
@@ -43,7 +43,7 @@ export function ReadyToAssignBanner({
           onClick={onOpenAssignModal}
           className="h-9 gap-2 rounded-none bg-[#346538] text-xs font-medium text-white hover:bg-[#28502c]"
         >
-          <span>Alokasikan Uang Sekarang</span>
+          <span>Assign Money Now</span>
           <ArrowRight className="size-3.5" />
         </Button>
       </div>
@@ -67,7 +67,7 @@ export function ReadyToAssignBanner({
               </span>
             </div>
             <p className="text-xs text-[#9F2F2D]/90">
-              Total alokasi anggaran melebihi saldo kas yang tersedia. Kurangi pengalokasian kategori.
+              Total allocated budget exceeds available cash. Reduce category assignments.
             </p>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function ReadyToAssignBanner({
           variant="outline"
           className="h-9 rounded-none border-[#9F2F2D]/30 bg-white text-xs font-medium text-[#9F2F2D] hover:bg-[#FDEBEC]"
         >
-          <span>Sesuaikan Anggaran</span>
+          <span>Adjust Budget</span>
         </Button>
       </div>
     );
@@ -91,7 +91,7 @@ export function ReadyToAssignBanner({
             Ready to Assign = Rp0
           </span>
           <p className="text-[11px] text-[#787774]">
-            Sempurna! Seluruh uang kas Anda telah dialokasikan ke masing-masing kategori.
+            All available cash has been fully assigned to your categories.
           </p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export function ReadyToAssignBanner({
         size="sm"
         className="h-8 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
       >
-        Kelola Alokasi
+        Manage Allocation
       </Button>
     </div>
   );

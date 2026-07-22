@@ -77,7 +77,7 @@ export function LedgerSidebarFilters({
         >
           <span className="flex items-center gap-2">
             <Vault className="w-3.5 h-3.5" />
-            Arus Kas & Reports
+            Cash Flow & Reports
           </span>
         </button>
       </div>

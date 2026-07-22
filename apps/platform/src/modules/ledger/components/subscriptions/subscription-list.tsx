@@ -1,22 +1,29 @@
 import React from 'react';
-import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
-import { Plus, Clock, PencilSimple, Trash } from '@phosphor-icons/react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@atlas/ui/components/table';
+import { Plus, PencilSimple, Trash, Clock } from '@phosphor-icons/react';
 
-interface SubscriptionItem {
+export interface SubscriptionItem {
   id: string;
   name: string;
-  cost: number;
-  billingCycle: string;
-  startDate: string;
-  status: string;
+  amount: number;
+  billingCycle: 'MONTHLY' | 'ANNUAL';
+  nextBillingDate: string;
   category?: string;
+  isActive: boolean;
 }
 
 interface SubscriptionListProps {
   subscriptions: SubscriptionItem[];
   onAddSubscription: () => void;
-  onEditSubscription: (sub: SubscriptionItem) => void;
+  onEditSubscription: (subscription: SubscriptionItem) => void;
   onDeleteSubscription: (id: string) => void;
 }
 
@@ -33,118 +40,105 @@ export function SubscriptionList({
       maximumFractionDigits: 0,
     }).format(val);
 
-  const monthlyTotal = subscriptions
-    .filter((s) => s.status === 'ACTIVE')
-    .reduce((acc, s) => {
-      if (s.billingCycle === 'YEARLY') return acc + s.cost / 12;
-      if (s.billingCycle === 'WEEKLY') return acc + s.cost * 4;
-      return acc + s.cost;
-    }, 0);
-
-  const annualTotal = monthlyTotal * 12;
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Cost Summary Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs">
-        <div className="flex items-center gap-6">
-          <div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#787774]">
-              Total Estimasi Bulanan
-            </span>
-            <div className="font-mono text-xl font-bold tracking-tight text-[#111111]">
-              {formatCurrency(monthlyTotal)}/bln
-            </div>
-          </div>
-          <div className="border-l border-[#EAEAEA] pl-6">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#787774]">
-              Total Estimasi Tahunan
-            </span>
-            <div className="font-mono text-sm font-semibold text-[#787774]">
-              {formatCurrency(annualTotal)}/thn
-            </div>
-          </div>
-        </div>
-
-        <Button
-          onClick={onAddSubscription}
-          size="sm"
-          className="h-8.5 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
-        >
-          <Plus className="size-3.5" />
-          <span>Tambah Subskripsi Baru</span>
-        </Button>
-      </div>
-
-      {/* Grid */}
-      {subscriptions.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subscriptions.map((sub) => (
-            <Card
-              key={sub.id}
-              className="flex flex-col justify-between rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs transition-all hover:border-[#CCCCCC]"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-none border border-[#EAEAEA] bg-[#F7F6F3]">
-                    <Clock className="size-4 text-[#956400]" />
-                  </div>
-                  <div>
-                    <h4 className="font-sans text-xs font-semibold text-[#111111]">
-                      {sub.name}
-                    </h4>
-                    <span className="rounded-none bg-[#F7F6F3] px-1.5 py-0.2 text-[9px] font-semibold uppercase text-[#787774]">
-                      {sub.billingCycle}
+      {/* Subscription Table */}
+      <div className="rounded-none border border-[#EAEAEA] bg-white shadow-2xs overflow-x-auto">
+        <Table>
+          <TableHeader className="bg-[#F7F6F3]">
+            <TableRow className="border-[#EAEAEA]">
+              <TableHead className="font-mono text-[11px] font-semibold text-[#787774]">
+                Subscription Name
+              </TableHead>
+              <TableHead className="w-32 text-right font-mono text-[11px] font-semibold text-[#787774]">
+                Cost
+              </TableHead>
+              <TableHead className="w-28 font-mono text-[11px] font-semibold text-[#787774]">
+                Cycle
+              </TableHead>
+              <TableHead className="w-36 font-mono text-[11px] font-semibold text-[#787774]">
+                Next Renewal
+              </TableHead>
+              <TableHead className="font-mono text-[11px] font-semibold text-[#787774]">
+                Category
+              </TableHead>
+              <TableHead className="w-24 font-mono text-[11px] font-semibold text-[#787774]">
+                Status
+              </TableHead>
+              <TableHead className="w-20 text-right font-mono text-[11px] font-semibold text-[#787774]">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {subscriptions.length > 0 ? (
+              subscriptions.map((sub) => (
+                <TableRow key={sub.id} className="border-[#EAEAEA] hover:bg-[#F7F6F3]/50">
+                  <TableCell className="font-medium text-xs text-[#111111]">
+                    <div className="flex items-center gap-2">
+                      <Clock className="size-3.5 text-[#787774]" />
+                      <span>{sub.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-semibold text-[#111111]">
+                    {formatCurrency(sub.amount)}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-[#787774]">
+                    {sub.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-[#787774]">
+                    {new Date(sub.nextBillingDate).toLocaleDateString('en-US', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </TableCell>
+                  <TableCell className="text-xs text-[#787774]">
+                    {sub.category || '-'}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-block rounded-none px-2 py-0.5 font-mono text-[10px] font-semibold uppercase ${
+                        sub.isActive
+                          ? 'bg-[#EDF3EC] text-[#346538]'
+                          : 'bg-[#F7F6F3] text-[#787774]'
+                      }`}
+                    >
+                      {sub.isActive ? 'Active' : 'Paused'}
                     </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEditSubscription(sub)}
-                    className="size-7 rounded-none text-[#787774] hover:bg-[#F7F6F3] hover:text-[#111111]"
-                  >
-                    <PencilSimple className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDeleteSubscription(sub.id)}
-                    className="size-7 rounded-none text-[#9F2F2D] hover:bg-[#FDEBEC]"
-                  >
-                    <Trash className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-4 border-t border-[#EAEAEA] pt-3">
-                <span className="text-[10px] text-[#787774]">Biaya Tagihan</span>
-                <div className="font-mono text-lg font-bold tracking-tight text-[#111111]">
-                  {formatCurrency(sub.cost)}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-none border border-dashed border-[#EAEAEA] bg-white p-12 text-center">
-          <Clock className="size-8 text-[#787774]" />
-          <p className="mt-2 text-xs font-medium text-[#111111]">Belum ada subskripsi rutin</p>
-          <p className="text-[11px] text-[#787774]">
-            Catat pengeluaran berlangganan seperti Netflix, Spotify, atau Cloud Hosting.
-          </p>
-          <Button
-            onClick={onAddSubscription}
-            size="sm"
-            className="mt-4 h-8 gap-1.5 rounded-none bg-[#111111] text-xs font-medium text-white"
-          >
-            <Plus className="size-3.5" />
-            <span>Tambah Subskripsi</span>
-          </Button>
-        </div>
-      )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEditSubscription(sub)}
+                        className="size-7 rounded-none text-[#787774] hover:bg-[#F7F6F3] hover:text-[#111111]"
+                      >
+                        <PencilSimple className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDeleteSubscription(sub.id)}
+                        className="size-7 rounded-none text-[#787774] hover:bg-[#FDEBEC] hover:text-[#9F2F2D]"
+                      >
+                        <Trash className="size-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-xs text-[#787774]">
+                  No active subscriptions found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

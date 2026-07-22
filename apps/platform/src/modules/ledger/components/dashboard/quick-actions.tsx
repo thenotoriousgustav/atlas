@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@atlas/ui/components/button';
-import { Plus, ArrowsLeftRight, Coins, Shield, UploadSimple } from '@phosphor-icons/react';
+import { Plus, Coins, Shield, UploadSimple } from '@phosphor-icons/react';
 
 interface QuickActionsProps {
   onAddTransaction: () => void;
@@ -16,12 +16,13 @@ export function QuickActions({
   onImportCsv,
 }: QuickActionsProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-[#EAEAEA] bg-white p-3.5 shadow-2xs">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-[#EAEAEA] bg-white p-4 shadow-2xs">
       <div className="flex items-center gap-2">
-        <span className="font-sans text-xs font-semibold uppercase tracking-wider text-[#787774]">
+        <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[#111111]">
           Quick Actions:
         </span>
       </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <Button
           onClick={onAddTransaction}
@@ -34,9 +35,8 @@ export function QuickActions({
 
         <Button
           onClick={onAssignMoney}
-          variant="outline"
           size="sm"
-          className="h-8.5 gap-1.5 rounded-none border-[#EAEAEA] bg-white text-xs font-medium text-[#346538] hover:bg-[#EDF3EC]"
+          className="h-8.5 gap-1.5 rounded-none bg-[#346538] text-xs font-medium text-white hover:bg-[#28502c]"
         >
           <Coins className="size-3.5" />
           <span>Assign Money</span>
@@ -46,7 +46,7 @@ export function QuickActions({
           onClick={onAddGoal}
           variant="outline"
           size="sm"
-          className="h-8.5 gap-1.5 rounded-none border-[#EAEAEA] bg-white text-xs font-medium text-[#1F6C9F] hover:bg-[#E1F3FE]"
+          className="h-8.5 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
         >
           <Shield className="size-3.5" />
           <span>Create Goal</span>
@@ -56,7 +56,7 @@ export function QuickActions({
           onClick={onImportCsv}
           variant="outline"
           size="sm"
-          className="h-8.5 gap-1.5 rounded-none border-[#EAEAEA] bg-white text-xs font-medium text-[#111111] hover:bg-[#F7F6F3]"
+          className="h-8.5 gap-1.5 rounded-none border-[#EAEAEA] text-xs text-[#111111] hover:bg-[#F7F6F3]"
         >
           <UploadSimple className="size-3.5" />
           <span>Import CSV</span>

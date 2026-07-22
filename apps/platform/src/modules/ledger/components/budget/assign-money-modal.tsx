@@ -4,27 +4,31 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@atlas/ui/components/dialog';
 import { Button } from '@atlas/ui/components/button';
-import { Input } from '@atlas/ui/components/input';
+import { Label } from '@atlas/ui/components/label';
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-  SelectGroup,
+  SelectTrigger,
+  SelectValue,
 } from '@atlas/ui/components/select';
-import { Coins } from '@phosphor-icons/react';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupInput,
+} from '@atlas/ui/components/input-group';
+import { formatNumberWithDots, parseDotsToNumber } from '../../utils/currency-format';
 
 interface AssignMoneyModalProps {
   isOpen: boolean;
   onClose: () => void;
   readyToAssign: number;
-  categories: any[];
-  onAssignSubmit: (categoryId: string, amount: number) => Promise<void>;
+  categories: Array<{ id: string; name: string }>;
+  onAssignSubmit: (categoryId: string, amount: number) => void;
 }
 
 export function AssignMoneyModal({
@@ -36,7 +40,6 @@ export function AssignMoneyModal({
 }: AssignMoneyModalProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [amount, setAmount] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -45,91 +48,93 @@ export function AssignMoneyModal({
       maximumFractionDigits: 0,
     }).format(val);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCategoryId || !amount) return;
+    const val = parseDotsToNumber(amount);
+    if (!selectedCategoryId || val <= 0) return;
 
-    setIsSubmitting(true);
-    try {
-      await onAssignSubmit(selectedCategoryId, parseFloat(amount) || 0);
-      onClose();
-      setAmount('');
-      setSelectedCategoryId('');
-    } catch {
-      // Handled in parent
-    } finally {
-      setIsSubmitting(false);
-    }
+    onAssignSubmit(selectedCategoryId, val);
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md rounded-none border-[#EAEAEA] bg-white p-6 shadow-lg">
+    <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
+      <DialogContent className="rounded-none border border-[#EAEAEA] bg-white p-6 shadow-lg sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-sans text-sm font-semibold uppercase tracking-wider text-[#111111]">
-            Assign Money (Rule 1 YNAB)
+          <DialogTitle className="font-serif text-lg font-bold text-[#111111]">
+            Assign Money
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#787774]">
-            Alokasikan dana mengendap dari Ready to Assign ke kategori pengeluaran pilihan Anda.
-          </DialogDescription>
+          <p className="text-xs text-[#787774]">
+            Select a target category to assign your available cash (Ready to Assign).
+          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
-          <div className="flex items-center justify-between rounded-none border border-[#346538]/20 bg-[#EDF3EC] p-3 text-[#346538]">
-            <div className="flex items-center gap-2">
-              <Coins className="size-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Ready to Assign:</span>
-            </div>
-            <span className="font-mono text-base font-bold">
-              {formatCurrency(readyToAssign)}
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="rounded-none border border-[#346538]/20 bg-[#EDF3EC] p-3 text-[#346538]">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#346538]">
+              Cash Available to Assign
             </span>
+            <div className="font-mono text-base font-bold">
+              {formatCurrency(readyToAssign)}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#111111]">Pilih Kategori Tujuan</label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">Select Target Category</Label>
             <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-              <SelectTrigger className="h-9 w-full rounded-none border-[#EAEAEA] text-xs">
-                <SelectValue placeholder="Pilih Kategori" />
+              <SelectTrigger className="w-full h-9 rounded-none border-[#EAEAEA] text-xs">
+                <SelectValue placeholder="Select Category" />
               </SelectTrigger>
-              <SelectContent className="rounded-none">
-                <SelectGroup>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name} ({cat.categoryGroup?.name || 'Group'})
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+              <SelectContent className="rounded-none border-[#EAEAEA]">
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#111111]">Jumlah Alokasi (IDR)</label>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              className="h-9 rounded-none border-[#EAEAEA] font-mono text-xs font-bold focus-visible:ring-1 focus-visible:ring-[#111111]"
-              required
-            />
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-[#111111]">Amount to Assign (IDR)</Label>
+            <InputGroup className="h-9 rounded-none border-[#EAEAEA]">
+              <InputGroupAddon>
+                <InputGroupText className="font-mono text-xs font-semibold text-[#111111]">
+                  Rp
+                </InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                type="text"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount(formatNumberWithDots(e.target.value))}
+                placeholder="0"
+                className="font-mono text-xs text-[#111111]"
+                required
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupText className="font-mono text-[10px] text-[#787774]">
+                  IDR
+                </InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
           </div>
 
-          <DialogFooter className="mt-2 flex items-center gap-2">
+          <DialogFooter className="pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="h-8.5 rounded-none border-[#EAEAEA] text-xs text-[#787774] hover:bg-[#F7F6F3]"
+              className="h-9 rounded-none border-[#EAEAEA] text-xs text-[#787774] hover:bg-[#F7F6F3]"
             >
-              Batal
+              Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="h-8.5 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
+              disabled={!selectedCategoryId || !amount}
+              className="h-9 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333]"
             >
-              {isSubmitting ? 'Mengalokasikan...' : 'Alokasikan Dana'}
+              Assign Funds
             </Button>
           </DialogFooter>
         </form>
