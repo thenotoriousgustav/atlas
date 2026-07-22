@@ -208,7 +208,7 @@ export const useEmailSyncControllerSaveConfig = <TError = unknown,
       return useMutation(getEmailSyncControllerSaveConfigMutationOptions(options), queryClient);
     }
     /**
- * @summary Sync transactions from email (simulated / preset / client-supplied templates)
+ * @summary Sync transactions from email (real IMAP fetch or simulated templates)
  */
 export const emailSyncControllerSyncEmails = (
     syncEmailsBodyDto: SyncEmailsBodyDto,
@@ -259,7 +259,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type EmailSyncControllerSyncEmailsMutationError = unknown
 
     /**
- * @summary Sync transactions from email (simulated / preset / client-supplied templates)
+ * @summary Sync transactions from email (real IMAP fetch or simulated templates)
  */
 export const useEmailSyncControllerSyncEmails = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emailSyncControllerSyncEmails>>, TError,{data: SyncEmailsBodyDto}, TContext>, request?: SecondParameter<typeof customInstance>}

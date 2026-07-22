@@ -75,3 +75,7 @@ export * from './updateTransactionDto.js';
 export * from './updateTransactionDtoType.js';
 export * from './updateUserDto.js';
 export * from './updateVehicleDto.js';
+export * from './createGoalDto.js';
+export * from './updateGoalDto.js';
+export * from './goal.js';
+

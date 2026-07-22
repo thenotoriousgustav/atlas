@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TransactionsService } from './transactions.service';
@@ -31,6 +31,16 @@ export class TransactionsController {
     @Body() createTransactionDto: CreateTransactionDto,
   ) {
     return this.transactionsService.create(user.id, createTransactionDto);
+  }
+
+  @Post('bulk')
+  @ApiBody({ type: CreateTransactionDto, isArray: true })
+  @ApiOperation({ summary: 'Create multiple new transactions at once' })
+  async createBulk(
+    @CurrentUser() user: any,
+    @Body() createTransactionDtos: CreateTransactionDto[],
+  ) {
+    return this.transactionsService.createBulk(user.id, createTransactionDtos);
   }
 
   @Get()

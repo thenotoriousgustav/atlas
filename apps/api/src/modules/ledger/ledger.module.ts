@@ -18,6 +18,8 @@ import { BudgetSharesService } from './budget-shares.service';
 import { BudgetShareGuard } from './budget-share.guard';
 import { EmailSyncController } from './email-sync.controller';
 import { EmailSyncService } from './email-sync.service';
+import { GoalsController } from './goals.controller';
+import { GoalsService } from './goals.service';
 
 @Module({
   imports: [PrismaModule],
@@ -31,6 +33,7 @@ import { EmailSyncService } from './email-sync.service';
     RecurringTransactionsController,
     BudgetSharesController,
     EmailSyncController,
+    GoalsController,
   ],
   providers: [
     TransactionsService,
@@ -42,6 +45,7 @@ import { EmailSyncService } from './email-sync.service';
     BudgetSharesService,
     BudgetShareGuard,
     EmailSyncService,
+    GoalsService,
   ],
   exports: [
     TransactionsService,
@@ -52,6 +56,8 @@ import { EmailSyncService } from './email-sync.service';
     RecurringTransactionsService,
     BudgetSharesService,
     EmailSyncService,
+    GoalsService,
   ],
 })
 export class LedgerModule {}
+

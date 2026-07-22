@@ -210,6 +210,70 @@ export function useTransactionsControllerFindAll<TData = Awaited<ReturnType<type
 
 
 /**
+ * @summary Create multiple new transactions at once
+ */
+export const transactionsControllerCreateBulk = (
+    createTransactionDto: CreateTransactionDto[],
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/transactions/bulk`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createTransactionDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getTransactionsControllerCreateBulkMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transactionsControllerCreateBulk>>, TError,{data: CreateTransactionDto[]}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof transactionsControllerCreateBulk>>, TError,{data: CreateTransactionDto[]}, TContext> => {
+
+const mutationKey = ['transactionsControllerCreateBulk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof transactionsControllerCreateBulk>>, {data: CreateTransactionDto[]}> = (props) => {
+          const {data} = props ?? {};
+
+          return  transactionsControllerCreateBulk(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TransactionsControllerCreateBulkMutationResult = NonNullable<Awaited<ReturnType<typeof transactionsControllerCreateBulk>>>
+    export type TransactionsControllerCreateBulkMutationBody = CreateTransactionDto[]
+    export type TransactionsControllerCreateBulkMutationError = unknown
+
+    /**
+ * @summary Create multiple new transactions at once
+ */
+export const useTransactionsControllerCreateBulk = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transactionsControllerCreateBulk>>, TError,{data: CreateTransactionDto[]}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof transactionsControllerCreateBulk>>,
+        TError,
+        {data: CreateTransactionDto[]},
+        TContext
+      > => {
+      return useMutation(getTransactionsControllerCreateBulkMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Get transaction details by ID
  */
 export const transactionsControllerFindOne = (

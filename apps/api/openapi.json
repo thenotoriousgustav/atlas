@@ -864,6 +864,39 @@
         ]
       }
     },
+    "/v1/transactions/bulk": {
+      "post": {
+        "operationId": "TransactionsController_createBulk",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreateTransactionDto"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create multiple new transactions at once",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
     "/v1/transactions/{id}": {
       "get": {
         "operationId": "TransactionsController_findOne",
@@ -1873,6 +1906,147 @@
         "summary": "Test IMAP connection",
         "tags": [
           "email-sync"
+        ]
+      }
+    },
+    "/v1/goals": {
+      "post": {
+        "operationId": "GoalsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new financial goal",
+        "tags": [
+          "goals"
+        ]
+      },
+      "get": {
+        "operationId": "GoalsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all financial goals",
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/v1/goals/{id}": {
+      "get": {
+        "operationId": "GoalsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get goal details by ID",
+        "tags": [
+          "goals"
+        ]
+      },
+      "patch": {
+        "operationId": "GoalsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a financial goal",
+        "tags": [
+          "goals"
+        ]
+      },
+      "delete": {
+        "operationId": "GoalsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a financial goal",
+        "tags": [
+          "goals"
         ]
       }
     },
@@ -3569,6 +3743,121 @@
             "items": {
               "$ref": "#/components/schemas/SimulateEmailDto"
             }
+          }
+        }
+      },
+      "CreateGoalDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Emergency Fund",
+            "description": "Goal name"
+          },
+          "type": {
+            "type": "string",
+            "example": "EMERGENCY_FUND",
+            "description": "Goal type",
+            "enum": [
+              "EMERGENCY_FUND",
+              "VACATION",
+              "HOUSE",
+              "CAR",
+              "WEDDING",
+              "RETIREMENT",
+              "DEBT_PAYOFF",
+              "CUSTOM"
+            ]
+          },
+          "targetAmount": {
+            "type": "number",
+            "example": 10000000,
+            "description": "Target amount in currency"
+          },
+          "currentAmount": {
+            "type": "number",
+            "example": 2500000,
+            "description": "Current saved amount"
+          },
+          "monthlyContribution": {
+            "type": "number",
+            "example": 500000,
+            "description": "Monthly contribution target"
+          },
+          "targetDate": {
+            "type": "string",
+            "example": "2026-12-31",
+            "description": "Target completion date"
+          },
+          "icon": {
+            "type": "string",
+            "example": "Shield",
+            "description": "Icon identifier"
+          },
+          "color": {
+            "type": "string",
+            "example": "#346538",
+            "description": "Color theme hex"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "targetAmount"
+        ]
+      },
+      "UpdateGoalDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Emergency Fund",
+            "description": "Goal name"
+          },
+          "type": {
+            "type": "string",
+            "example": "EMERGENCY_FUND",
+            "description": "Goal type",
+            "enum": [
+              "EMERGENCY_FUND",
+              "VACATION",
+              "HOUSE",
+              "CAR",
+              "WEDDING",
+              "RETIREMENT",
+              "DEBT_PAYOFF",
+              "CUSTOM"
+            ]
+          },
+          "targetAmount": {
+            "type": "number",
+            "example": 10000000,
+            "description": "Target amount in currency"
+          },
+          "currentAmount": {
+            "type": "number",
+            "example": 2500000,
+            "description": "Current saved amount"
+          },
+          "monthlyContribution": {
+            "type": "number",
+            "example": 500000,
+            "description": "Monthly contribution target"
+          },
+          "targetDate": {
+            "type": "string",
+            "example": "2026-12-31",
+            "description": "Target completion date"
+          },
+          "icon": {
+            "type": "string",
+            "example": "Shield",
+            "description": "Icon identifier"
+          },
+          "color": {
+            "type": "string",
+            "example": "#346538",
+            "description": "Color theme hex"
           }
         }
       },

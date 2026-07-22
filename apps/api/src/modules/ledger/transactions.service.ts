@@ -274,6 +274,127 @@ export class TransactionsService {
     });
   }
 
+  async createBulk(userId: string, dtos: CreateTransactionDto[]) {
+    if (!dtos || dtos.length === 0) {
+      return [];
+    }
+
+    const accountIds = Array.from(new Set(dtos.map(d => d.accountId)));
+    const categoryIds = Array.from(new Set(dtos.filter(d => d.categoryId).map(d => d.categoryId)));
+
+    const accounts = await this.prisma.account.findMany({
+      where: { id: { in: accountIds }, userId, deletedAt: null },
+    });
+    const accountsMap = new Map(accounts.map(a => [a.id, a]));
+
+    const categories = await this.prisma.category.findMany({
+      where: { id: { in: categoryIds as string[] }, userId, deletedAt: null },
+    });
+    const categoriesMap = new Map(categories.map(c => [c.id, c]));
+
+    // Validation
+    for (const dto of dtos) {
+      if (!accountsMap.has(dto.accountId)) {
+        throw new BadRequestException(`Account not found or access denied for ID: ${dto.accountId}`);
+      }
+      if (dto.categoryId && !categoriesMap.has(dto.categoryId)) {
+        throw new BadRequestException(`Category not found or access denied for ID: ${dto.categoryId}`);
+      }
+      if (dto.type === 'TRANSFER') {
+        if (!dto.transferAccountId) {
+          throw new BadRequestException('transferAccountId is required for transfer transactions');
+        }
+        const destAccount = await this.prisma.account.findFirst({
+          where: { id: dto.transferAccountId, userId, deletedAt: null },
+        });
+        if (!destAccount) {
+          throw new BadRequestException(`Destination account not found or access denied for ID: ${dto.transferAccountId}`);
+        }
+      }
+    }
+
+    // Execute in db transaction
+    return this.prisma.$transaction(async (tx) => {
+      const createdTransactions = [];
+      for (const dto of dtos) {
+        if (dto.type === 'TRANSFER') {
+          const date = dto.date ? new Date(dto.date) : new Date();
+          const sourceTx = await tx.transaction.create({
+            data: {
+              type: 'TRANSFER',
+              amount: dto.amount,
+              title: dto.title || `Transfer`,
+              description: dto.description,
+              accountId: dto.accountId,
+              transferAccountId: dto.transferAccountId,
+              date,
+              userId,
+            },
+          });
+
+          const destTx = await tx.transaction.create({
+            data: {
+              type: 'TRANSFER',
+              amount: dto.amount,
+              title: dto.title || `Transfer`,
+              description: dto.description,
+              accountId: dto.transferAccountId!,
+              transferAccountId: dto.accountId,
+              transferPairId: sourceTx.id,
+              date,
+              userId,
+            },
+          });
+
+          const updatedSourceTx = await tx.transaction.update({
+            where: { id: sourceTx.id },
+            data: { transferPairId: destTx.id },
+          });
+
+          await tx.account.update({
+            where: { id: dto.accountId },
+            data: { balance: { decrement: dto.amount } },
+          });
+          await tx.account.update({
+            where: { id: dto.transferAccountId! },
+            data: { balance: { increment: dto.amount } },
+          });
+
+          createdTransactions.push(updatedSourceTx);
+        } else {
+          const transaction = await tx.transaction.create({
+            data: {
+              type: dto.type,
+              amount: dto.amount,
+              title: dto.title,
+              description: dto.description,
+              accountId: dto.accountId,
+              categoryId: dto.categoryId,
+              category: dto.category,
+              date: dto.date ? new Date(dto.date) : new Date(),
+              userId,
+            },
+          });
+
+          if (dto.type === 'EXPENSE') {
+            await tx.account.update({
+              where: { id: dto.accountId },
+              data: { balance: { decrement: dto.amount } },
+            });
+          } else if (dto.type === 'INCOME') {
+            await tx.account.update({
+              where: { id: dto.accountId },
+              data: { balance: { increment: dto.amount } },
+            });
+          }
+
+          createdTransactions.push(transaction);
+        }
+      }
+      return createdTransactions;
+    });
+  }
+
   async remove(userId: string, id: string) {
     const transaction = await this.findOne(userId, id);
 

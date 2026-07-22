@@ -32,6 +32,7 @@ model User {
   ownedShares     BudgetShare[]  @relation("OwnedShares")
   receivedShares  BudgetShare[]  @relation("ReceivedShares")
   emailSyncConfig EmailSyncConfig?
+  goals           Goal[]
 
   @@map("users")
 }
@@ -464,3 +465,24 @@ model EmailSyncConfig {
 
   @@map("email_sync_configs")
 }
+
+model Goal {
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String
+  type                String    // "EMERGENCY_FUND", "VACATION", "HOUSE", "CAR", "WEDDING", "RETIREMENT", "DEBT_PAYOFF", "CUSTOM"
+  targetAmount        Float
+  currentAmount       Float     @default(0)
+  monthlyContribution Float     @default(0)
+  targetDate          DateTime?
+  icon                String?
+  color               String?
+  userId              String    @db.Uuid
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+

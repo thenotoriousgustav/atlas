@@ -17,6 +17,15 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { Button } from '@atlas/ui/components/button';
 import { Badge } from '@atlas/ui/components/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@atlas/ui/components/alert-dialog';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
   BookmarkSimple,
@@ -130,6 +139,9 @@ export default function HomePortalPage() {
 
   const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
   const [hasPasskey, setHasPasskey] = useState(false);
+  const [passkeyAlertOpen, setPasskeyAlertOpen] = useState(false);
+  const [passkeyAlertTitle, setPasskeyAlertTitle] = useState('');
+  const [passkeyAlertDesc, setPasskeyAlertDesc] = useState('');
 
   // Check if current user has passkeys registered
   useEffect(() => {
@@ -183,9 +195,13 @@ export default function HomePortalPage() {
       }
 
       setHasPasskey(true);
-      alert('Passkey successfully registered on this device!');
+      setPasskeyAlertTitle('Registrasi Passkey Berhasil');
+      setPasskeyAlertDesc('Passkey telah berhasil didaftarkan di perangkat ini!');
+      setPasskeyAlertOpen(true);
     } catch (err: any) {
-      alert(`Passkey registration failed: ${err.message}`);
+      setPasskeyAlertTitle('Registrasi Passkey Gagal');
+      setPasskeyAlertDesc(`Gagal melakukan pendaftaran passkey: ${err.message}`);
+      setPasskeyAlertOpen(true);
     } finally {
       setIsRegisteringPasskey(false);
     }
@@ -518,6 +534,28 @@ export default function HomePortalPage() {
           Seeded Single-User Authorization Active
         </span>
       </div>
+
+      {/* Passkey Alert Dialog */}
+      <AlertDialog open={passkeyAlertOpen} onOpenChange={setPasskeyAlertOpen}>
+        <AlertDialogContent className="rounded-none font-mono">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+              {passkeyAlertTitle}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-[#787774] dark:text-zinc-400 mt-2">
+              {passkeyAlertDesc}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogAction
+              onClick={() => setPasskeyAlertOpen(false)}
+              className="rounded-none bg-[#111111] dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs px-4 py-2"
+            >
+              Lanjutkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
