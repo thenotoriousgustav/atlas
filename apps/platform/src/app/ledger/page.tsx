@@ -1,7 +1,7 @@
 'use client';
 
-import { LedgerDashboard } from '../../modules/ledger/page';
+import { LedgerDashboard } from './ledger-dashboard';
 
-export default function LedgerPage() {
-  return <LedgerDashboard />;
+export default function LedgerIndexPage() {
+  return <LedgerDashboard activeView="dashboard" />;
 }

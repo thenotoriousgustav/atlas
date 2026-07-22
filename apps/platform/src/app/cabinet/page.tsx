@@ -1,6 +1,6 @@
 'use client';
 
-import { CabinetDashboard } from '../../modules/cabinet/page';
+import { CabinetDashboard } from './cabinet-dashboard';
 
 export default function CabinetPage() {
   return <CabinetDashboard />;

@@ -1,6 +1,6 @@
 'use client';
 
-import { FetchDashboard } from '../../modules/fetch/page';
+import { FetchDashboard } from './fetch-dashboard';
 
 export default function FetchPage() {
   return <FetchDashboard />;

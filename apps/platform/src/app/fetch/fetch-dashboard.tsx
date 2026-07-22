@@ -15,7 +15,7 @@ import {
   useFetchControllerCreateCollection,
   useFetchControllerRemoveCollection,
 } from '@atlas/api-client';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { WorkspaceHeader } from './components/workspace-header';
 import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';

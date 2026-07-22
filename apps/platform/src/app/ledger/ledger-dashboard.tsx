@@ -34,7 +34,7 @@ import {
   useGoalsControllerUpdate,
   useGoalsControllerRemove,
 } from '@atlas/api-client';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { LedgerWorkspaceHeader } from './components/shared/ledger-workspace-header';
 import { LedgerSidebarFilters, LedgerView } from './components/shared/ledger-sidebar-filters';
 import { LedgerPageHeaderCard } from './components/shared/ledger-page-header-card';
@@ -60,15 +60,16 @@ import { Plus, Coins, ArrowsLeftRight, UploadSimple, Shield } from '@phosphor-ic
 import { toast } from 'sonner';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 
-export function LedgerDashboard() {
+interface LedgerDashboardProps {
+  activeView?: LedgerView;
+}
+
+export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { user, setUser } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-
-  // Active View Tab State
-  const [activeView, setActiveView] = useState<LedgerView>('dashboard');
 
   // Month & Year State
   const now = new Date();
@@ -469,7 +470,7 @@ export function LedgerDashboard() {
   return (
     <div className="h-screen flex flex-col bg-brand-canvas overflow-hidden">
       {/* Pinned Top Workspace Nav Header */}
-      <div className="shrink-0 px-4 md:px-12 pt-6 pb-4 border-b border-brand-border bg-brand-canvas z-30">
+      <div className="shrink-0 px-4 md:px-12 pt-6 bg-brand-canvas z-30">
         <div className="max-w-8xl mx-auto">
           <LedgerWorkspaceHeader user={user} onLogout={handleLogout} />
         </div>
@@ -482,7 +483,6 @@ export function LedgerDashboard() {
           <aside className="md:col-span-1 h-full overflow-y-auto pr-2">
             <LedgerSidebarFilters
               activeView={activeView}
-              setActiveView={setActiveView}
               readyToAssign={readyToAssign}
               onImportCsv={() => setIsImportModalOpen(true)}
               accountsCount={accounts.length}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@atlas/ui/components/button';
 import {
   Table,
@@ -9,13 +9,20 @@ import {
   TableRow,
 } from '@atlas/ui/components/table';
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupInput,
+} from '@atlas/ui/components/input-group';
+import {
   Plus,
   PencilSimple,
   Trash,
   ArrowsLeftRight,
 } from '@phosphor-icons/react';
+import { formatNumberWithDots, parseDotsToNumber } from '../../utils/currency-format';
 
-export interface CategoryItem {
+export interface BudgetCategoryItem {
   id: string;
   name: string;
   targetAmount?: number;
@@ -24,14 +31,14 @@ export interface CategoryItem {
   available: number;
 }
 
-export interface CategoryGroupItem {
+export interface BudgetGroupItem {
   id: string;
   name: string;
-  categories: CategoryItem[];
+  categories: BudgetCategoryItem[];
 }
 
 interface ZeroBasedBudgetGridProps {
-  groups: CategoryGroupItem[];
+  groups: BudgetGroupItem[];
   readyToAssign: number;
   budgetMonth: number;
   budgetYear: number;
@@ -40,8 +47,57 @@ interface ZeroBasedBudgetGridProps {
   onOpenMoveBudgetModal: (sourceCategoryId?: string) => void;
   onAddCategoryGroup: () => void;
   onAddCategory: (groupId: string) => void;
-  onEditCategory: (cat: CategoryItem) => void;
-  onDeleteCategory: (id: string) => void;
+  onEditCategory: (category: BudgetCategoryItem) => void;
+  onDeleteCategory: (categoryId: string) => void;
+}
+
+function CategoryAssignedInput({
+  initialValue,
+  onSave,
+}: {
+  initialValue: number;
+  onSave: (val: number) => void;
+}) {
+  const [value, setValue] = useState(formatNumberWithDots(initialValue ?? 0));
+
+  useEffect(() => {
+    setValue(formatNumberWithDots(initialValue ?? 0));
+  }, [initialValue]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(formatNumberWithDots(e.target.value));
+  };
+
+  const handleBlur = () => {
+    const num = parseDotsToNumber(value);
+    if (num !== initialValue) {
+      onSave(num);
+    }
+  };
+
+  return (
+    <InputGroup className="h-7 w-38 ml-auto rounded-none border-[#EAEAEA] bg-white">
+      <InputGroupAddon>
+        <InputGroupText className="font-mono text-[11px] font-semibold text-[#111111]">
+          Rp
+        </InputGroupText>
+      </InputGroupAddon>
+      <InputGroupInput
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        placeholder="0"
+        className="text-right font-mono text-xs text-[#111111] px-1.5"
+      />
+    </InputGroup>
+  );
 }
 
 export function ZeroBasedBudgetGrid({
@@ -61,7 +117,7 @@ export function ZeroBasedBudgetGrid({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Budget Grid Table */}
+      {/* Category Groups Table */}
       <div className="rounded-none border border-[#EAEAEA] bg-white shadow-2xs overflow-x-auto">
         <Table>
           <TableHeader className="bg-[#F7F6F3]">
@@ -69,16 +125,16 @@ export function ZeroBasedBudgetGrid({
               <TableHead className="font-mono text-[11px] font-semibold text-[#787774]">
                 Category
               </TableHead>
-              <TableHead className="w-32 text-right font-mono text-[11px] font-semibold text-[#787774]">
+              <TableHead className="text-right font-mono text-[11px] font-semibold text-[#787774]">
                 Target
               </TableHead>
               <TableHead className="w-36 text-right font-mono text-[11px] font-semibold text-[#787774]">
                 Assigned
               </TableHead>
-              <TableHead className="w-32 text-right font-mono text-[11px] font-semibold text-[#787774]">
+              <TableHead className="text-right font-mono text-[11px] font-semibold text-[#787774]">
                 Activity
               </TableHead>
-              <TableHead className="w-36 text-right font-mono text-[11px] font-semibold text-[#787774]">
+              <TableHead className="text-right font-mono text-[11px] font-semibold text-[#787774]">
                 Available
               </TableHead>
               <TableHead className="w-24 text-right font-mono text-[11px] font-semibold text-[#787774]">
@@ -91,31 +147,31 @@ export function ZeroBasedBudgetGrid({
               groups.map((group) => (
                 <React.Fragment key={group.id}>
                   {/* Category Group Header Row */}
-                  <TableRow className="border-[#EAEAEA] bg-[#F7F6F3]/60 font-semibold">
-                    <TableCell colSpan={5} className="py-2 text-xs text-[#111111]">
+                  <TableRow className="border-[#EAEAEA] bg-[#F7F6F3]/70 font-semibold">
+                    <TableCell colSpan={5} className="py-2.5 text-xs text-[#111111]">
                       <div className="flex items-center gap-2">
-                        <span className="uppercase tracking-wider font-mono text-[11px]">
+                        <span className="font-bold uppercase tracking-wider text-[11px]">
                           {group.name}
                         </span>
-                        <span className="text-[10px] font-normal text-[#787774]">
+                        <span className="font-mono text-[10px] text-[#787774] font-normal">
                           ({group.categories?.length || 0} categories)
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-2 text-right">
+                    <TableCell className="py-2.5 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onAddCategory(group.id)}
-                        className="h-6 gap-1 rounded-none px-2 font-mono text-[10px] text-[#787774] hover:bg-white hover:text-[#111111]"
+                        className="h-6 gap-1 rounded-none text-[10px] text-[#787774] hover:bg-white hover:text-[#111111]"
                       >
                         <Plus className="size-3" />
-                        <span>+ Category</span>
+                        <span>Category</span>
                       </Button>
                     </TableCell>
                   </TableRow>
 
-                  {/* Individual Categories */}
+                  {/* Category Items Rows */}
                   {group.categories && group.categories.length > 0 ? (
                     group.categories.map((cat) => {
                       const isAvailablePositive = cat.available > 0;
@@ -135,16 +191,9 @@ export function ZeroBasedBudgetGrid({
                           </TableCell>
 
                           <TableCell className="text-right">
-                            <input
-                              type="number"
-                              defaultValue={cat.assigned || 0}
-                              onBlur={(e) => {
-                                const val = parseFloat(e.target.value) || 0;
-                                if (val !== cat.assigned) {
-                                  onUpdateAssigned(cat.id, val);
-                                }
-                              }}
-                              className="h-7 w-28 rounded-none border border-[#EAEAEA] bg-white px-2 text-right font-mono text-xs text-[#111111] focus:border-[#111111] focus:outline-none"
+                            <CategoryAssignedInput
+                              initialValue={cat.assigned || 0}
+                              onSave={(newVal) => onUpdateAssigned(cat.id, newVal)}
                             />
                           </TableCell>
 

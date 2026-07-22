@@ -24,7 +24,7 @@ import {
   useBookmarksControllerTriggerHealthCheck,
   AXIOS_INSTANCE,
 } from '@atlas/api-client';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import { toast } from 'sonner';
 import { WorkspaceHeader } from './components/workspace-header';

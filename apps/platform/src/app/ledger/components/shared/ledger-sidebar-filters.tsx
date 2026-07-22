@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Button } from '@atlas/ui/components/button';
 import {
   ChartBar,
@@ -22,7 +23,6 @@ export type LedgerView =
 
 interface LedgerSidebarFiltersProps {
   activeView: LedgerView;
-  setActiveView: (view: LedgerView) => void;
   readyToAssign?: number;
   onImportCsv: () => void;
   accountsCount?: number;
@@ -32,7 +32,6 @@ interface LedgerSidebarFiltersProps {
 
 export function LedgerSidebarFilters({
   activeView,
-  setActiveView,
   readyToAssign = 0,
   onImportCsv,
   accountsCount = 0,
@@ -47,14 +46,14 @@ export function LedgerSidebarFilters({
     }).format(val);
 
   return (
-    <aside className="md:col-span-1 space-y-6">
+    <aside className="space-y-6">
       {/* Overview Group */}
       <div className="space-y-1">
         <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
           Overview
         </h3>
-        <button
-          onClick={() => setActiveView('dashboard')}
+        <Link
+          href="/ledger/dashboard"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'dashboard'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -65,10 +64,10 @@ export function LedgerSidebarFilters({
             <ChartBar className="w-3.5 h-3.5" />
             Dashboard
           </span>
-        </button>
+        </Link>
 
-        <button
-          onClick={() => setActiveView('reports')}
+        <Link
+          href="/ledger/reports"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'reports'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -79,7 +78,7 @@ export function LedgerSidebarFilters({
             <Vault className="w-3.5 h-3.5" />
             Cash Flow & Reports
           </span>
-        </button>
+        </Link>
       </div>
 
       {/* Zero-Based Budget Group */}
@@ -87,8 +86,8 @@ export function LedgerSidebarFilters({
         <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
           Budgeting
         </h3>
-        <button
-          onClick={() => setActiveView('budget')}
+        <Link
+          href="/ledger/budget"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'budget'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -100,20 +99,20 @@ export function LedgerSidebarFilters({
             Zero-Based Budget
           </span>
           {readyToAssign > 0 && (
-            <span className="font-mono text-[9px] px-1 text-emerald-700 bg-emerald-50 border border-emerald-200">
+            <span className="font-mono text-[9px] px-1.5 py-0.2 bg-[#EDF3EC] text-[#346538] font-bold">
               {formatCurrency(readyToAssign)}
             </span>
           )}
-        </button>
+        </Link>
       </div>
 
-      {/* Transactions & Accounts Group */}
+      {/* Ledger Data Group */}
       <div className="space-y-1">
         <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
           Ledger Data
         </h3>
-        <button
-          onClick={() => setActiveView('transactions')}
+        <Link
+          href="/ledger/transactions"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'transactions'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -125,14 +124,14 @@ export function LedgerSidebarFilters({
             Transactions
           </span>
           {transactionsCount > 0 && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
+            <span className="font-mono text-[10px] text-brand-muted">
               {transactionsCount}
             </span>
           )}
-        </button>
+        </Link>
 
-        <button
-          onClick={() => setActiveView('accounts')}
+        <Link
+          href="/ledger/accounts"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'accounts'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -144,20 +143,18 @@ export function LedgerSidebarFilters({
             Accounts
           </span>
           {accountsCount > 0 && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {accountsCount}
-            </span>
+            <span className="font-mono text-[10px] text-brand-muted">{accountsCount}</span>
           )}
-        </button>
+        </Link>
       </div>
 
-      {/* Goals & Subscriptions Group */}
+      {/* Planning Group */}
       <div className="space-y-1">
         <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
           Planning
         </h3>
-        <button
-          onClick={() => setActiveView('goals')}
+        <Link
+          href="/ledger/goals"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'goals'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -169,14 +166,12 @@ export function LedgerSidebarFilters({
             Financial Goals
           </span>
           {goalsCount > 0 && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {goalsCount}
-            </span>
+            <span className="font-mono text-[10px] text-brand-muted">{goalsCount}</span>
           )}
-        </button>
+        </Link>
 
-        <button
-          onClick={() => setActiveView('subscriptions')}
+        <Link
+          href="/ledger/subscriptions"
           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
             activeView === 'subscriptions'
               ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
@@ -187,25 +182,22 @@ export function LedgerSidebarFilters({
             <Clock className="w-3.5 h-3.5" />
             Subscriptions
           </span>
-        </button>
+        </Link>
       </div>
 
-      {/* Import & Export Sync */}
-      <div className="border-t border-brand-border pt-4 px-2 space-y-2">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
+      {/* Quick Sync / Utilities */}
+      <div className="pt-4 border-t border-brand-border space-y-2">
+        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
           Sync
         </h3>
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onImportCsv}
-            className="w-full flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase h-8 rounded-none border-brand-border"
-          >
-            <UploadSimple className="w-3.5 h-3.5" />
-            Import CSV
-          </Button>
-        </div>
+        <Button
+          onClick={onImportCsv}
+          variant="outline"
+          className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
+        >
+          <UploadSimple className="w-3.5 h-3.5" />
+          <span>Import CSV</span>
+        </Button>
       </div>
     </aside>
   );
