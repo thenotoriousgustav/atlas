@@ -52,13 +52,13 @@ export function HabitHeatmap({ data = [], goalDirection = 'INCREASING', title, c
     if (goalDirection === 'DECREASING') {
       switch (level) {
         case 1:
-          return 'data-[level="1"]:fill-[#9be9a8] dark:data-[level="1"]:fill-[#0e4429]'; // Low (good)
+          return 'data-[level="1"]:fill-[#9be9a8] dark:data-[level="1"]:fill-[#0e4429]';
         case 2:
-          return 'data-[level="2"]:fill-amber-400 dark:data-[level="2"]:fill-amber-600'; // Moderate
+          return 'data-[level="2"]:fill-amber-400 dark:data-[level="2"]:fill-amber-600';
         case 3:
-          return 'data-[level="3"]:fill-amber-600 dark:data-[level="3"]:fill-amber-700'; // High
+          return 'data-[level="3"]:fill-amber-600 dark:data-[level="3"]:fill-amber-700';
         case 4:
-          return 'data-[level="4"]:fill-rose-600 dark:data-[level="4"]:fill-rose-500'; // Exceeded limit
+          return 'data-[level="4"]:fill-rose-600 dark:data-[level="4"]:fill-rose-500';
         default:
           return 'data-[level="0"]:fill-[#ebedf0] dark:data-[level="0"]:fill-[#161b22]';
       }
@@ -101,29 +101,29 @@ export function HabitHeatmap({ data = [], goalDirection = 'INCREASING', title, c
         </div>
       )}
 
-      <TooltipProvider delayDuration={50}>
+      <TooltipProvider>
         <ContributionGraph data={fullYearData} blockSize={12} blockMargin={3} blockRadius={2}>
           <ContributionGraphCalendar>
             {({ activity, dayIndex, weekIndex }) => (
               <Tooltip key={`${activity.date}-${dayIndex}`}>
                 <TooltipTrigger asChild>
-                  <ContributionGraphBlock
-                    activity={activity}
-                    dayIndex={dayIndex}
-                    weekIndex={weekIndex}
-                    className={cn(
-                      'transition-all duration-150 hover:scale-125 cursor-pointer outline-none',
-                      getLevelColorClass(activity.level)
-                    )}
-                  />
+                  <g>
+                    <ContributionGraphBlock
+                      activity={activity}
+                      dayIndex={dayIndex}
+                      weekIndex={weekIndex}
+                      className={cn(
+                        'cursor-pointer transition-all duration-150 outline-none',
+                        getLevelColorClass(activity.level)
+                      )}
+                    />
+                  </g>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs font-mono py-1.5 px-3 bg-popover text-popover-foreground border border-border shadow-md">
-                  <div className="space-y-0.5 text-center">
-                    <p className="font-semibold text-foreground">{formatDateLabel(activity.date)}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {activity.count > 0 ? `${activity.count} contributions / check-ins` : 'No contributions'}
-                    </p>
-                  </div>
+                <TooltipContent className="text-xs font-mono py-1 px-2.5">
+                  <p className="font-semibold">{formatDateLabel(activity.date)}</p>
+                  <p className="text-muted-foreground">
+                    {activity.count > 0 ? `${activity.count} contributions` : 'No contributions'}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             )}

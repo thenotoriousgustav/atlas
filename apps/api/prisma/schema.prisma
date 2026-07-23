@@ -34,6 +34,7 @@ model User {
   emailSyncConfig EmailSyncConfig?
   goals           Goal[]
   habitTrackers   HabitTracker[]
+  habitCategories HabitCategory[]
 
   @@map("users")
 }
@@ -500,6 +501,8 @@ model HabitTracker {
   goalFrequency String       @default("DAILY") // DAILY, WEEKLY
   goalDirection String       @default("INCREASING") // INCREASING, DECREASING
   color         String       @default("emerald")
+  reminderTime  String?      // e.g. "21:00"
+  quickSteppers Int[]        @default([1, 5]) // e.g. [1, 5] for quick +1, +5 buttons
   archived      Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -522,6 +525,20 @@ model HabitEntry {
 
   @@unique([trackerId, date])
   @@map("habit_entries")
+}
+
+model HabitCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  color     String?  @default("emerald")
+  icon      String?  @default("FolderSimple")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@map("habit_categories")
 }
 
 

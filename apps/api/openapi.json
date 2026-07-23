@@ -3167,6 +3167,102 @@
           "habits"
         ]
       }
+    },
+    "/v1/habits/categories/list": {
+      "get": {
+        "operationId": "HabitController_getCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get custom habit categories",
+        "tags": [
+          "habits"
+        ]
+      }
+    },
+    "/v1/habits/categories": {
+      "post": {
+        "operationId": "HabitController_createCategory",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create custom habit category",
+        "tags": [
+          "habits"
+        ]
+      }
+    },
+    "/v1/habits/categories/{id}": {
+      "patch": {
+        "operationId": "HabitController_updateCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update custom habit category",
+        "tags": [
+          "habits"
+        ]
+      },
+      "delete": {
+        "operationId": "HabitController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete custom habit category",
+        "tags": [
+          "habits"
+        ]
+      }
     }
   },
   "info": {
@@ -4627,6 +4723,20 @@
             "type": "string",
             "example": "emerald",
             "default": "emerald"
+          },
+          "reminderTime": {
+            "type": "string",
+            "example": "21:00"
+          },
+          "quickSteppers": {
+            "example": [
+              1,
+              5
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -4689,6 +4799,20 @@
             "type": "string",
             "example": "emerald",
             "default": "emerald"
+          },
+          "reminderTime": {
+            "type": "string",
+            "example": "21:00"
+          },
+          "quickSteppers": {
+            "example": [
+              1,
+              5
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

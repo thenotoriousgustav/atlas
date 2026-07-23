@@ -21,6 +21,8 @@ export class HabitService {
         goalFrequency: dto.goalFrequency ?? 'DAILY',
         goalDirection: dto.goalDirection ?? 'INCREASING',
         color: dto.color ?? 'emerald',
+        reminderTime: dto.reminderTime,
+        quickSteppers: dto.quickSteppers && dto.quickSteppers.length > 0 ? dto.quickSteppers : [1, 5],
       },
     });
   }
@@ -299,5 +301,61 @@ export class HabitService {
       completionRate: Math.min(completionRate, 100),
       heatmapData,
     };
+  }
+
+  async getCategories(userId: string) {
+    const customCats = await this.prisma.habitCategory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (customCats.length === 0) {
+      const defaults = [
+        { name: 'Health', color: 'emerald', icon: 'FolderSimple' },
+        { name: 'Learning', color: 'sky', icon: 'FolderSimple' },
+        { name: 'Productivity', color: 'amber', icon: 'FolderSimple' },
+        { name: 'Lifestyle', color: 'rose', icon: 'FolderSimple' },
+        { name: 'Finance', color: 'violet', icon: 'FolderSimple' },
+      ];
+      for (const d of defaults) {
+        await this.prisma.habitCategory.create({
+          data: { userId, name: d.name, color: d.color, icon: d.icon },
+        });
+      }
+      return this.prisma.habitCategory.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'asc' },
+      });
+    }
+
+    return customCats;
+  }
+
+  async createCategory(userId: string, dto: { name: string; color?: string; icon?: string }) {
+    return this.prisma.habitCategory.create({
+      data: {
+        userId,
+        name: dto.name.trim(),
+        color: dto.color ?? 'emerald',
+        icon: dto.icon ?? 'FolderSimple',
+      },
+    });
+  }
+
+  async updateCategory(userId: string, id: string, dto: { name: string; color?: string; icon?: string }) {
+    return this.prisma.habitCategory.update({
+      where: { id, userId },
+      data: {
+        name: dto.name.trim(),
+        color: dto.color,
+        icon: dto.icon,
+      },
+    });
+  }
+
+  async deleteCategory(userId: string, id: string) {
+    return this.prisma.habitCategory.delete({
+      where: { id, userId },
+    });
   }
 }

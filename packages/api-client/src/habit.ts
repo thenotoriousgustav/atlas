@@ -16,6 +16,8 @@ export interface HabitTracker {
   goalFrequency: GoalFrequency;
   goalDirection: GoalDirection;
   color: string;
+  reminderTime?: string | null;
+  quickSteppers?: number[];
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -73,6 +75,8 @@ export interface CreateHabitTrackerDto {
   goalFrequency?: GoalFrequency;
   goalDirection?: GoalDirection;
   color?: string;
+  reminderTime?: string;
+  quickSteppers?: number[];
 }
 
 export interface UpdateHabitTrackerDto extends Partial<CreateHabitTrackerDto> {
@@ -150,4 +154,48 @@ export const habitApi = {
     });
     return res?.data ?? res;
   },
+
+  getCategories: async (): Promise<HabitCategory[]> => {
+    const res: any = await customInstance<HabitCategory[]>({
+      url: '/v1/habits/categories/list',
+      method: 'GET',
+    });
+    return res?.data ?? res;
+  },
+
+  createCategory: async (data: { name: string; color?: string; icon?: string }): Promise<HabitCategory> => {
+    const res: any = await customInstance<HabitCategory>({
+      url: '/v1/habits/categories',
+      method: 'POST',
+      data,
+    });
+    return res?.data ?? res;
+  },
+
+  updateCategory: async (id: string, data: { name: string; color?: string; icon?: string }): Promise<HabitCategory> => {
+    const res: any = await customInstance<HabitCategory>({
+      url: `/v1/habits/categories/${id}`,
+      method: 'PATCH',
+      data,
+    });
+    return res?.data ?? res;
+  },
+
+  deleteCategory: async (id: string): Promise<{ id: string }> => {
+    const res: any = await customInstance<{ id: string }>({
+      url: `/v1/habits/categories/${id}`,
+      method: 'DELETE',
+    });
+    return res?.data ?? res;
+  },
 };
+
+export interface HabitCategory {
+  id: string;
+  userId: string;
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

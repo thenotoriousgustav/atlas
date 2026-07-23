@@ -90,4 +90,32 @@ export class HabitController {
   ) {
     return this.habitService.deleteEntry(user.id, id, date);
   }
+
+  @Get('categories/list')
+  @ApiOperation({ summary: 'Get custom habit categories' })
+  async getCategories(@CurrentUser() user: any) {
+    return this.habitService.getCategories(user.id);
+  }
+
+  @Post('categories')
+  @ApiOperation({ summary: 'Create custom habit category' })
+  async createCategory(@CurrentUser() user: any, @Body() dto: any) {
+    return this.habitService.createCategory(user.id, dto);
+  }
+
+  @Patch('categories/:id')
+  @ApiOperation({ summary: 'Update custom habit category' })
+  async updateCategory(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.habitService.updateCategory(user.id, id, dto);
+  }
+
+  @Delete('categories/:id')
+  @ApiOperation({ summary: 'Delete custom habit category' })
+  async deleteCategory(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.habitService.deleteCategory(user.id, id);
+  }
 }

@@ -64,4 +64,13 @@ export class CreateHabitTrackerDto {
   @IsString()
   @IsOptional()
   color?: string;
+
+  @ApiPropertyOptional({ example: '21:00' })
+  @IsString()
+  @IsOptional()
+  reminderTime?: string;
+
+  @ApiPropertyOptional({ example: [1, 5] })
+  @IsOptional()
+  quickSteppers?: number[];
 }
