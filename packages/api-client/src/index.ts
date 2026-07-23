@@ -22,4 +22,5 @@ export * from './generated/budget-shares/budget-shares';
 export * from './generated/email-sync/email-sync';
 export * from './generated/goals/goals';
 export * from './generated/model';
+export * from './habit';
 export * from './custom-instance';

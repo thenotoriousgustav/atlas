@@ -52,6 +52,7 @@
     "./globals.css": "./src/styles/globals.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
+    "./components/kibo-ui/contribution-graph": "./src/components/kibo-ui/contribution-graph/index.tsx",
     "./components/*": "./src/components/*.tsx",
     "./hooks/use-confirm": "./src/hooks/use-confirm.tsx",
     "./hooks/*": "./src/hooks/*.ts"

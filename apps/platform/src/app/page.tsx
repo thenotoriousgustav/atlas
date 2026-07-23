@@ -42,6 +42,7 @@ import {
   Download,
   Heart,
   Fingerprint,
+  CalendarCheck,
 } from '@phosphor-icons/react';
 import { startRegistration } from '@simplewebauthn/browser';
 
@@ -514,6 +515,55 @@ export default function HomePortalPage() {
                   <span className="font-semibold text-brand-charcoal flex items-center gap-1">
                     <Heart className="w-3.5 h-3.5 text-[#b3261e]" />
                     {totalFavoriteDownloads} saved
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-7 h-7 border border-brand-border flex items-center justify-center text-brand-muted group-hover:bg-brand-charcoal group-hover:text-white group-hover:border-brand-charcoal transition-colors">
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Habit Behavior Tracker */}
+          <div
+            onClick={() => router.push('/habit')}
+            className="group cursor-pointer border border-brand-border bg-white rounded-none p-6 hover:border-brand-charcoal hover:shadow-xs transition-all duration-200 flex flex-col justify-between min-h-60"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-10 bg-brand-charcoal/5 flex items-center justify-center text-brand-charcoal">
+                  <CalendarCheck className="w-5 h-5" />
+                </div>
+                <Badge variant="outline" className="text-[9px] uppercase px-2 py-0.5 tracking-wider font-mono">
+                  Module 05
+                </Badge>
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
+                  Habit
+                </h3>
+                <p className="text-xs text-brand-muted">
+                  Daily habit &amp; behavior tracking, 365-day heatmaps, streaks, and fast &lt;5s check-in engine.
+                </p>
+              </div>
+            </div>
+
+            {/* Live Data Summary for Habit */}
+            <div className="border-t border-brand-charcoal/5 pt-4 mt-6 flex items-center justify-between">
+              <div className="flex gap-4 text-[10px] text-brand-muted">
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Heatmap</span>
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
+                    <CalendarCheck className="w-3.5 h-3.5" />
+                    365 Days
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-slate-400 block text-[9px] uppercase tracking-wide">Fast Input</span>
+                  <span className="font-semibold text-brand-charcoal flex items-center gap-1">
+                    ⌘K Enabled
                   </span>
                 </div>
               </div>

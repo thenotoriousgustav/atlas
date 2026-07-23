@@ -2921,6 +2921,252 @@
           "fetch"
         ]
       }
+    },
+    "/v1/habits": {
+      "post": {
+        "operationId": "HabitController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHabitTrackerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new habit tracker",
+        "tags": [
+          "habits"
+        ]
+      },
+      "get": {
+        "operationId": "HabitController_findAll",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all habit trackers for current user",
+        "tags": [
+          "habits"
+        ]
+      }
+    },
+    "/v1/habits/dashboard": {
+      "get": {
+        "operationId": "HabitController_getDashboardSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get habit dashboard overview with aggregated heatmap & stats",
+        "tags": [
+          "habits"
+        ]
+      }
+    },
+    "/v1/habits/{id}": {
+      "get": {
+        "operationId": "HabitController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get habit tracker detail with 365-day stats & heatmap",
+        "tags": [
+          "habits"
+        ]
+      },
+      "patch": {
+        "operationId": "HabitController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHabitTrackerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update habit tracker metadata or archive",
+        "tags": [
+          "habits"
+        ]
+      },
+      "delete": {
+        "operationId": "HabitController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete habit tracker",
+        "tags": [
+          "habits"
+        ]
+      }
+    },
+    "/v1/habits/{id}/entries": {
+      "post": {
+        "operationId": "HabitController_logEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogHabitEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upsert daily check-in entry for habit",
+        "tags": [
+          "habits"
+        ]
+      }
+    },
+    "/v1/habits/{id}/entries/{date}": {
+      "delete": {
+        "operationId": "HabitController_deleteEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete entry for specific date (YYYY-MM-DD)",
+        "tags": [
+          "habits"
+        ]
+      }
     }
   },
   "info": {
@@ -4323,6 +4569,154 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "CreateHabitTrackerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Workout"
+          },
+          "icon": {
+            "type": "string",
+            "example": "Barbell"
+          },
+          "category": {
+            "type": "string",
+            "example": "Health",
+            "default": "General"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "BOOLEAN",
+              "COUNT",
+              "DURATION",
+              "NUMERIC",
+              "AMOUNT"
+            ],
+            "default": "BOOLEAN"
+          },
+          "goalValue": {
+            "type": "number",
+            "example": 1,
+            "default": 1
+          },
+          "goalUnit": {
+            "type": "string",
+            "example": "times"
+          },
+          "goalFrequency": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "WEEKLY"
+            ],
+            "default": "DAILY"
+          },
+          "goalDirection": {
+            "type": "string",
+            "enum": [
+              "INCREASING",
+              "DECREASING"
+            ],
+            "default": "INCREASING"
+          },
+          "color": {
+            "type": "string",
+            "example": "emerald",
+            "default": "emerald"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateHabitTrackerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Workout"
+          },
+          "icon": {
+            "type": "string",
+            "example": "Barbell"
+          },
+          "category": {
+            "type": "string",
+            "example": "Health",
+            "default": "General"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "BOOLEAN",
+              "COUNT",
+              "DURATION",
+              "NUMERIC",
+              "AMOUNT"
+            ],
+            "default": "BOOLEAN"
+          },
+          "goalValue": {
+            "type": "number",
+            "example": 1,
+            "default": 1
+          },
+          "goalUnit": {
+            "type": "string",
+            "example": "times"
+          },
+          "goalFrequency": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "WEEKLY"
+            ],
+            "default": "DAILY"
+          },
+          "goalDirection": {
+            "type": "string",
+            "enum": [
+              "INCREASING",
+              "DECREASING"
+            ],
+            "default": "INCREASING"
+          },
+          "color": {
+            "type": "string",
+            "example": "emerald",
+            "default": "emerald"
+          }
+        }
+      },
+      "LogHabitEntryDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-07-24",
+            "description": "YYYY-MM-DD format"
+          },
+          "value": {
+            "type": "number",
+            "example": 1
+          },
+          "durationSeconds": {
+            "type": "number",
+            "example": 1800,
+            "description": "Duration in seconds"
+          },
+          "note": {
+            "type": "string",
+            "example": "Ran 5km at the park"
+          }
+        },
+        "required": [
+          "date",
+          "value"
         ]
       }
     }

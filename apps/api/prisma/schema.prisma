@@ -33,6 +33,7 @@ model User {
   receivedShares  BudgetShare[]  @relation("ReceivedShares")
   emailSyncConfig EmailSyncConfig?
   goals           Goal[]
+  habitTrackers   HabitTracker[]
 
   @@map("users")
 }
@@ -485,4 +486,42 @@ model Goal {
 
   @@map("goals")
 }
+
+model HabitTracker {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @db.Uuid
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  icon          String?
+  category      String       @default("General")
+  type          String       @default("BOOLEAN") // BOOLEAN, COUNT, DURATION, NUMERIC, AMOUNT
+  goalValue     Float        @default(1)
+  goalUnit      String?
+  goalFrequency String       @default("DAILY") // DAILY, WEEKLY
+  goalDirection String       @default("INCREASING") // INCREASING, DECREASING
+  color         String       @default("emerald")
+  archived      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+  entries       HabitEntry[]
+
+  @@map("habit_trackers")
+}
+
+model HabitEntry {
+  id              String       @id @default(uuid()) @db.Uuid
+  trackerId       String       @db.Uuid
+  tracker         HabitTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  date            String       // Format YYYY-MM-DD
+  value           Float        @default(1)
+  durationSeconds Int?
+  note            String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([trackerId, date])
+  @@map("habit_entries")
+}
+
 
