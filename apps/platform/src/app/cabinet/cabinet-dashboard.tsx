@@ -28,6 +28,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import { toast } from 'sonner';
 import { WorkspaceHeader } from './components/workspace-header';
+import { ModuleContainer } from '@/components/module-container';
 import { SidebarFilters } from './components/sidebar-filters';
 import { Toolbar } from './components/toolbar';
 import { BookmarkList } from './components/bookmark-list';
@@ -581,8 +582,8 @@ export function CabinetDashboard() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-brand-canvas py-8 px-4 md:px-12">
-      <div className="max-w-8xl mx-auto space-y-8">
+    <div className="min-h-[100dvh] bg-brand-canvas py-8">
+      <ModuleContainer className="space-y-8">
         
         {/* Workspace Nav Header */}
         <WorkspaceHeader user={user} onLogout={handleLogout} />
@@ -714,7 +715,7 @@ export function CabinetDashboard() {
           </section>
 
         </main>
-      </div>
+      </ModuleContainer>
 
       <ActionBar
         open={selectedBookmarkIds.length > 0}

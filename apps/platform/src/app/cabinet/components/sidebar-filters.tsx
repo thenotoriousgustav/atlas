@@ -37,6 +37,11 @@ import {
 } from '@phosphor-icons/react';
 import { FolderTree } from './folder-tree';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
+import {
+  WorkspaceSidebar,
+  WorkspaceSidebarGroup,
+  WorkspaceSidebarItem,
+} from '@/components/workspace-sidebar';
 
 interface SidebarFiltersProps {
   selectedFolderId?: string;
@@ -98,12 +103,21 @@ export function SidebarFilters({
   resetFolderForm,
 }: SidebarFiltersProps) {
   const confirm = useConfirm();
+
   return (
-    <aside className="md:col-span-1 space-y-6">
-      {/* Quick Filters */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">Library</h3>
-        <button
+    <WorkspaceSidebar>
+      {/* Quick Filters / Library Group */}
+      <WorkspaceSidebarGroup title="Library">
+        <WorkspaceSidebarItem
+          icon={<BookmarkSimple className="w-3.5 h-3.5" />}
+          label="All Bookmarks"
+          badge={healthSummary?.total}
+          isActive={
+            selectedFolderId === undefined &&
+            filterFavorite === undefined &&
+            filterArchived === false &&
+            selectedTag === undefined
+          }
           onClick={() => {
             onSelectFolder(undefined);
             onSelectTag(undefined);
@@ -112,27 +126,13 @@ export function SidebarFilters({
             onSelectBroken(undefined);
             onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            selectedFolderId === undefined &&
-            filterFavorite === undefined &&
-            filterArchived === false &&
-            selectedTag === undefined
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <BookmarkSimple className="w-3.5 h-3.5" />
-            All Bookmarks
-          </span>
-          {healthSummary && healthSummary.total !== undefined && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {healthSummary.total}
-            </span>
-          )}
-        </button>
+        />
 
-        <button
+        <WorkspaceSidebarItem
+          icon={<Star className="w-3.5 h-3.5 text-[#956400]" />}
+          label="Favorites"
+          badge={healthSummary?.favorites}
+          isActive={filterFavorite === true}
           onClick={() => {
             onSelectFolder(undefined);
             onSelectTag(undefined);
@@ -141,24 +141,13 @@ export function SidebarFilters({
             onSelectBroken(undefined);
             onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            filterFavorite === true
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Star className="w-3.5 h-3.5 text-[#956400]" />
-            Favorites
-          </span>
-          {healthSummary && healthSummary.favorites !== undefined && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {healthSummary.favorites}
-            </span>
-          )}
-        </button>
+        />
 
-        <button
+        <WorkspaceSidebarItem
+          icon={<Archive className="w-3.5 h-3.5" />}
+          label="Archive"
+          badge={healthSummary?.archived}
+          isActive={filterArchived === true}
           onClick={() => {
             onSelectFolder(undefined);
             onSelectTag(undefined);
@@ -167,37 +156,27 @@ export function SidebarFilters({
             onSelectBroken(undefined);
             onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            filterArchived === true
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Archive className="w-3.5 h-3.5" />
-            Archive
-          </span>
-          {healthSummary && healthSummary.archived !== undefined && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {healthSummary.archived}
-            </span>
-          )}
-        </button>
-      </div>
+        />
+      </WorkspaceSidebarGroup>
 
-      {/* Health / Maintenance (Duplicates & Broken) */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between px-2 pb-1">
-          <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Health</h3>
-          <button 
+      {/* Health / Maintenance Group */}
+      <WorkspaceSidebarGroup
+        title="Health"
+        action={
+          <button
             onClick={onScan}
             title="Scan links status now"
             className="text-brand-muted hover:text-brand-charcoal hover:bg-brand-charcoal/5 p-1 rounded-none transition-colors"
           >
             <ArrowClockwise className="w-3 h-3" />
           </button>
-        </div>
-         <button
+        }
+      >
+        <WorkspaceSidebarItem
+          icon={<Warning className="w-3.5 h-3.5 text-red-500" />}
+          label="Broken Links"
+          badge={healthSummary?.broken}
+          isActive={filterBroken === true}
           onClick={() => {
             onSelectFolder(undefined);
             onSelectTag(undefined);
@@ -206,24 +185,13 @@ export function SidebarFilters({
             onSelectBroken(true);
             onSelectDuplicates(undefined);
           }}
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            filterBroken === true
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Warning className="w-3.5 h-3.5 text-red-500" />
-            Broken Links
-          </span>
-          {healthSummary && healthSummary.broken !== undefined && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {healthSummary.broken}
-            </span>
-          )}
-        </button>
+        />
 
-        <button
+        <WorkspaceSidebarItem
+          icon={<Copy className="w-3.5 h-3.5" />}
+          label="Duplicates"
+          badge={healthSummary?.duplicates}
+          isActive={filterDuplicates === true}
           onClick={() => {
             onSelectFolder(undefined);
             onSelectTag(undefined);
@@ -232,29 +200,13 @@ export function SidebarFilters({
             onSelectBroken(undefined);
             onSelectDuplicates(true);
           }}
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            filterDuplicates === true
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Copy className="w-3.5 h-3.5" />
-            Duplicates
-          </span>
-          {healthSummary && healthSummary.duplicates !== undefined && (
-            <span className="text-brand-muted/70 font-mono text-[10px] px-1">
-              {healthSummary.duplicates}
-            </span>
-          )}
-        </button>
-      </div>
+        />
+      </WorkspaceSidebarGroup>
 
-      {/* Folders */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Folders</h3>
-
+      {/* Folders Group */}
+      <WorkspaceSidebarGroup
+        title="Folders"
+        action={
           <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
             <DialogTrigger
               onClick={() => {
@@ -371,8 +323,8 @@ export function SidebarFilters({
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-
+        }
+      >
         <div className="max-h-[220px] overflow-y-auto pr-1">
           {folders.length === 0 ? (
             <p className="text-[11px] text-brand-muted italic px-2">No folders created</p>
@@ -393,18 +345,16 @@ export function SidebarFilters({
             />
           )}
         </div>
-      </div>
+      </WorkspaceSidebarGroup>
 
-      {/* Tags */}
-      <div className="space-y-2">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">Tags</h3>
-        <div className="flex flex-wrap gap-1.5 px-2">
+      {/* Tags Group */}
+      <WorkspaceSidebarGroup title="Tags">
+        <div className="flex flex-wrap gap-1.5 px-2 pt-1">
           {tags.length === 0 ? (
             <p className="text-[11px] text-brand-muted italic">No active tags</p>
           ) : (
             tags.map((tag: any) => {
               const isSelected = selectedTag === tag.name;
-              // ponytail: compound button split allows clean tag selection and deletion without nested buttons
               return (
                 <div
                   key={tag.id}
@@ -457,12 +407,11 @@ export function SidebarFilters({
             })
           )}
         </div>
-      </div>
+      </WorkspaceSidebarGroup>
 
-      {/* Import & Export */}
-      <div className="border-t border-brand-border pt-4 px-2 space-y-2">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Sync</h3>
-        <div className="flex flex-col gap-2">
+      {/* Sync Group */}
+      <WorkspaceSidebarGroup title="Sync">
+        <div className="flex flex-col gap-2 pt-1 px-2">
           <Button
             variant="outline"
             size="sm"
@@ -485,7 +434,7 @@ export function SidebarFilters({
             />
           </label>
         </div>
-      </div>
-    </aside>
+      </WorkspaceSidebarGroup>
+    </WorkspaceSidebar>
   );
 }

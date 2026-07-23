@@ -36,6 +36,7 @@ import {
 } from '@atlas/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LedgerWorkspaceHeader } from './components/shared/ledger-workspace-header';
+import { ModuleContainer } from '@/components/module-container';
 import { LedgerSidebarFilters, LedgerView } from './components/shared/ledger-sidebar-filters';
 import { LedgerPageHeaderCard } from './components/shared/ledger-page-header-card';
 import { ReadyToAssignBanner } from './components/shared/ready-to-assign-banner';
@@ -472,15 +473,16 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
   return (
     <div className="h-screen flex flex-col bg-brand-canvas overflow-hidden">
       {/* Pinned Top Workspace Nav Header */}
-      <div className="shrink-0 px-4 md:px-12 pt-6 bg-brand-canvas z-30">
-        <div className="max-w-8xl mx-auto">
+      <div className="shrink-0 pt-6 bg-brand-canvas z-30">
+        <ModuleContainer>
           <LedgerWorkspaceHeader user={user} onLogout={handleLogout} />
-        </div>
+        </ModuleContainer>
       </div>
 
       {/* Main Body Layout Container */}
-      <div className="flex-1 overflow-hidden px-4 md:px-12 py-6">
-        <div className="max-w-8xl mx-auto h-full grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+      <div className="flex-1 overflow-hidden py-6">
+        <ModuleContainer className="h-full">
+          <div className="h-full grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
           {/* Left Pinned Sidebar (1 col) */}
           <aside className="md:col-span-1 h-full overflow-y-auto pr-2">
             <LedgerSidebarFilters
@@ -834,7 +836,8 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
             )}
           </section>
         </div>
-      </div>
+      </ModuleContainer>
+    </div>
 
       {/* Dialog Modals */}
       <AddAccountDialog

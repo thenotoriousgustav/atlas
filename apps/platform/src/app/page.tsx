@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from '@atlas/ui/components/alert-dialog';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ModuleContainer } from '@/components/module-container';
 import {
   BookmarkSimple,
   Coins,
@@ -267,49 +268,69 @@ export default function HomePortalPage() {
   return (
     <div className="min-h-[100dvh] bg-brand-canvas flex flex-col justify-between py-12 px-4 md:px-12 select-none font-mono">
       {/* Top Bar: Portal Greeting & Profile */}
-      <div className="max-w-8xl w-full mx-auto flex items-center justify-between border-b border-brand-border pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-brand-charcoal animate-pulse rounded-none" />
-            <h1 className="text-sm font-semibold uppercase tracking-widest text-brand-charcoal">
-              Atlas
-            </h1>
-          </div>
-          <p className="text-[10px] text-brand-muted uppercase">
-            Productivity Suite Hub
-          </p>
-        </div>
+      <ModuleContainer>
+        <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-brand-border pb-5 gap-4">
+          {/* Brand & Module Title */}
+          <div className="flex items-center gap-3">
+            <div className="size-7 bg-brand-charcoal flex items-center justify-center rounded-none text-brand-canvas font-serif italic text-sm font-semibold">
+              A
+            </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right text-[10px] text-brand-muted hidden sm:block">
-            <p className="font-semibold text-brand-charcoal">{user.name}</p>
-            <p className="text-[9px]">{user.email}</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-serif text-2xl font-medium tracking-tight text-brand-charcoal">
+                  Atlas
+                </h1>
+                <Badge
+                  variant="outline"
+                  className="border-brand-border text-[10px] font-mono uppercase tracking-wider py-0.5 px-1.5 rounded-none text-brand-muted"
+                >
+                  v1.0
+                </Badge>
+              </div>
+              <p className="text-[10px] text-brand-muted font-mono tracking-tight uppercase">
+                Productivity Suite Hub
+              </p>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRegisterPasskey}
-            disabled={isRegisteringPasskey}
-            className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-brand-charcoal"
-          >
-            <Fingerprint className="w-3.5 h-3.5" />
-            {isRegisteringPasskey ? 'Registering...' : hasPasskey ? 'Passkey Registered' : 'Setup Passkey'}
-          </Button>
-          <ThemeToggle />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border"
-          >
-            <SignOut className="w-3.5 h-3.5" />
-            Sign out
-          </Button>
-        </div>
-      </div>
+
+          {/* Action Controls & Profile */}
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="text-right font-mono hidden sm:block border-l border-brand-border pl-4">
+                <p className="text-xs font-semibold text-brand-charcoal">{user.name}</p>
+                <p className="text-[10px] text-brand-muted">{user.email}</p>
+              </div>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRegisterPasskey}
+              disabled={isRegisteringPasskey}
+              className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border text-brand-charcoal"
+            >
+              <Fingerprint className="w-3.5 h-3.5" />
+              {isRegisteringPasskey ? 'Registering...' : hasPasskey ? 'Passkey Registered' : 'Setup Passkey'}
+            </Button>
+
+            <ThemeToggle />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 font-semibold text-[10px] tracking-tight uppercase rounded-none border-brand-border"
+            >
+              <SignOut className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Sign Out</span>
+            </Button>
+          </div>
+        </header>
+      </ModuleContainer>
 
       {/* Main Content: Hub Grid Picker */}
-      <div className="max-w-8xl w-full mx-auto py-12 space-y-10 flex-1 flex flex-col justify-center">
+      <ModuleContainer className="py-12 space-y-10 flex-1 flex flex-col justify-center">
         {/* Asymmetric Header */}
         <div className="space-y-3 max-w-xl">
           <div className="text-[10px] uppercase text-brand-muted tracking-widest flex items-center gap-2">
@@ -574,16 +595,16 @@ export default function HomePortalPage() {
             </div>
           </div>
         </div>
-      </div>
+      </ModuleContainer>
 
       {/* Footer Details */}
-      <div className="max-w-8xl w-full mx-auto border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-brand-muted uppercase tracking-wider gap-4">
+      <ModuleContainer className="border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-brand-muted uppercase tracking-wider gap-4">
         <span>Gustam Platform v1.0 · Personal Workspaces</span>
         <span className="flex items-center gap-1">
           <User className="w-3 h-3" />
           Seeded Single-User Authorization Active
         </span>
-      </div>
+      </ModuleContainer>
 
       {/* Passkey Alert Dialog */}
       <AlertDialog open={passkeyAlertOpen} onOpenChange={setPasskeyAlertOpen}>

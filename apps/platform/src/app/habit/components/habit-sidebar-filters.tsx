@@ -17,6 +17,13 @@ import { CategoryManagementModal } from './category-management-modal';
 import { EditCategoryDialog } from './edit-category-dialog';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import { toast } from 'sonner';
+import {
+  WorkspaceSidebar,
+  WorkspaceSidebarAction,
+  WorkspaceSidebarGroup,
+  WorkspaceSidebarItem,
+  WorkspaceSidebarWidget,
+} from '@/components/workspace-sidebar';
 
 interface HabitSidebarFiltersProps {
   selectedCategory: string;
@@ -76,48 +83,32 @@ export function HabitSidebarFilters({
   };
 
   return (
-    <aside className="space-y-6">
+    <WorkspaceSidebar>
       {/* Primary Action Button */}
-      <div className="space-y-2">
+      <WorkspaceSidebarAction>
         <Button
           onClick={onOpenCreate}
           className="w-full justify-center gap-2 bg-brand-charcoal text-brand-canvas hover:bg-brand-charcoal/90 rounded-none font-mono text-xs font-semibold uppercase tracking-wider h-9"
         >
           <Plus className="size-4" /> New Custom Tracker
         </Button>
-      </div>
+      </WorkspaceSidebarAction>
 
       {/* Navigation / Overview Group */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Overview
-        </h3>
-        <button
+      <WorkspaceSidebarGroup title="Overview">
+        <WorkspaceSidebarItem
+          icon={<CalendarCheck className="size-3.5" />}
+          label="All Trackers"
+          badge={dashboardData?.totalTrackers}
+          isActive={selectedCategory === 'ALL'}
           onClick={() => onSelectCategory('ALL')}
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left font-sans ${
-            selectedCategory === 'ALL'
-              ? 'bg-brand-charcoal/10 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <CalendarCheck className="size-3.5" />
-            All Trackers
-          </span>
-          {dashboardData && (
-            <span className="font-mono text-[10px] text-brand-muted">
-              {dashboardData.totalTrackers}
-            </span>
-          )}
-        </button>
-      </div>
+        />
+      </WorkspaceSidebarGroup>
 
-      {/* Dynamic Categories Group with Hover Action Icons & Alert Dialog */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
-            Categories
-          </h3>
+      {/* Dynamic Categories Group */}
+      <WorkspaceSidebarGroup
+        title="Categories"
+        action={
           <button
             type="button"
             onClick={() => setIsManageCategoriesOpen(true)}
@@ -126,8 +117,8 @@ export function HabitSidebarFilters({
           >
             <Gear className="size-3" /> Manage
           </button>
-        </div>
-
+        }
+      >
         {userCategories.map((cat) => {
           const count = (dashboardData?.trackers || []).filter(
             (t) => t.category.toUpperCase() === cat.name.toUpperCase()
@@ -135,23 +126,15 @@ export function HabitSidebarFilters({
           const isActive = selectedCategory.toUpperCase() === cat.name.toUpperCase();
 
           return (
-            <div
+            <WorkspaceSidebarItem
               key={cat.id}
+              icon={<FolderSimple className="size-3.5" />}
+              label={cat.name}
+              badge={count}
+              isActive={isActive}
               onClick={() => onSelectCategory(cat.name)}
-              className={`group w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left font-sans cursor-pointer ${
-                isActive
-                  ? 'bg-brand-charcoal/10 text-brand-charcoal font-semibold'
-                  : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-              }`}
-            >
-              <span className="flex items-center gap-2 truncate">
-                <FolderSimple className="size-3.5 shrink-0" />
-                <span className="truncate">{cat.name}</span>
-              </span>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                {/* Hover Action Icons (Cabinet Style) */}
-                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+              hoverActions={
+                <>
                   <button
                     type="button"
                     onClick={(e) => handleEditCategory(cat, e)}
@@ -168,44 +151,39 @@ export function HabitSidebarFilters({
                   >
                     <Trash className="size-3" />
                   </button>
-                </div>
-
-                <span className="font-mono text-[10px] text-brand-muted ml-1">{count}</span>
-              </div>
-            </div>
+                </>
+              }
+            />
           );
         })}
-      </div>
+      </WorkspaceSidebarGroup>
 
       {/* Daily Progress Widget */}
-      <div className="pt-4 border-t border-brand-border space-y-3">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2 flex items-center gap-1">
-          <Lightning className="size-3.5 text-amber-500" /> Today Summary
-        </h3>
-
-        <div className="p-3 border border-brand-border bg-white dark:bg-card space-y-2 font-mono text-xs rounded-none">
-          <div className="flex items-center justify-between text-brand-muted">
-            <span>Completed</span>
-            <span className="font-bold text-brand-charcoal">
-              {dashboardData?.completedTodayCount || 0} / {dashboardData?.totalTrackers || 0}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-brand-muted">
-            <span>Progress Rate</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-              {dashboardData ? `${Math.round(dashboardData.todayProgressRate)}%` : '0%'}
-            </span>
-          </div>
-
-          <div className="h-1.5 w-full bg-brand-canvas border border-brand-border overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-500"
-              style={{ width: `${dashboardData?.todayProgressRate || 0}%` }}
-            />
-          </div>
+      <WorkspaceSidebarWidget
+        title="Today Summary"
+        icon={<Lightning className="size-3.5 text-amber-500" />}
+      >
+        <div className="flex items-center justify-between text-brand-muted">
+          <span>Completed</span>
+          <span className="font-bold text-brand-charcoal">
+            {dashboardData?.completedTodayCount || 0} / {dashboardData?.totalTrackers || 0}
+          </span>
         </div>
-      </div>
+
+        <div className="flex items-center justify-between text-brand-muted">
+          <span>Progress Rate</span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {dashboardData ? `${Math.round(dashboardData.todayProgressRate)}%` : '0%'}
+          </span>
+        </div>
+
+        <div className="h-1.5 w-full bg-brand-canvas border border-brand-border overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 transition-all duration-500"
+            style={{ width: `${dashboardData?.todayProgressRate || 0}%` }}
+          />
+        </div>
+      </WorkspaceSidebarWidget>
 
       {/* Edit Category Dialog */}
       <EditCategoryDialog
@@ -220,6 +198,6 @@ export function HabitSidebarFilters({
         onOpenChange={setIsManageCategoriesOpen}
         categories={userCategories}
       />
-    </aside>
+    </WorkspaceSidebar>
   );
 }

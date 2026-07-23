@@ -10,11 +10,11 @@ export interface ModuleContainerProps extends React.HTMLAttributes<HTMLDivElemen
 
 /**
  * Standardized reusable container for Atlas Platform modules (Cabinet, Ledger, Garage, Fetch, Habit)
- * Guarantees consistent max-width (max-w-8xl), padding, and alignment across all portal screens.
+ * Centralized width management — change max-width here to update ALL platform modules globally!
  */
 export function ModuleContainer({ children, className, ...props }: ModuleContainerProps) {
   return (
-    <div className={cn('max-w-8xl w-full mx-auto px-4 sm:px-6', className)} {...props}>
+    <div className={cn('max-w-8xl w-full mx-auto px-4 sm:px-6 md:px-12', className)} {...props}>
       {children}
     </div>
   );

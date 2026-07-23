@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthControllerLogout } from '@atlas/api-client';
 import { toast } from 'sonner';
 import { cn } from '@atlas/ui/lib/utils';
+import { ModuleContainer } from './module-container';
 
 export interface GlobalModuleHeaderProps {
   moduleName: string;
@@ -34,6 +35,7 @@ export interface GlobalModuleLayoutProps {
 /**
  * Standardized Global Viewport Layout for all Atlas Platform Modules (Cabinet, Ledger, Garage, Fetch, Habit)
  * Features:
+ * - Uses centralized ModuleContainer for global width management across all modules
  * - Fixed height viewport (h-screen overflow-hidden)
  * - Pinned Top Workspace Header (shrink-0)
  * - Pinned Left Sidebar (independent scroll if long)
@@ -138,8 +140,8 @@ export function GlobalModuleLayout({
   return (
     <div className={cn('h-screen flex flex-col bg-brand-canvas overflow-hidden text-brand-charcoal', className)}>
       {/* Pinned Top Workspace Nav Header */}
-      <div className="shrink-0 px-4 md:px-12 pt-6 bg-brand-canvas z-30">
-        <div className="max-w-8xl mx-auto">
+      <div className="shrink-0 pt-6 bg-brand-canvas z-30">
+        <ModuleContainer>
           <GlobalModuleHeader
             moduleName={moduleName}
             moduleBadge={moduleBadge}
@@ -147,29 +149,31 @@ export function GlobalModuleLayout({
             moduleInitial={moduleInitial}
             actions={headerActions}
           />
-        </div>
+        </ModuleContainer>
       </div>
 
       {/* Main Body Layout Container with Independent Main Section Scroll */}
-      <div className="flex-1 overflow-hidden px-4 md:px-12 py-6">
-        <div className="max-w-8xl mx-auto h-full grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
-          {/* Pinned Left Sidebar (1 col) — Scrollbar hidden so only 1 main scrollbar appears */}
-          {sidebar && (
-            <aside className="md:col-span-1 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pr-2 space-y-6">
-              {sidebar}
-            </aside>
-          )}
-
-          {/* Main Scrollable Content Area (3 cols or 4 cols if no sidebar) */}
-          <section
-            className={cn(
-              sidebar ? 'md:col-span-3' : 'md:col-span-4',
-              'h-full overflow-y-auto pr-2 space-y-6'
+      <div className="flex-1 overflow-hidden py-6">
+        <ModuleContainer className="h-full">
+          <div className="h-full grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+            {/* Pinned Left Sidebar (1 col) — Scrollbar hidden so only 1 main scrollbar appears */}
+            {sidebar && (
+              <aside className="md:col-span-1 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pr-2 space-y-6">
+                {sidebar}
+              </aside>
             )}
-          >
-            {children}
-          </section>
-        </div>
+
+            {/* Main Scrollable Content Area (3 cols or 4 cols if no sidebar) */}
+            <section
+              className={cn(
+                sidebar ? 'md:col-span-3' : 'md:col-span-4',
+                'h-full overflow-y-auto pr-2 space-y-6'
+              )}
+            >
+              {children}
+            </section>
+          </div>
+        </ModuleContainer>
       </div>
     </div>
   );

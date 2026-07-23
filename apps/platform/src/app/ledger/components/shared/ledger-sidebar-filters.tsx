@@ -12,6 +12,11 @@ import {
   Vault,
   EnvelopeSimple,
 } from '@phosphor-icons/react';
+import {
+  WorkspaceSidebar,
+  WorkspaceSidebarGroup,
+  WorkspaceSidebarItem,
+} from '@/components/workspace-sidebar';
 
 export type LedgerView =
   | 'dashboard'
@@ -49,167 +54,106 @@ export function LedgerSidebarFilters({
     }).format(val);
 
   return (
-    <aside className="space-y-6">
+    <WorkspaceSidebar>
       {/* Overview Group */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Overview
-        </h3>
-        <Link
-          href="/ledger/dashboard"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'dashboard'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <ChartBar className="w-3.5 h-3.5" />
-            Dashboard
-          </span>
+      <WorkspaceSidebarGroup title="Overview">
+        <Link href="/ledger/dashboard" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<ChartBar className="w-3.5 h-3.5" />}
+            label="Dashboard"
+            isActive={activeView === 'dashboard'}
+          />
         </Link>
 
-        <Link
-          href="/ledger/reports"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'reports'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Vault className="w-3.5 h-3.5" />
-            Cash Flow & Reports
-          </span>
+        <Link href="/ledger/reports" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<Vault className="w-3.5 h-3.5" />}
+            label="Cash Flow & Reports"
+            isActive={activeView === 'reports'}
+          />
         </Link>
-      </div>
+      </WorkspaceSidebarGroup>
 
       {/* Zero-Based Budget Group */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Budgeting
-        </h3>
-        <Link
-          href="/ledger/budget"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'budget'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Coins className="w-3.5 h-3.5" />
-            Zero-Based Budget
-          </span>
-          {readyToAssign > 0 && (
-            <span className="font-mono text-[9px] px-1.5 py-0.2 bg-[#EDF3EC] text-[#346538] font-bold">
-              {formatCurrency(readyToAssign)}
-            </span>
-          )}
+      <WorkspaceSidebarGroup title="Budgeting">
+        <Link href="/ledger/budget" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<Coins className="w-3.5 h-3.5" />}
+            label="Zero-Based Budget"
+            isActive={activeView === 'budget'}
+            badge={
+              readyToAssign > 0 ? (
+                <span className="font-mono text-[9px] px-1.5 py-0.2 bg-[#EDF3EC] text-[#346538] font-bold">
+                  {formatCurrency(readyToAssign)}
+                </span>
+              ) : undefined
+            }
+          />
         </Link>
-      </div>
+      </WorkspaceSidebarGroup>
 
       {/* Ledger Data Group */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Ledger Data
-        </h3>
-        <Link
-          href="/ledger/transactions"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'transactions'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <List className="w-3.5 h-3.5" />
-            Transactions
-          </span>
-          {transactionsCount > 0 && (
-            <span className="font-mono text-[10px] text-brand-muted">
-              {transactionsCount}
-            </span>
-          )}
+      <WorkspaceSidebarGroup title="Ledger Data">
+        <Link href="/ledger/transactions" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<List className="w-3.5 h-3.5" />}
+            label="Transactions"
+            isActive={activeView === 'transactions'}
+            badge={transactionsCount > 0 ? transactionsCount : undefined}
+          />
         </Link>
 
-        <Link
-          href="/ledger/accounts"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'accounts'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <CreditCard className="w-3.5 h-3.5" />
-            Accounts
-          </span>
-          {accountsCount > 0 && (
-            <span className="font-mono text-[10px] text-brand-muted">{accountsCount}</span>
-          )}
+        <Link href="/ledger/accounts" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<CreditCard className="w-3.5 h-3.5" />}
+            label="Accounts"
+            isActive={activeView === 'accounts'}
+            badge={accountsCount > 0 ? accountsCount : undefined}
+          />
         </Link>
-      </div>
+      </WorkspaceSidebarGroup>
 
       {/* Planning Group */}
-      <div className="space-y-1">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Planning
-        </h3>
-        <Link
-          href="/ledger/goals"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'goals'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Shield className="w-3.5 h-3.5" />
-            Financial Goals
-          </span>
-          {goalsCount > 0 && (
-            <span className="font-mono text-[10px] text-brand-muted">{goalsCount}</span>
-          )}
+      <WorkspaceSidebarGroup title="Planning">
+        <Link href="/ledger/goals" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<Shield className="w-3.5 h-3.5" />}
+            label="Financial Goals"
+            isActive={activeView === 'goals'}
+            badge={goalsCount > 0 ? goalsCount : undefined}
+          />
         </Link>
 
-        <Link
-          href="/ledger/subscriptions"
-          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-none text-xs transition-colors text-left ${
-            activeView === 'subscriptions'
-              ? 'bg-brand-charcoal/5 text-brand-charcoal font-semibold'
-              : 'text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5" />
-            Subscriptions
-          </span>
+        <Link href="/ledger/subscriptions" className="block w-full">
+          <WorkspaceSidebarItem
+            icon={<Clock className="w-3.5 h-3.5" />}
+            label="Subscriptions"
+            isActive={activeView === 'subscriptions'}
+          />
         </Link>
-      </div>
+      </WorkspaceSidebarGroup>
 
-      {/* Quick Sync / Utilities */}
-      <div className="pt-4 border-t border-brand-border space-y-2">
-        <h3 className="text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2">
-          Sync & Import
-        </h3>
-        <Button
-          onClick={onSyncEmail}
-          variant="outline"
-          className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
-        >
-          <EnvelopeSimple className="w-3.5 h-3.5" />
-          <span>Sync Email</span>
-        </Button>
-        <Button
-          onClick={onImportCsv}
-          variant="outline"
-          className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
-        >
-          <UploadSimple className="w-3.5 h-3.5" />
-          <span>Import CSV</span>
-        </Button>
-      </div>
-    </aside>
+      {/* Quick Sync / Utilities Group */}
+      <WorkspaceSidebarGroup title="Sync & Import">
+        <div className="flex flex-col gap-2 pt-1">
+          <Button
+            onClick={onSyncEmail}
+            variant="outline"
+            className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
+          >
+            <EnvelopeSimple className="w-3.5 h-3.5" />
+            <span>Sync Email</span>
+          </Button>
+          <Button
+            onClick={onImportCsv}
+            variant="outline"
+            className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
+          >
+            <UploadSimple className="w-3.5 h-3.5" />
+            <span>Import CSV</span>
+          </Button>
+        </div>
+      </WorkspaceSidebarGroup>
+    </WorkspaceSidebar>
   );
 }
