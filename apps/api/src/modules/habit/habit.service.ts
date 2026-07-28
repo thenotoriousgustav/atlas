@@ -154,9 +154,7 @@ export class HabitService {
 
   async getDashboardSummary(userId: string) {
     const trackers = await this.findAll(userId);
-    const todayStr = new Date().toISOString().split('T')[0];
 
-    // Get all entries for user habits in the last 365 days
     const oneYearAgoDate = new Date();
     oneYearAgoDate.setDate(oneYearAgoDate.getDate() - 365);
     const oneYearAgoStr = oneYearAgoDate.toISOString().split('T')[0];
@@ -170,7 +168,7 @@ export class HabitService {
 
     const totalTrackers = trackers.length;
     const completedTodayCount = trackers.filter((t) => t.isCompletedToday).length;
-    const todayProgressRate = totalTrackers > 0 ? (completedTodayCount / totalTrackers) * 100 : 0;
+    const todayProgressRate = totalTrackers > 0 ? Math.round((completedTodayCount / totalTrackers) * 100) : 0;
 
     // Aggregate daily activity counts for heatmap across ALL habits
     const dateCountMap = new Map<string, number>();
@@ -189,16 +187,57 @@ export class HabitService {
       aggregatedHeatmap.push({ date, count, level });
     });
 
+    // Category Distribution (Pie / Radar)
+    const categoryCountMap = new Map<string, number>();
+    trackers.forEach((t) => {
+      const cat = t.category || 'General';
+      categoryCountMap.set(cat, (categoryCountMap.get(cat) || 0) + 1);
+    });
+
+    const categoryDistribution: Array<{ category: string; count: number; percentage: number }> = [];
+    categoryCountMap.forEach((count, category) => {
+      const percentage = totalTrackers > 0 ? Math.round((count / totalTrackers) * 100) : 0;
+      categoryDistribution.push({ category, count, percentage });
+    });
+
+    // Weekly Trend (last 14 days)
+    const weeklyTrend: Array<{ date: string; completed: number; total: number }> = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+
+      let completedCount = 0;
+      trackers.forEach((t) => {
+        const entry = allEntries.find((e) => e.trackerId === t.id && e.date === dateStr);
+        if (entry) {
+          const isDone =
+            t.goalDirection === GoalDirection.DECREASING
+              ? entry.value <= t.goalValue
+              : entry.value >= t.goalValue;
+          if (isDone) completedCount++;
+        }
+      });
+
+      weeklyTrend.push({
+        date: dateStr,
+        completed: completedCount,
+        total: totalTrackers,
+      });
+    }
+
     return {
       totalTrackers,
       completedTodayCount,
       todayProgressRate,
       trackers,
       aggregatedHeatmap,
+      categoryDistribution,
+      weeklyTrend,
     };
   }
 
-  // ponytail: helper method to compute streaks & level mapping
+  // ponytail: helper method to compute streaks & stats
   private calculateStats(tracker: any, entries: any[]) {
     const entryMap = new Map<string, any>(entries.map((e) => [e.date, e]));
     let currentStreak = 0;
@@ -221,9 +260,7 @@ export class HabitService {
       if (isSuccess) {
         currentStreak++;
       } else {
-        // If today hasn't been checked in yet, allow yesterday to continue streak
         if (i === 0) {
-          // Check yesterday
           checkDate.setDate(checkDate.getDate() - 1);
           continue;
         }
@@ -269,7 +306,7 @@ export class HabitService {
       }
     }
 
-    // Prepare heatmap level 0-4 for kibo-ui contribution graph
+    // Prepare heatmap level 0-4
     const heatmapData = entries.map((e) => {
       let level = 0;
       if (tracker.goalDirection === GoalDirection.DECREASING) {
@@ -292,14 +329,96 @@ export class HabitService {
       };
     });
 
+    // Calculate Monthly Averages & Best Month
+    const monthlyGroups = new Map<string, { totalVal: number; count: number; successes: number }>();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    entries.forEach((e) => {
+      const yearMonth = e.date.substring(0, 7); // "YYYY-MM"
+      const group = monthlyGroups.get(yearMonth) || { totalVal: 0, count: 0, successes: 0 };
+      group.totalVal += e.value;
+      group.count += 1;
+
+      const isSuccess =
+        tracker.goalDirection === GoalDirection.DECREASING
+          ? e.value <= tracker.goalValue
+          : e.value >= tracker.goalValue;
+      if (isSuccess) group.successes += 1;
+
+      monthlyGroups.set(yearMonth, group);
+    });
+
+    const currentMonthKey = today.toISOString().substring(0, 7);
+    const currentMonthGroup = monthlyGroups.get(currentMonthKey);
+    const monthlyAverageNum =
+      currentMonthGroup && currentMonthGroup.count > 0
+        ? Math.round((currentMonthGroup.totalVal / currentMonthGroup.count) * 10) / 10
+        : 0;
+    const monthlyAverage = `${monthlyAverageNum}${tracker.goalUnit ? ' ' + tracker.goalUnit : ''}/day`;
+
+    let bestMonth = '-';
+    let bestScore = tracker.goalDirection === GoalDirection.DECREASING ? Infinity : -1;
+
+    monthlyGroups.forEach((group, yearMonth) => {
+      const [year, month] = yearMonth.split('-');
+      const monthIdx = parseInt(month, 10) - 1;
+      const monthName = `${monthNames[monthIdx]}`;
+      const avg = group.totalVal / group.count;
+
+      if (tracker.goalDirection === GoalDirection.DECREASING) {
+        if (avg < bestScore) {
+          bestScore = avg;
+          bestMonth = monthName;
+        }
+      } else {
+        if (avg > bestScore) {
+          bestScore = avg;
+          bestMonth = monthName;
+        }
+      }
+    });
+
+    const streakLabel =
+      tracker.goalDirection === GoalDirection.DECREASING
+        ? `${currentStreak} days under target`
+        : `${currentStreak} days streak`;
+
+    const sortedMonths = Array.from(monthlyGroups.keys()).sort();
+    const monthlyChartData = sortedMonths.map((ym) => {
+      const [year, month] = ym.split('-');
+      const mIdx = parseInt(month, 10) - 1;
+      const grp = monthlyGroups.get(ym)!;
+      return {
+        month: `${monthNames[mIdx]} '${year.substring(2)}`,
+        average: Math.round((grp.totalVal / grp.count) * 10) / 10,
+        goal: tracker.goalValue,
+        total: grp.count,
+      };
+    });
+
+    const trendChartData = [...entries]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-30)
+      .map((e) => ({
+        date: e.date,
+        value: e.value,
+        goal: tracker.goalValue,
+      }));
+
     const completionRate = entries.length > 0 ? Math.round((entries.length / 30) * 100) : 0;
 
     return {
       currentStreak,
+      streakLabel,
       longestStreak,
+      monthlyAverage,
+      monthlyAverageNum,
+      bestMonth,
       totalEntries: entries.length,
       completionRate: Math.min(completionRate, 100),
       heatmapData,
+      monthlyChartData,
+      trendChartData,
     };
   }
 

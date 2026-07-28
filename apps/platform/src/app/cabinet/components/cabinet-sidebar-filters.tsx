@@ -73,7 +73,7 @@ interface SidebarFiltersProps {
   resetFolderForm: () => void;
 }
 
-export function SidebarFilters({
+export function CabinetSidebarFilters({
   selectedFolderId,
   onSelectFolder,
   selectedTag,

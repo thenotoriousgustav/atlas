@@ -27,9 +27,9 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import { toast } from 'sonner';
-import { WorkspaceHeader } from './components/workspace-header';
+import { WorkspaceHeader } from '@/components/workspace-header';
 import { ModuleContainer } from '@/components/module-container';
-import { SidebarFilters } from './components/sidebar-filters';
+import { CabinetSidebarFilters } from './components/cabinet-sidebar-filters';
 import { Toolbar } from './components/toolbar';
 import { BookmarkList } from './components/bookmark-list';
 import { Archive, Trash } from '@phosphor-icons/react';
@@ -586,13 +586,13 @@ export function CabinetDashboard() {
       <ModuleContainer className="space-y-8">
         
         {/* Workspace Nav Header */}
-        <WorkspaceHeader user={user} onLogout={handleLogout} />
+        <WorkspaceHeader moduleName="Cabinet" moduleInitial="C" user={user} onLogout={handleLogout} />
 
         {/* Dashboard Grid */}
         <main className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
           
           {/* Left Sidebar (1 col) */}
-          <SidebarFilters
+          <CabinetSidebarFilters
             selectedFolderId={selectedFolderId}
             onSelectFolder={setSelectedFolderId}
             selectedTag={selectedTag}

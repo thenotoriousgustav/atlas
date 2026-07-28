@@ -29,7 +29,7 @@ import {
   useDocumentsControllerRemove,
 } from '@atlas/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
-import { WorkspaceHeader } from './components/workspace-header';
+import { WorkspaceHeader } from '@/components/workspace-header';
 import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
@@ -628,7 +628,7 @@ export function GarageDashboard() {
       <div className="max-w-8xl mx-auto space-y-8">
         
         {/* Workspace Header */}
-        <WorkspaceHeader user={user} onLogout={handleLogout} />
+        <WorkspaceHeader moduleName="Garage" moduleInitial="G" user={user} onLogout={handleLogout} />
 
         {/* Top selectors & general state */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-border pb-4">

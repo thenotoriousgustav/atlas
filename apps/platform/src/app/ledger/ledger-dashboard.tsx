@@ -35,7 +35,7 @@ import {
   useGoalsControllerRemove,
 } from '@atlas/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
-import { LedgerWorkspaceHeader } from './components/shared/ledger-workspace-header';
+import { WorkspaceHeader } from '@/components/workspace-header';
 import { ModuleContainer } from '@/components/module-container';
 import { LedgerSidebarFilters, LedgerView } from './components/shared/ledger-sidebar-filters';
 import { LedgerPageHeaderCard } from './components/shared/ledger-page-header-card';
@@ -475,7 +475,12 @@ export function LedgerDashboard({ activeView = 'dashboard' }: LedgerDashboardPro
       {/* Pinned Top Workspace Nav Header */}
       <div className="shrink-0 pt-6 bg-brand-canvas z-30">
         <ModuleContainer>
-          <LedgerWorkspaceHeader user={user} onLogout={handleLogout} />
+          <WorkspaceHeader
+            moduleName="Ledger"
+            moduleInitial="L"
+            user={user}
+            onLogout={handleLogout}
+          />
         </ModuleContainer>
       </div>
 

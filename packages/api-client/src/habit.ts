@@ -36,9 +36,38 @@ export interface HabitEntry {
   updatedAt: string;
 }
 
+export interface MonthlyChartItem {
+  month: string;
+  average: number;
+  goal: number;
+  total: number;
+}
+
+export interface TrendChartItem {
+  date: string;
+  value: number;
+  goal: number;
+}
+
+export interface CategoryDistributionItem {
+  category: string;
+  count: number;
+  percentage: number;
+}
+
+export interface WeeklyTrendItem {
+  date: string;
+  completed: number;
+  total: number;
+}
+
 export interface HabitStats {
   currentStreak: number;
+  streakLabel: string;
   longestStreak: number;
+  monthlyAverage: string;
+  monthlyAverageNum: number;
+  bestMonth: string;
   totalEntries: number;
   completionRate: number;
   heatmapData: Array<{
@@ -46,6 +75,8 @@ export interface HabitStats {
     count: number;
     level: number;
   }>;
+  monthlyChartData: MonthlyChartItem[];
+  trendChartData: TrendChartItem[];
 }
 
 export interface HabitDetail extends HabitTracker {
@@ -63,6 +94,8 @@ export interface HabitDashboardSummary {
     count: number;
     level: number;
   }>;
+  categoryDistribution: CategoryDistributionItem[];
+  weeklyTrend: WeeklyTrendItem[];
 }
 
 export interface CreateHabitTrackerDto {

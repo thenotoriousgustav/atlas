@@ -277,17 +277,12 @@ export default function HomePortalPage() {
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
+              
                 <h1 className="font-serif text-2xl font-medium tracking-tight text-brand-charcoal">
                   Atlas
                 </h1>
-                <Badge
-                  variant="outline"
-                  className="border-brand-border text-[10px] font-mono uppercase tracking-wider py-0.5 px-1.5 rounded-none text-brand-muted"
-                >
-                  v1.0
-                </Badge>
-              </div>
+                
+              
               <p className="text-[10px] text-brand-muted font-mono tracking-tight uppercase">
                 Productivity Suite Hub
               </p>
@@ -599,7 +594,7 @@ export default function HomePortalPage() {
 
       {/* Footer Details */}
       <ModuleContainer className="border-t border-brand-border pt-6 flex flex-col sm:flex-row justify-between text-[9px] text-brand-muted uppercase tracking-wider gap-4">
-        <span>Gustam Platform v1.0 · Personal Workspaces</span>
+        <span>Gustam Platform · Personal Workspaces</span>
         <span className="flex items-center gap-1">
           <User className="w-3 h-3" />
           Seeded Single-User Authorization Active

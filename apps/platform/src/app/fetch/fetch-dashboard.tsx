@@ -16,7 +16,8 @@ import {
   useFetchControllerRemoveCollection,
 } from '@atlas/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
-import { WorkspaceHeader } from './components/workspace-header';
+import { WorkspaceHeader } from '@/components/workspace-header';
+import { FetchSidebarFilters } from './components/fetch-sidebar-filters';
 import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
@@ -437,7 +438,7 @@ export function FetchDashboard() {
       <div className="max-w-8xl mx-auto space-y-8">
         
         {/* Workspace Header */}
-        <WorkspaceHeader user={user} onLogout={handleLogout} />
+        <WorkspaceHeader moduleName="Fetch" moduleInitial="F" user={user} onLogout={handleLogout} />
 
         {/* Input Bar Section */}
         <Card className="border-brand-border bg-white rounded-none p-6 shadow-none">
@@ -663,120 +664,27 @@ export function FetchDashboard() {
         )}
 
         {/* History Split Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
           
-          {/* Sidebar Collections (3 cols) */}
-          <div className="lg:col-span-3 space-y-6">
-            <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
-              <div className="flex items-center justify-between border-b border-brand-border pb-2">
-                <span className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">
-                  Collections
-                </span>
-                <Button
-                  onClick={() => setIsCollectionModalOpen(true)}
-                  variant="ghost"
-                  size="xs"
-                  className="text-[9px] font-bold text-brand-charcoal hover:underline uppercase"
-                >
-                  + New
-                </Button>
-              </div>
+          {/* Left Sidebar (1 col) */}
+          <aside className="md:col-span-1 space-y-6">
+            <FetchSidebarFilters
+              collections={collections}
+              selectedCollectionId={selectedCollectionId}
+              onSelectCollection={setSelectedCollectionId}
+              onOpenCreateCollection={() => setIsCollectionModalOpen(true)}
+              onRemoveCollection={handleRemoveCollection}
+              selectedPlatform={selectedPlatform}
+              onSelectPlatform={setSelectedPlatform}
+              selectedMediaType={downloadType}
+              onSelectMediaType={(type) => setDownloadType(type as any)}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          </aside>
 
-              <div className="space-y-1.5 font-mono text-[11px] text-brand-muted">
-                <div
-                  onClick={() => setSelectedCollectionId('')}
-                  className={`px-2.5 py-1.5 cursor-pointer flex items-center gap-2 ${
-                    !selectedCollectionId
-                      ? 'bg-brand-charcoal text-white font-semibold'
-                      : 'hover:bg-brand-charcoal/5 text-brand-charcoal'
-                  }`}
-                >
-                  <Bookmark className="w-3.5 h-3.5" /> All Downloads
-                </div>
-
-                {collections.map((col: any) => (
-                  <div
-                    key={col.id}
-                    className={`px-2.5 py-1.5 cursor-pointer flex items-center justify-between group transition-colors ${
-                      selectedCollectionId === col.id
-                        ? 'bg-brand-charcoal text-white font-semibold'
-                        : 'hover:bg-brand-charcoal/5 text-brand-charcoal'
-                    }`}
-                  >
-                    <span
-                      onClick={() => setSelectedCollectionId(col.id)}
-                      className="flex-1 truncate flex items-center gap-2"
-                    >
-                      <Bookmark className="w-3.5 h-3.5" /> {col.name}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveCollection(col.id);
-                      }}
-                      className={`opacity-0 group-hover:opacity-100 hover:text-brand-red-text shrink-0 ml-2 ${
-                        selectedCollectionId === col.id ? 'text-white/60' : 'text-brand-muted'
-                      }`}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-
-                <div
-                  onClick={() => setSelectedCollectionId('none')}
-                  className={`px-2.5 py-1.5 cursor-pointer flex items-center gap-2 ${
-                    selectedCollectionId === 'none'
-                      ? 'bg-brand-charcoal text-white font-semibold'
-                      : 'hover:bg-brand-charcoal/5 text-brand-charcoal'
-                  }`}
-                >
-                  <Bookmark className="w-3.5 h-3.5" /> Uncategorized
-                </div>
-              </div>
-            </Card>
-
-            {/* Quick Filters */}
-            <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-4">
-              <span className="text-[10px] font-bold text-brand-muted uppercase tracking-wider block border-b border-brand-border pb-2">
-                Platform Filters
-              </span>
-              <div className="space-y-2">
-                <Select
-                  value={selectedPlatform}
-                  onValueChange={(val) => setSelectedPlatform(val || '')}
-                >
-                  <SelectTrigger className="w-full h-8 border-brand-border bg-white text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none">
-                    <SelectValue placeholder="All Platforms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Platforms</SelectItem>
-                    <SelectItem value="YouTube">YouTube</SelectItem>
-                    <SelectItem value="TikTok">TikTok</SelectItem>
-                    <SelectItem value="Instagram">Instagram</SelectItem>
-                    <SelectItem value="Threads">Threads</SelectItem>
-                    <SelectItem value="Facebook">Facebook</SelectItem>
-                    <SelectItem value="Twitter">Twitter / X</SelectItem>
-                    <SelectItem value="Reddit">Reddit</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="flex items-center gap-2 py-1 font-semibold text-[10px] uppercase text-brand-charcoal">
-                  <Checkbox
-                    id="showOnlyFavorites"
-                    checked={showOnlyFavorites}
-                    onCheckedChange={(checked) => setShowOnlyFavorites(checked === true)}
-                  />
-                  <label htmlFor="showOnlyFavorites" className="cursor-pointer select-none">
-                    Show Favorites
-                  </label>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Main download history list (9 cols) */}
-          <div className="lg:col-span-9 space-y-4">
+          {/* Main download history list (3 cols) */}
+          <div className="md:col-span-3 space-y-4">
             
             {/* Search filter row */}
             <div className="flex items-center border border-brand-border bg-white p-2">

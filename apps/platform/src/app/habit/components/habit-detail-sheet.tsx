@@ -15,7 +15,9 @@ import { habitApi } from '@atlas/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { HabitHeatmap } from './habit-heatmap';
 import { toast } from 'sonner';
-import { Flame, Trophy, Percent, Trash, Note } from '@phosphor-icons/react';
+import { Flame, Trophy, Calendar, ChartLineUp, Trash, Note, ChartBar } from '@phosphor-icons/react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@atlas/ui/components/tabs';
+import { HabitTrendChart, HabitMonthlyBarChart } from './habit-charts';
 
 interface HabitDetailSheetProps {
   open: boolean;
@@ -98,35 +100,98 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onRefresh }: Hab
               </SheetDescription>
             </SheetHeader>
 
-            {/* Key Stats Cards */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* 4 Key Stats Cards (Section 6) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <div className="p-3 rounded-lg border border-border bg-card flex flex-col items-center justify-center text-center">
-                <Flame className="size-5 text-amber-500 mb-1" />
-                <span className="text-xs font-mono uppercase text-muted-foreground">Streak</span>
-                <span className="text-xl font-bold font-mono tracking-tight">{detail.stats.currentStreak} d</span>
+                <Flame className="size-4 text-amber-500 mb-1" />
+                <span className="text-[10px] font-mono uppercase text-muted-foreground">Current Streak</span>
+                <span className="text-lg font-bold font-mono tracking-tight text-amber-500">
+                  {detail.stats.currentStreak} d
+                </span>
+                <span className="text-[10px] text-muted-foreground font-sans line-clamp-1 mt-0.5">
+                  {detail.stats.streakLabel}
+                </span>
               </div>
 
               <div className="p-3 rounded-lg border border-border bg-card flex flex-col items-center justify-center text-center">
-                <Trophy className="size-5 text-emerald-500 mb-1" />
-                <span className="text-xs font-mono uppercase text-muted-foreground">Best</span>
-                <span className="text-xl font-bold font-mono tracking-tight">{detail.stats.longestStreak} d</span>
+                <ChartLineUp className="size-4 text-sky-500 mb-1" />
+                <span className="text-[10px] font-mono uppercase text-muted-foreground">Monthly Avg</span>
+                <span className="text-lg font-bold font-mono tracking-tight text-sky-500">
+                  {detail.stats.monthlyAverage || '0'}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-sans mt-0.5">this month</span>
               </div>
 
               <div className="p-3 rounded-lg border border-border bg-card flex flex-col items-center justify-center text-center">
-                <Percent className="size-5 text-sky-500 mb-1" />
-                <span className="text-xs font-mono uppercase text-muted-foreground">Rate</span>
-                <span className="text-xl font-bold font-mono tracking-tight">{detail.stats.completionRate}%</span>
+                <Calendar className="size-4 text-purple-500 mb-1" />
+                <span className="text-[10px] font-mono uppercase text-muted-foreground">Best Month</span>
+                <span className="text-lg font-bold font-mono tracking-tight text-purple-500">
+                  {detail.stats.bestMonth || '-'}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-sans mt-0.5">top avg performance</span>
+              </div>
+
+              <div className="p-3 rounded-lg border border-border bg-card flex flex-col items-center justify-center text-center">
+                <Trophy className="size-4 text-emerald-500 mb-1" />
+                <span className="text-[10px] font-mono uppercase text-muted-foreground">Longest Streak</span>
+                <span className="text-lg font-bold font-mono tracking-tight text-emerald-500">
+                  {detail.stats.longestStreak} d
+                </span>
+                <span className="text-[10px] text-muted-foreground font-sans mt-0.5">all-time record</span>
               </div>
             </div>
 
-            {/* 365-Day Contribution Heatmap */}
-            <div className="space-y-2">
-              <HabitHeatmap
-                data={detail.stats.heatmapData}
-                goalDirection={detail.goalDirection}
-                title={`${detail.name} — Full Year Activity`}
-              />
-            </div>
+            {/* Interactive Charts & Analytics Tabs (Section 7) */}
+            <Tabs defaultValue="heatmap" className="w-full">
+              <TabsList className="w-full grid grid-cols-3 bg-muted/60">
+                <TabsTrigger value="heatmap" className="text-xs font-mono gap-1">
+                  <Calendar className="size-3.5" /> Heatmap
+                </TabsTrigger>
+                <TabsTrigger value="trend" className="text-xs font-mono gap-1">
+                  <ChartLineUp className="size-3.5" /> Trend
+                </TabsTrigger>
+                <TabsTrigger value="monthly" className="text-xs font-mono gap-1">
+                  <ChartBar className="size-3.5" /> Monthly
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="heatmap" className="mt-3">
+                <HabitHeatmap
+                  data={detail.stats.heatmapData}
+                  goalDirection={detail.goalDirection}
+                  title={`${detail.name} — Full Year Activity`}
+                />
+              </TabsContent>
+
+              <TabsContent value="trend" className="mt-3">
+                <div className="p-4 rounded-xl border border-border bg-card/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      Daily Log Progression vs Goal
+                    </span>
+                  </div>
+                  <HabitTrendChart
+                    data={detail.stats.trendChartData}
+                    goalValue={detail.goalValue}
+                    goalUnit={detail.goalUnit}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="monthly" className="mt-3">
+                <div className="p-4 rounded-xl border border-border bg-card/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      Monthly Average Comparison
+                    </span>
+                  </div>
+                  <HabitMonthlyBarChart
+                    data={detail.stats.monthlyChartData}
+                    goalUnit={detail.goalUnit}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {/* Recent History Entries List */}
             <div className="space-y-3 pt-2">
