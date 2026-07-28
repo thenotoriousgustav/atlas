@@ -88,13 +88,10 @@ function MoodboardCard({
     <Card className={`border border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-brand-charcoal/30 transition-all h-auto w-full group/card shadow-none [--card-spacing:0px] ${isSelected ? 'border-brand-charcoal' : ''}`}>
       {/* Visual Top Header - Screenshot / Fallback */}
       <div className="relative w-full bg-brand-canvas border-b border-brand-border overflow-hidden aspect-[16/10] shrink-0">
-        {/* Checkbox & Drag Handle Overlay */}
-        <div className={`absolute top-2 left-2 z-10 flex items-center gap-1 bg-white p-1 border border-brand-border shadow-sm transition-opacity ${
+        {/* Checkbox Overlay */}
+        <div className={`absolute top-2 left-2 z-10 bg-white p-1 border border-brand-border shadow-sm transition-opacity ${
           isSelected ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100 focus-within:opacity-100'
         }`}>
-          <SortableItemHandle className="p-0.5 text-brand-muted/70 hover:text-brand-charcoal transition-colors cursor-grab active:cursor-grabbing">
-            <DotsSixVertical className="size-3.5" />
-          </SortableItemHandle>
           <Checkbox
             checked={isSelected}
             onCheckedChange={onToggleSelect}
@@ -683,16 +680,12 @@ export function BookmarkList({
                     <SortableItem
                       key={bookmark.id}
                       value={bookmark.id}
+                      asHandle
                       className={`flex items-center justify-between py-2.5 px-3 bg-white transition-all hover:bg-brand-charcoal/5 gap-4 text-xs group/item ${
                         isSelected ? 'bg-brand-charcoal/5' : ''
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {/* Drag Handle */}
-                        <SortableItemHandle className="p-0.5 text-brand-muted/40 hover:text-brand-charcoal transition-colors cursor-grab active:cursor-grabbing shrink-0">
-                          <DotsSixVertical className="size-4" />
-                        </SortableItemHandle>
-
                         <div className={`transition-opacity shrink-0 ${
                           isSelected ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100 focus-within:opacity-100'
                         }`}>
@@ -856,7 +849,30 @@ export function BookmarkList({
                   );
                 })}
               </SortableContent>
-              <SortableOverlay />
+              <SortableOverlay>
+                {(activeItem) => {
+                  const bookmark = bookmarks.find((b: any) => b.id === activeItem.value);
+                  if (!bookmark) return null;
+                  const hostname = getHostname(bookmark.url);
+                  return (
+                    <div className="flex items-center justify-between py-2.5 px-3 bg-white border border-brand-charcoal shadow-lg text-xs gap-4 w-full">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                          alt=""
+                          className="size-4 shrink-0 object-contain rounded-none border border-brand-border/60 bg-white"
+                        />
+                        <span className="font-semibold text-brand-charcoal truncate">
+                          {bookmark.title || bookmark.url}
+                        </span>
+                        <span className="text-[10px] text-brand-muted/70 font-mono truncate hidden md:inline">
+                          ({hostname})
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }}
+              </SortableOverlay>
             </Sortable>
           )}
 
@@ -878,7 +894,7 @@ export function BookmarkList({
                     : 'grid-cols-4'
                 } items-start`}>
                   {bookmarks.map((bookmark: any) => (
-                    <SortableItem key={bookmark.id} value={bookmark.id}>
+                    <SortableItem key={bookmark.id} value={bookmark.id} asHandle>
                       <MoodboardCard
                         bookmark={bookmark}
                         onSelectTag={onSelectTag}
@@ -896,7 +912,29 @@ export function BookmarkList({
                   ))}
                 </div>
               </SortableContent>
-              <SortableOverlay />
+              <SortableOverlay>
+                {(activeItem) => {
+                  const bookmark = bookmarks.find((b: any) => b.id === activeItem.value);
+                  if (!bookmark) return null;
+                  return (
+                    <div className="shadow-2xl ring-2 ring-brand-charcoal opacity-95">
+                      <MoodboardCard
+                        bookmark={bookmark}
+                        onSelectTag={onSelectTag}
+                        onToggleFavorite={onToggleFavorite}
+                        onToggleArchive={onToggleArchive}
+                        onEditBookmark={onEditBookmark}
+                        onDeleteBookmark={onDeleteBookmark}
+                        onDuplicateBookmark={onDuplicateBookmark}
+                        getHostname={getHostname}
+                        getPastelColor={getPastelColor}
+                        isSelected={selectedBookmarkIds.includes(bookmark.id)}
+                        onToggleSelect={() => onToggleSelect(bookmark.id)}
+                      />
+                    </div>
+                  );
+                }}
+              </SortableOverlay>
             </Sortable>
           )}
 
