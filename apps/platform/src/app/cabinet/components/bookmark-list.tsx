@@ -61,29 +61,23 @@ function MoodboardCard({
   const hostname = getHostname(bookmark.url);
   const color = getPastelColor(hostname);
   
-  const [imageSrc, setImageSrc] = React.useState<string | null>(bookmark.imageUrl || null);
-  const [imageStatus, setImageStatus] = React.useState<'loading' | 'loaded' | 'error'>(
-    bookmark.imageUrl ? 'loading' : 'loading'
-  );
+  const screenshotUrl = React.useMemo(() => {
+    if (bookmark.imageUrl) return bookmark.imageUrl;
+    return `https://api.microlink.io/?url=${encodeURIComponent(bookmark.url)}&screenshot=true&embed=screenshot.url`;
+  }, [bookmark.imageUrl, bookmark.url]);
+
+  const [imageSrc, setImageSrc] = React.useState<string>(screenshotUrl);
+  const [imageStatus, setImageStatus] = React.useState<'loading' | 'loaded' | 'error'>('loading');
 
   React.useEffect(() => {
-    if (bookmark.imageUrl) {
-      setImageSrc(bookmark.imageUrl);
-      setImageStatus('loading');
-    } else {
-      // Try live screenshot
-      const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(bookmark.url)}&screenshot=true&embed=screenshot.url`;
-      setImageSrc(screenshotUrl);
-      setImageStatus('loading');
-    }
-  }, [bookmark.imageUrl, bookmark.url]);
+    setImageSrc(screenshotUrl);
+  }, [screenshotUrl]);
 
   const handleImageError = () => {
     if (bookmark.imageUrl && imageSrc === bookmark.imageUrl) {
       // Fallback from metadata image to live screenshot
-      const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(bookmark.url)}&screenshot=true&embed=screenshot.url`;
-      setImageSrc(screenshotUrl);
-      setImageStatus('loading');
+      const fallbackUrl = `https://api.microlink.io/?url=${encodeURIComponent(bookmark.url)}&screenshot=true&embed=screenshot.url`;
+      setImageSrc(fallbackUrl);
     } else {
       // Live screenshot also failed, show pastel color fallback
       setImageStatus('error');
