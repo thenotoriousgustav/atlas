@@ -248,7 +248,27 @@ export function CabinetDashboard() {
   const rawBookmarks = bookmarksInfiniteData?.pages.flatMap((page: any) => page?.data?.data || []) || [];
   const bookmarks = Array.from(new Map(rawBookmarks.map((b: any) => [b.id, b])).values());
 
-  const [orderedBookmarkIds, setOrderedBookmarkIds] = React.useState<string[]>([]);
+  const [orderedBookmarkIds, setOrderedBookmarkIds] = React.useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('cabinet_bookmark_order');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const handleReorder = React.useCallback((newOrder: any[]) => {
+    const newIds = newOrder.map((b: any) => b.id);
+    setOrderedBookmarkIds(newIds);
+    try {
+      localStorage.setItem('cabinet_bookmark_order', JSON.stringify(newIds));
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   const filteredBookmarks = React.useMemo(() => {
     if (orderedBookmarkIds.length === 0) return bookmarks;
@@ -776,9 +796,7 @@ export function CabinetDashboard() {
               isDuplicatesView={filterDuplicates}
               duplicateGroups={duplicateGroups}
               onCleanDuplicates={handleCleanDuplicates}
-              onReorder={(newOrder) => {
-                setOrderedBookmarkIds(newOrder.map((b: any) => b.id));
-              }}
+              onReorder={handleReorder}
             />
 
             {/* Load More Button */}
