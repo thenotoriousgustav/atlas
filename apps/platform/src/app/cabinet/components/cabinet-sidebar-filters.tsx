@@ -42,6 +42,7 @@ import {
   WorkspaceSidebarGroup,
   WorkspaceSidebarItem,
 } from '@/components/workspace-sidebar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@atlas/ui/components/dropdown-menu';
 
 interface SidebarFiltersProps {
   selectedFolderId?: string;
@@ -68,7 +69,7 @@ interface SidebarFiltersProps {
   onSelectDuplicates: (dup: boolean | undefined) => void;
   healthSummary?: any;
   onScan: () => void;
-  onExport: () => void;
+  onExport: (format: 'html' | 'csv' | 'txt' | 'zip') => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   resetFolderForm: () => void;
 }
@@ -325,43 +326,38 @@ export function CabinetSidebarFilters({
           </Dialog>
         }
       >
-        <div className="max-h-[220px] overflow-y-auto pr-1">
-          {folders.length === 0 ? (
-            <p className="text-[11px] text-brand-muted italic px-2">No folders created</p>
-          ) : (
-            <FolderTree
-              folders={folders}
-              selectedFolderId={selectedFolderId}
-              onSelectFolder={(id) => {
-                onSelectFolder(id);
-                onSelectTag(undefined);
-                onSelectFavorite(undefined);
-                onSelectBroken(undefined);
-                onSelectDuplicates(undefined);
-              }}
-              onEditFolder={onEditFolder}
-              onDeleteFolder={onDeleteFolder}
-              onCreateSubfolder={onCreateSubfolder}
-            />
-          )}
-        </div>
+        <FolderTree
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={(id) => {
+            onSelectFolder(id);
+            onSelectTag(undefined);
+            onSelectFavorite(undefined);
+            onSelectArchived(undefined);
+            onSelectBroken(undefined);
+            onSelectDuplicates(undefined);
+          }}
+          onEditFolder={onEditFolder}
+          onDeleteFolder={onDeleteFolder}
+          onCreateSubfolder={onCreateSubfolder}
+        />
       </WorkspaceSidebarGroup>
 
       {/* Tags Group */}
       <WorkspaceSidebarGroup title="Tags">
-        <div className="flex flex-wrap gap-1.5 px-2 pt-1">
+        <div className="flex flex-wrap gap-1 pt-1 px-2">
           {tags.length === 0 ? (
-            <p className="text-[11px] text-brand-muted italic">No active tags</p>
+            <p className="text-[10px] font-mono text-brand-muted italic">No tags created</p>
           ) : (
             tags.map((tag: any) => {
               const isSelected = selectedTag === tag.name;
               return (
                 <div
                   key={tag.id}
-                  className={`inline-flex items-center rounded-none text-[10px] font-mono border transition-colors ${
+                  className={`inline-flex items-center h-6 rounded-none font-mono text-[10px] transition-colors ${
                     isSelected
-                      ? 'bg-brand-charcoal text-white border-brand-charcoal'
-                      : 'bg-white text-brand-muted border-brand-border'
+                      ? 'bg-brand-charcoal text-white font-semibold'
+                      : 'bg-brand-canvas text-brand-muted hover:bg-brand-charcoal/10 hover:text-brand-charcoal border border-brand-border'
                   }`}
                 >
                   <button
@@ -369,14 +365,15 @@ export function CabinetSidebarFilters({
                       onSelectTag(isSelected ? undefined : tag.name);
                       onSelectFolder(undefined);
                       onSelectFavorite(undefined);
+                      onSelectArchived(undefined);
                       onSelectBroken(undefined);
                       onSelectDuplicates(undefined);
                     }}
-                    className="flex items-center gap-1 px-2 py-0.5 hover:text-brand-charcoal hover:bg-brand-charcoal/5"
+                    className="px-2 py-0.5 flex items-center gap-1.5 h-full"
                   >
-                    <TagIcon className="w-2.5 h-2.5" />
-                    {tag.name}
-                    <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-brand-muted/70'}`}>
+                    <TagIcon className="size-3" />
+                    <span>{tag.name}</span>
+                    <span className={`text-[9px] ${isSelected ? 'text-white/70' : 'text-brand-muted'}`}>
                       ({tag.bookmarkCount})
                     </span>
                   </button>
@@ -400,7 +397,7 @@ export function CabinetSidebarFilters({
                     }`}
                     title="Delete tag"
                   >
-                    <X className="w-2.5 h-2.5" />
+                    <X className="size-2.5" />
                   </button>
                 </div>
               );
@@ -412,18 +409,36 @@ export function CabinetSidebarFilters({
       {/* Sync Group */}
       <WorkspaceSidebarGroup title="Sync">
         <div className="flex flex-col gap-2 pt-1 px-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExport}
-            className="w-full flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase h-8"
-          >
-            <DownloadSimple className="w-3.5 h-3.5" />
-            Export HTML
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase h-8"
+              >
+                <DownloadSimple className="size-3.5" />
+                Export Bookmarks
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-none">
+              <DropdownMenuItem onClick={() => onExport('html')}>
+                Export as HTML (.html)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('csv')}>
+                Export as CSV (.csv)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('txt')}>
+                Export as TXT (.txt)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('zip')}>
+                Export as ZIP Archive (.zip)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <label className="w-full">
             <span className="flex items-center gap-1.5 justify-center font-mono text-[10px] uppercase border border-brand-border bg-white text-brand-charcoal hover:bg-brand-canvas rounded-none h-8 cursor-pointer transition-colors px-3 font-semibold text-xs border border-brand-border shadow-none">
-              <UploadSimple className="w-3.5 h-3.5" />
+              <UploadSimple className="size-3.5" />
               Import HTML
             </span>
             <input

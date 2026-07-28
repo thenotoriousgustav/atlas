@@ -534,20 +534,85 @@ export function CabinetDashboard() {
   };
 
   // Import / Export handlers
-  const handleExport = async () => {
+  const handleExport = async (format: 'html' | 'csv' | 'txt' | 'zip') => {
     try {
-      const res = await AXIOS_INSTANCE.get('/v1/bookmarks/export', { responseType: 'blob' });
-      const blob = new Blob([res.data], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'cabinet_bookmarks.html';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      if (format === 'html') {
+        const res = await AXIOS_INSTANCE.get('/v1/bookmarks/export', { responseType: 'blob' });
+        const blob = new Blob([res.data], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cabinet_bookmarks.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Bookmarks exported as HTML!');
+        return;
+      }
+
+      if (filteredBookmarks.length === 0) {
+        toast.error('No bookmarks available to export.');
+        return;
+      }
+
+      if (format === 'csv') {
+        const headers = ['ID', 'Title', 'URL', 'Description', 'Folder', 'Tags', 'Created At'];
+        const rows = filteredBookmarks.map((b: any) => [
+          `"${b.id || ''}"`,
+          `"${(b.title || '').replace(/"/g, '""')}"`,
+          `"${(b.url || '').replace(/"/g, '""')}"`,
+          `"${(b.description || '').replace(/"/g, '""')}"`,
+          `"${(b.folder?.name || '').replace(/"/g, '""')}"`,
+          `"${(b.tags || []).map((t: any) => t.name || t).join(', ').replace(/"/g, '""')}"`,
+          `"${b.createdAt || ''}"`,
+        ]);
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cabinet_bookmarks.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Bookmarks exported as CSV!');
+        return;
+      }
+
+      if (format === 'txt') {
+        const txtLines = filteredBookmarks.map((b: any) => `${b.title || 'Untitled'} - ${b.url}`);
+        const txtContent = txtLines.join('\n');
+        const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cabinet_bookmarks.txt';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Bookmarks exported as TXT!');
+        return;
+      }
+
+      if (format === 'zip') {
+        const res = await AXIOS_INSTANCE.get('/v1/bookmarks/export', { responseType: 'blob' });
+        const blob = new Blob([res.data], { type: 'application/zip' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cabinet_bookmarks_archive.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Bookmarks exported as ZIP Archive!');
+        return;
+      }
     } catch {
-      toast.error('Failed to export bookmarks');
+      toast.error(`Failed to export bookmarks as ${format.toUpperCase()}`);
     }
   };
 
@@ -582,66 +647,72 @@ export function CabinetDashboard() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-brand-canvas py-8">
-      <ModuleContainer className="space-y-8">
-        
-        {/* Workspace Nav Header */}
-        <WorkspaceHeader moduleName="Cabinet" moduleInitial="C" user={user} onLogout={handleLogout} />
+    <div className="h-screen flex flex-col bg-brand-canvas overflow-hidden">
+      {/* Pinned Top Workspace Nav Header */}
+      <div className="shrink-0 pt-6 bg-brand-canvas z-30">
+        <ModuleContainer>
+          <WorkspaceHeader moduleName="Cabinet" moduleInitial="C" user={user} onLogout={handleLogout} />
+        </ModuleContainer>
+      </div>
 
-        {/* Dashboard Grid */}
-        <main className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
-          
-          {/* Left Sidebar (1 col) */}
-          <CabinetSidebarFilters
-            selectedFolderId={selectedFolderId}
-            onSelectFolder={setSelectedFolderId}
-            selectedTag={selectedTag}
-            onSelectTag={setSelectedTag}
-            filterFavorite={filterFavorite}
-            onSelectFavorite={setFilterFavorite}
-            filterArchived={filterArchived}
-            onSelectArchived={setFilterArchived}
-            folders={folders}
-            tags={tags}
-            onDeleteTag={handleDeleteTag}
-            isFolderModalOpen={isFolderModalOpen}
-            setIsFolderModalOpen={setIsFolderModalOpen}
-            folderToEdit={folderToEdit}
-            folderForm={folderForm}
-            onEditFolder={handleEditFolder}
-            onDeleteFolder={handleDeleteFolder}
-            onCreateSubfolder={handleCreateSubfolder}
-            filterBroken={filterBroken}
-            onSelectBroken={(val) => {
-              setFilterBroken(val);
-              if (val) {
-                setSelectedFolderId(undefined);
-                setSelectedTag(undefined);
-                setFilterFavorite(undefined);
-                setFilterArchived(undefined);
-                setFilterDuplicates(undefined);
-              }
-            }}
-            filterDuplicates={filterDuplicates}
-            onSelectDuplicates={(val) => {
-              setFilterDuplicates(val);
-              if (val) {
-                setSelectedFolderId(undefined);
-                setSelectedTag(undefined);
-                setFilterFavorite(undefined);
-                setFilterArchived(undefined);
-                setFilterBroken(undefined);
-              }
-            }}
-            healthSummary={healthSummary}
-            onScan={handleScan}
-            onExport={handleExport}
-            onImport={handleImport}
-            resetFolderForm={resetFolderForm}
-          />
+      {/* Main Body Layout Container */}
+      <div className="flex-1 overflow-hidden py-6">
+        <ModuleContainer className="h-full">
+          <div className="h-full grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+            
+            {/* Left Pinned Sidebar (1 col) */}
+            <aside className="md:col-span-1 h-full overflow-y-auto pr-2">
+              <CabinetSidebarFilters
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={setSelectedFolderId}
+                selectedTag={selectedTag}
+                onSelectTag={setSelectedTag}
+                filterFavorite={filterFavorite}
+                onSelectFavorite={setFilterFavorite}
+                filterArchived={filterArchived}
+                onSelectArchived={setFilterArchived}
+                folders={folders}
+                tags={tags}
+                onDeleteTag={handleDeleteTag}
+                isFolderModalOpen={isFolderModalOpen}
+                setIsFolderModalOpen={setIsFolderModalOpen}
+                folderToEdit={folderToEdit}
+                folderForm={folderForm}
+                onEditFolder={handleEditFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onCreateSubfolder={handleCreateSubfolder}
+                filterBroken={filterBroken}
+                onSelectBroken={(val) => {
+                  setFilterBroken(val);
+                  if (val) {
+                    setSelectedFolderId(undefined);
+                    setSelectedTag(undefined);
+                    setFilterFavorite(undefined);
+                    setFilterArchived(undefined);
+                    setFilterDuplicates(undefined);
+                  }
+                }}
+                filterDuplicates={filterDuplicates}
+                onSelectDuplicates={(val) => {
+                  setFilterDuplicates(val);
+                  if (val) {
+                    setSelectedFolderId(undefined);
+                    setSelectedTag(undefined);
+                    setFilterFavorite(undefined);
+                    setFilterArchived(undefined);
+                    setFilterBroken(undefined);
+                  }
+                }}
+                healthSummary={healthSummary}
+                onScan={handleScan}
+                onExport={handleExport}
+                onImport={handleImport}
+                resetFolderForm={resetFolderForm}
+              />
+            </aside>
 
-          {/* Main Bookmarks Content (3 cols) */}
-          <section className="md:col-span-3 space-y-6">
+            {/* Main Independent Scrollable Content Area (3 cols) */}
+            <section className="md:col-span-3 h-full overflow-y-auto pr-2 space-y-6">
             
             {/* Toolbar (Search & Add) */}
             <Toolbar
@@ -713,9 +784,9 @@ export function CabinetDashboard() {
             )}
 
           </section>
-
-        </main>
-      </ModuleContainer>
+          </div>
+        </ModuleContainer>
+      </div>
 
       <ActionBar
         open={selectedBookmarkIds.length > 0}
@@ -734,15 +805,12 @@ export function CabinetDashboard() {
             {filteredBookmarks.length > 0 && filteredBookmarks.every((b: any) => selectedBookmarkIds.includes(b.id)) ? 'Deselect All' : 'Select All'}
           </ActionBarItem>
 
-          <Select
-            value=""
-            onValueChange={(val) => handleBulkMove(val || null)}
-          >
-            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] tracking-wider uppercase font-bold text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none w-40 px-2.5">
-              <SelectValue placeholder="MOVE TO..." />
+          <Select onValueChange={(folderId) => handleBulkMove(folderId || null)}>
+            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] font-mono font-bold uppercase text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none w-auto gap-1">
+              <SelectValue placeholder="Move to folder..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None (Root)</SelectItem>
+              <SelectItem value="">Root (No Folder)</SelectItem>
               {folders.map((f: any) => (
                 <SelectItem key={f.id} value={f.id}>
                   {f.name}

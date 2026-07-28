@@ -83,7 +83,7 @@ function MoodboardCard({
   };
 
   return (
-    <Card className={`border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-brand-charcoal/30 transition-all h-auto w-full group/card shadow-none [--card-spacing:0px] ${isSelected ? 'border-brand-charcoal' : ''}`}>
+    <Card className={`border border-brand-border bg-white rounded-none flex flex-col overflow-hidden hover:border-brand-charcoal/30 transition-all h-auto w-full group/card shadow-none [--card-spacing:0px] ${isSelected ? 'border-brand-charcoal' : ''}`}>
       {/* Visual Top Header - Screenshot / Fallback */}
       <div className="relative w-full bg-brand-canvas border-b border-brand-border overflow-hidden aspect-[16/10] shrink-0">
         {/* Checkbox Overlay */}
@@ -511,7 +511,15 @@ export function BookmarkList({
                               onCheckedChange={() => onToggleSelect(bookmark.id)}
                             />
                           </div>
-                          <span className="flex items-center gap-1.5 min-w-0">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <img
+                              src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                              alt=""
+                              className="size-4 shrink-0 object-contain rounded-none border border-brand-border/60 bg-white"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
+                            />
                             <a
                               href={bookmark.url}
                               target="_blank"
@@ -674,7 +682,15 @@ export function BookmarkList({
                           onCheckedChange={() => onToggleSelect(bookmark.id)}
                         />
                       </div>
-                      <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                          alt=""
+                          className="size-4 shrink-0 object-contain rounded-none border border-brand-border/60 bg-white"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
                         <a
                           href={bookmark.url}
                           target="_blank"

@@ -139,7 +139,7 @@ export function LedgerSidebarFilters({
           <Button
             onClick={onSyncEmail}
             variant="outline"
-            className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
+            className="w-full justify-center gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
           >
             <EnvelopeSimple className="w-3.5 h-3.5" />
             <span>Sync Email</span>
@@ -147,7 +147,7 @@ export function LedgerSidebarFilters({
           <Button
             onClick={onImportCsv}
             variant="outline"
-            className="w-full justify-start gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
+            className="w-full justify-center gap-2 h-8 rounded-none border-brand-border text-xs text-brand-charcoal hover:bg-brand-charcoal/5"
           >
             <UploadSimple className="w-3.5 h-3.5" />
             <span>Import CSV</span>

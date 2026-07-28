@@ -38,7 +38,7 @@ export function BookmarkCard({
   onToggleSelect,
 }: BookmarkCardProps) {
   return (
-    <Card className={`border-brand-border bg-white rounded-none p-5 transition-all hover:border-brand-charcoal/30 flex flex-col sm:flex-row gap-4 justify-between items-start group/card ${isSelected ? 'border-brand-charcoal' : ''}`}>
+    <Card className={`border border-brand-border bg-white rounded-none p-5 transition-all hover:border-brand-charcoal/30 flex flex-col sm:flex-row gap-4 justify-between items-start group/card ${isSelected ? 'border-brand-charcoal' : ''}`}>
       <div className="flex items-start gap-3 flex-1 min-w-0 w-full">
         {/* Selection Checkbox */}
         <div className={`pt-1 transition-opacity shrink-0 ${
@@ -54,6 +54,14 @@ export function BookmarkCard({
           {/* URL / Title / Category */}
           <div className="space-y-1">
             <div className="flex items-start gap-2.5 flex-wrap">
+              <img
+                src={`https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`}
+                alt=""
+                className="size-4 mt-0.5 shrink-0 object-contain rounded-none border border-brand-border/60 bg-white"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
               <a
                 href={bookmark.url}
                 target="_blank"
