@@ -15,6 +15,7 @@ import {
   defaultDropAnimationSideEffects,
   KeyboardSensor,
   MouseSensor,
+  rectIntersection,
   type ScreenReaderInstructions,
   TouchSensor,
   type UniqueIdentifier,
@@ -29,6 +30,7 @@ import {
 import {
   arrayMove,
   horizontalListSortingStrategy,
+  rectSortingStrategy,
   SortableContext,
   type SortableContextProps,
   sortableKeyboardCoordinates,
@@ -54,9 +56,9 @@ const orientationConfig = {
     collisionDetection: closestCenter,
   },
   mixed: {
-    modifiers: [restrictToParentElement],
-    strategy: undefined,
-    collisionDetection: closestCorners,
+    modifiers: [],
+    strategy: rectSortingStrategy,
+    collisionDetection: rectIntersection,
   },
 };
 

@@ -247,7 +247,23 @@ export function CabinetDashboard() {
   );
   const rawBookmarks = bookmarksInfiniteData?.pages.flatMap((page: any) => page?.data?.data || []) || [];
   const bookmarks = Array.from(new Map(rawBookmarks.map((b: any) => [b.id, b])).values());
-  const filteredBookmarks = bookmarks;
+
+  const [orderedBookmarkIds, setOrderedBookmarkIds] = React.useState<string[]>([]);
+
+  const filteredBookmarks = React.useMemo(() => {
+    if (orderedBookmarkIds.length === 0) return bookmarks;
+    const itemMap = new Map(bookmarks.map((b: any) => [b.id, b]));
+    const ordered: any[] = [];
+    orderedBookmarkIds.forEach((id) => {
+      if (itemMap.has(id)) {
+        ordered.push(itemMap.get(id));
+        itemMap.delete(id);
+      }
+    });
+    // Append remaining items not in orderedBookmarkIds
+    itemMap.forEach((item) => ordered.push(item));
+    return ordered;
+  }, [bookmarks, orderedBookmarkIds]);
 
   // Health and Duplicates Queries
   const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary();
@@ -760,6 +776,9 @@ export function CabinetDashboard() {
               isDuplicatesView={filterDuplicates}
               duplicateGroups={duplicateGroups}
               onCleanDuplicates={handleCleanDuplicates}
+              onReorder={(newOrder) => {
+                setOrderedBookmarkIds(newOrder.map((b: any) => b.id));
+              }}
             />
 
             {/* Load More Button */}
