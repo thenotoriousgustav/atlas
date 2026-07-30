@@ -113,9 +113,10 @@ export class BookmarksService {
         tags: true,
         folder: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { position: 'asc' },
+        { createdAt: 'desc' },
+      ],
     };
 
     if (take !== undefined) {
@@ -440,5 +441,17 @@ export class BookmarksService {
       console.error('Triggered health scan failed', err);
     });
     return { success: true, message: 'Scan started in background' };
+  }
+
+  async reorder(userId: string, ids: string[]) {
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.bookmark.updateMany({
+          where: { id, userId },
+          data: { position: index },
+        }),
+      ),
+    );
+    return { success: true };
   }
 }

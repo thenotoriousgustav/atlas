@@ -80,6 +80,7 @@ model Bookmark {
   userId      String    @db.Uuid
   status      String    @default("OK")
   statusCode  Int?
+  position    Int       @default(0)
   lastChecked DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

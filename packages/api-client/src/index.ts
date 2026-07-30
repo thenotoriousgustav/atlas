@@ -22,5 +22,23 @@ export * from './generated/budget-shares/budget-shares';
 export * from './generated/email-sync/email-sync';
 export * from './generated/goals/goals';
 export * from './generated/model';
-export * from './habit';
+export { habitApi } from './habit';
+export type {
+  HabitType,
+  GoalFrequency,
+  GoalDirection,
+  HabitTracker,
+  HabitEntry,
+  HabitStats,
+  HabitDetail,
+  HabitDashboardSummary,
+  HabitCategory,
+  CreateHabitTrackerDto,
+  UpdateHabitTrackerDto,
+  LogHabitEntryDto,
+  MonthlyChartItem,
+  TrendChartItem,
+  CategoryDistributionItem,
+  WeeklyTrendItem,
+} from './habit';
 export * from './custom-instance';

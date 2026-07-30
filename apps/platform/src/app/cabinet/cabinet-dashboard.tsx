@@ -22,6 +22,7 @@ import {
   useBookmarksControllerGetDuplicates,
   useBookmarksControllerCleanDuplicates,
   useBookmarksControllerTriggerHealthCheck,
+  useBookmarksControllerReorder,
   AXIOS_INSTANCE,
 } from '@atlas/api-client';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -248,42 +249,49 @@ export function CabinetDashboard() {
   const rawBookmarks = bookmarksInfiniteData?.pages.flatMap((page: any) => page?.data?.data || []) || [];
   const bookmarks = Array.from(new Map(rawBookmarks.map((b: any) => [b.id, b])).values());
 
-  const [orderedBookmarkIds, setOrderedBookmarkIds] = React.useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('cabinet_bookmark_order');
-        return saved ? JSON.parse(saved) : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
+  const [optimisticOrder, setOptimisticOrder] = React.useState<string[] | null>(null);
 
-  const handleReorder = React.useCallback((newOrder: any[]) => {
-    const newIds = newOrder.map((b: any) => b.id);
-    setOrderedBookmarkIds(newIds);
-    try {
-      localStorage.setItem('cabinet_bookmark_order', JSON.stringify(newIds));
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
+  // Reset optimistic order when query data updates
+  React.useEffect(() => {
+    setOptimisticOrder(null);
+  }, [bookmarksInfiniteData]);
+
+  const reorderMutation = useBookmarksControllerReorder();
+
+  const handleReorder = React.useCallback(
+    (newOrder: any[]) => {
+      const newIds = newOrder.map((b: any) => b.id);
+      setOptimisticOrder(newIds);
+      reorderMutation.mutate(
+        { data: { ids: newIds } },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['infinite', '/v1/bookmarks'] });
+            queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+          },
+          onError: () => {
+            setOptimisticOrder(null);
+            toast.error('Failed to save bookmark order');
+          },
+        }
+      );
+    },
+    [reorderMutation, queryClient]
+  );
 
   const filteredBookmarks = React.useMemo(() => {
-    if (orderedBookmarkIds.length === 0) return bookmarks;
+    if (!optimisticOrder || optimisticOrder.length === 0) return bookmarks;
     const itemMap = new Map(bookmarks.map((b: any) => [b.id, b]));
     const ordered: any[] = [];
-    orderedBookmarkIds.forEach((id) => {
+    optimisticOrder.forEach((id) => {
       if (itemMap.has(id)) {
         ordered.push(itemMap.get(id));
         itemMap.delete(id);
       }
     });
-    // Append remaining items not in orderedBookmarkIds
     itemMap.forEach((item) => ordered.push(item));
     return ordered;
-  }, [bookmarks, orderedBookmarkIds]);
+  }, [bookmarks, optimisticOrder]);
 
   // Health and Duplicates Queries
   const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary();

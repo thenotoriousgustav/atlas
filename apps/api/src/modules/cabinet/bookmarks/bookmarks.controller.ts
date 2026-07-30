@@ -19,6 +19,8 @@ import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
 import { ImportBookmarksDto } from './dto/import-bookmarks.dto';
 
+import { ReorderBookmarksDto } from './dto/reorder-bookmarks.dto';
+
 @ApiTags('bookmarks')
 @ApiBearerAuth()
 @Controller('v1/bookmarks')
@@ -123,6 +125,15 @@ export class BookmarksController {
   @ApiOperation({ summary: 'Trigger manual scan of bookmark links status' })
   async triggerHealthCheck(@CurrentUser() user: any) {
     return this.bookmarksService.triggerHealthCheck(user.id);
+  }
+
+  @Patch('reorder')
+  @ApiOperation({ summary: 'Reorder bookmarks position' })
+  async reorder(
+    @CurrentUser() user: any,
+    @Body() reorderDto: ReorderBookmarksDto,
+  ) {
+    return this.bookmarksService.reorder(user.id, reorderDto.ids);
   }
 
   @Get(':id')
