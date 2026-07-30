@@ -1,43 +1,29 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { VehiclesController } from './vehicles.controller';
-import { VehiclesService } from './vehicles.service';
-import { MaintenanceController } from './maintenance.controller';
-import { MaintenanceService } from './maintenance.service';
-import { FuelController } from './fuel.controller';
-import { FuelService } from './fuel.service';
-import { ExpensesController } from './expenses.controller';
-import { ExpensesService } from './expenses.service';
-import { RemindersController } from './reminders.controller';
-import { RemindersService } from './reminders.service';
-import { DocumentsController } from './documents.controller';
-import { DocumentsService } from './documents.service';
+import { VehiclesModule } from './vehicles/vehicles.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
+import { FuelModule } from './fuel/fuel.module';
+import { ExpensesModule } from './expenses/expenses.module';
+import { RemindersModule } from './reminders/reminders.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
-  imports: [PrismaModule],
-  controllers: [
-    VehiclesController,
-    MaintenanceController,
-    FuelController,
-    ExpensesController,
-    RemindersController,
-    DocumentsController,
-  ],
-  providers: [
-    VehiclesService,
-    MaintenanceService,
-    FuelService,
-    ExpensesService,
-    RemindersService,
-    DocumentsService,
+  imports: [
+    PrismaModule,
+    VehiclesModule,
+    MaintenanceModule,
+    FuelModule,
+    ExpensesModule,
+    RemindersModule,
+    DocumentsModule,
   ],
   exports: [
-    VehiclesService,
-    MaintenanceService,
-    FuelService,
-    ExpensesService,
-    RemindersService,
-    DocumentsService,
+    VehiclesModule,
+    MaintenanceModule,
+    FuelModule,
+    ExpensesModule,
+    RemindersModule,
+    DocumentsModule,
   ],
 })
 export class GarageModule {}

@@ -1,63 +1,40 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { TransactionsController } from './transactions.controller';
-import { TransactionsService } from './transactions.service';
-import { SubscriptionsController } from './subscriptions.controller';
-import { SubscriptionsService } from './subscriptions.service';
-import { AccountsController } from './accounts.controller';
-import { AccountsService } from './accounts.service';
-import { CategoryGroupsController } from './category-groups.controller';
-import { CategoriesController } from './categories.controller';
-import { CategoriesService } from './categories.service';
-import { BudgetController } from './budget.controller';
-import { BudgetService } from './budget.service';
-import { RecurringTransactionsController } from './recurring-transactions.controller';
-import { RecurringTransactionsService } from './recurring-transactions.service';
-import { BudgetSharesController } from './budget-shares.controller';
-import { BudgetSharesService } from './budget-shares.service';
-import { BudgetShareGuard } from './budget-share.guard';
-import { EmailSyncController } from './email-sync.controller';
-import { EmailSyncService } from './email-sync.service';
-import { GoalsController } from './goals.controller';
-import { GoalsService } from './goals.service';
+import { AccountsModule } from './accounts/accounts.module';
+import { TransactionsModule } from './transactions/transactions.module';
+import { RecurringTransactionsModule } from './recurring-transactions/recurring-transactions.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { BudgetModule } from './budget/budget.module';
+import { BudgetSharesModule } from './budget-shares/budget-shares.module';
+import { CategoriesModule } from './categories/categories.module';
+import { CategoryGroupsModule } from './category-groups/category-groups.module';
+import { GoalsModule } from './goals/goals.module';
+import { EmailSyncModule } from './email-sync/email-sync.module';
 
 @Module({
-  imports: [PrismaModule],
-  controllers: [
-    TransactionsController,
-    SubscriptionsController,
-    AccountsController,
-    CategoryGroupsController,
-    CategoriesController,
-    BudgetController,
-    RecurringTransactionsController,
-    BudgetSharesController,
-    EmailSyncController,
-    GoalsController,
-  ],
-  providers: [
-    TransactionsService,
-    SubscriptionsService,
-    AccountsService,
-    CategoriesService,
-    BudgetService,
-    RecurringTransactionsService,
-    BudgetSharesService,
-    BudgetShareGuard,
-    EmailSyncService,
-    GoalsService,
+  imports: [
+    PrismaModule,
+    AccountsModule,
+    TransactionsModule,
+    RecurringTransactionsModule,
+    SubscriptionsModule,
+    BudgetModule,
+    BudgetSharesModule,
+    CategoriesModule,
+    CategoryGroupsModule,
+    GoalsModule,
+    EmailSyncModule,
   ],
   exports: [
-    TransactionsService,
-    SubscriptionsService,
-    AccountsService,
-    CategoriesService,
-    BudgetService,
-    RecurringTransactionsService,
-    BudgetSharesService,
-    EmailSyncService,
-    GoalsService,
+    AccountsModule,
+    TransactionsModule,
+    RecurringTransactionsModule,
+    SubscriptionsModule,
+    BudgetModule,
+    BudgetSharesModule,
+    CategoriesModule,
+    GoalsModule,
+    EmailSyncModule,
   ],
 })
 export class LedgerModule {}
-

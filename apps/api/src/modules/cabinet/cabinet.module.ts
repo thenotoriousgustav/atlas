@@ -1,32 +1,20 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { FoldersService } from './folders.service';
-import { BookmarksService } from './bookmarks.service';
-import { TagsService } from './tags.service';
-import { MetadataService } from './metadata.service';
-import { LinkCheckerService } from './link-checker.service';
-import { FoldersController } from './folders.controller';
-import { BookmarksController } from './bookmarks.controller';
-import { TagsController } from './tags.controller';
+import { BookmarksModule } from './bookmarks/bookmarks.module';
+import { FoldersModule } from './folders/folders.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
-  imports: [PrismaModule],
-  providers: [
-    FoldersService,
-    BookmarksService,
-    TagsService,
-    MetadataService,
-    LinkCheckerService,
-  ],
-  controllers: [
-    FoldersController,
-    BookmarksController,
-    TagsController,
+  imports: [
+    PrismaModule,
+    BookmarksModule,
+    FoldersModule,
+    TagsModule,
   ],
   exports: [
-    FoldersService,
-    BookmarksService,
-    TagsService,
+    BookmarksModule,
+    FoldersModule,
+    TagsModule,
   ],
 })
 export class CabinetModule {}
