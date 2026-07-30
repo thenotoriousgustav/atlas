@@ -1,9 +1,9 @@
-'use client';
+"use client"
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { useForm } from '@tanstack/react-form';
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
+import { useForm } from "@tanstack/react-form"
 import {
   useAuthControllerMe,
   useAuthControllerLogout,
@@ -24,103 +24,113 @@ import {
   useBookmarksControllerTriggerHealthCheck,
   useBookmarksControllerReorder,
   AXIOS_INSTANCE,
-} from '@atlas/api-client';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useConfirm } from '@atlas/ui/hooks/use-confirm';
-import { toast } from 'sonner';
-import { WorkspaceHeader } from '@/components/workspace-header';
-import { ModuleContainer } from '@/components/module-container';
-import { CabinetSidebarFilters } from './components/cabinet-sidebar-filters';
-import { Toolbar } from './components/toolbar';
-import { BookmarkList } from './components/bookmark-list';
-import { Archive, Trash } from '@phosphor-icons/react';
-import { Button } from '@atlas/ui/components/button';
-import { Spinner } from '@atlas/ui/components/spinner';
+} from "@atlas/api-client"
+import { useAuthStore } from "@/store/useAuthStore"
+import { useConfirm } from "@atlas/ui/hooks/use-confirm"
+import { toast } from "sonner"
+import { WorkspaceHeader } from "@/components/workspace-header"
+import { ModuleContainer } from "@/components/module-container"
+import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
+import { Toolbar } from "./components/toolbar"
+import { BookmarkList } from "./components/bookmark-list"
+import { Archive, Trash } from "@phosphor-icons/react"
+import { Button } from "@atlas/ui/components/button"
+import { Spinner } from "@atlas/ui/components/spinner"
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@atlas/ui/components/select';
+} from "@atlas/ui/components/select"
 import {
   ActionBar,
   ActionBarSelection,
   ActionBarGroup,
   ActionBarItem,
   ActionBarSeparator,
-} from '@atlas/ui/components/action-bar';
+} from "@atlas/ui/components/action-bar"
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic"
 
 export function CabinetDashboard() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { user, setUser, logout } = useAuthStore();
-  const confirm = useConfirm();
-  const [isLoading, setIsLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const { user, setUser, logout } = useAuthStore()
+  const confirm = useConfirm()
+  const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   // Filters & State
-  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
-  const [filterFavorite, setFilterFavorite] = useState<boolean | undefined>(undefined);
-  const [filterArchived, setFilterArchived] = useState<boolean | undefined>(false); // default active only
-  const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchDebounced, setSearchDebounced] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'list' | 'moodboard'>('list');
-  const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([]);
-  const [filterBroken, setFilterBroken] = useState<boolean | undefined>(undefined);
-  const [filterDuplicates, setFilterDuplicates] = useState<boolean | undefined>(undefined);
-  const [columnCount, setColumnCount] = useState<number>(3);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(
+    undefined
+  )
+  const [filterFavorite, setFilterFavorite] = useState<boolean | undefined>(
+    undefined
+  )
+  const [filterArchived, setFilterArchived] = useState<boolean | undefined>(
+    false
+  ) // default active only
+  const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [searchDebounced, setSearchDebounced] = useState<string>("")
+  const [viewMode, setViewMode] = useState<"list" | "moodboard">("list")
+  const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([])
+  const [filterBroken, setFilterBroken] = useState<boolean | undefined>(
+    undefined
+  )
+  const [filterDuplicates, setFilterDuplicates] = useState<boolean | undefined>(
+    undefined
+  )
+  const [columnCount, setColumnCount] = useState<number>(3)
 
   // Load viewMode and columnCount from localStorage on mount
   useEffect(() => {
-    const savedMode = localStorage.getItem('cabinet_view_mode');
-    if (savedMode === 'list' || savedMode === 'moodboard') {
-      setViewMode(savedMode as any);
+    const savedMode = localStorage.getItem("cabinet_view_mode")
+    if (savedMode === "list" || savedMode === "moodboard") {
+      setViewMode(savedMode as any)
     }
-    const savedCols = localStorage.getItem('cabinet_column_count');
+    const savedCols = localStorage.getItem("cabinet_column_count")
     if (savedCols) {
-      const parsed = parseInt(savedCols, 10);
+      const parsed = parseInt(savedCols, 10)
       if ([1, 2, 3, 4].includes(parsed)) {
-        setColumnCount(parsed);
+        setColumnCount(parsed)
       }
     }
-  }, []);
+  }, [])
 
-  const handleViewModeChange = (mode: 'list' | 'moodboard') => {
-    setViewMode(mode);
-    localStorage.setItem('cabinet_view_mode', mode);
-  };
+  const handleViewModeChange = (mode: "list" | "moodboard") => {
+    setViewMode(mode)
+    localStorage.setItem("cabinet_view_mode", mode)
+  }
 
   const handleColumnCountChange = (count: number) => {
-    setColumnCount(count);
-    localStorage.setItem('cabinet_column_count', count.toString());
-  };
+    setColumnCount(count)
+    localStorage.setItem("cabinet_column_count", count.toString())
+  }
 
   const invalidateAllQueries = () => {
-    queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
-    queryClient.invalidateQueries({ queryKey: ['infinite', '/v1/bookmarks'] });
-    queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks/health'] });
-    queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks/duplicates'] });
-    queryClient.invalidateQueries({ queryKey: ['/v1/folders'] });
-    queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
-  };
+    queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks"] })
+    queryClient.invalidateQueries({ queryKey: ["infinite", "/v1/bookmarks"] })
+    queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks/health"] })
+    queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks/duplicates"] })
+    queryClient.invalidateQueries({ queryKey: ["/v1/folders"] })
+    queryClient.invalidateQueries({ queryKey: ["/v1/tags"] })
+  }
 
   // Modals state
-  const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
-  const [bookmarkToEdit, setBookmarkToEdit] = useState<any | null>(null);
+  const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false)
+  const [bookmarkToEdit, setBookmarkToEdit] = useState<any | null>(null)
 
-  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
-  const [folderToEdit, setFolderToEdit] = useState<any | null>(null);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false)
+  const [folderToEdit, setFolderToEdit] = useState<any | null>(null)
 
   // TanStack Forms
   const folderForm = useForm({
     defaultValues: {
-      name: '',
-      description: '',
-      parentId: '',
+      name: "",
+      description: "",
+      parentId: "",
     },
     onSubmit: async ({ value }) => {
       try {
@@ -132,7 +142,7 @@ export function CabinetDashboard() {
               description: value.description || undefined,
               parentId: value.parentId || undefined,
             },
-          });
+          })
         } else {
           await createFolderMutation.mutateAsync({
             data: {
@@ -140,33 +150,33 @@ export function CabinetDashboard() {
               description: value.description || undefined,
               parentId: value.parentId || undefined,
             },
-          });
+          })
         }
-        invalidateAllQueries();
-        setIsFolderModalOpen(false);
-        resetFolderForm();
+        invalidateAllQueries()
+        setIsFolderModalOpen(false)
+        resetFolderForm()
       } catch {
-        toast.error('Failed to save folder');
+        toast.error("Failed to save folder")
       }
     },
-  });
+  })
 
   const bookmarkForm = useForm({
     defaultValues: {
-      url: '',
-      title: '',
-      description: '',
-      folderId: '',
+      url: "",
+      title: "",
+      description: "",
+      folderId: "",
       tags: [] as string[],
     },
     onSubmit: async ({ value }) => {
       const tagsArray = (value.tags || [])
-        .map((t) => t.replace(/^#/, '').trim())
-        .filter((t) => t.length > 0);
+        .map((t) => t.replace(/^#/, "").trim())
+        .filter((t) => t.length > 0)
 
-      let targetUrl = value.url.trim();
+      let targetUrl = value.url.trim()
       if (!/^https?:\/\//i.test(targetUrl)) {
-        targetUrl = 'https://' + targetUrl;
+        targetUrl = "https://" + targetUrl
       }
 
       try {
@@ -180,7 +190,7 @@ export function CabinetDashboard() {
               folderId: value.folderId || undefined,
               tags: tagsArray,
             },
-          });
+          })
         } else {
           await createBookmarkMutation.mutateAsync({
             data: {
@@ -190,38 +200,38 @@ export function CabinetDashboard() {
               folderId: value.folderId || undefined,
               tags: tagsArray,
             },
-          });
+          })
         }
-        invalidateAllQueries();
-        setIsBookmarkModalOpen(false);
-        resetBookmarkForm();
+        invalidateAllQueries()
+        setIsBookmarkModalOpen(false)
+        resetBookmarkForm()
       } catch {
-        toast.error('Failed to save bookmark');
+        toast.error("Failed to save bookmark")
       }
     },
-  });
+  })
 
   // Debounce search
   useEffect(() => {
     const handler = setTimeout(() => {
-      setSearchDebounced(searchQuery);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+      setSearchDebounced(searchQuery)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [searchQuery])
 
   const { data: meData, isLoading: isMeLoading } = useAuthControllerMe({
     query: {
       retry: false,
       enabled: true,
     },
-  });
+  })
 
   // Fetch Folders, Bookmarks, Tags
-  const { data: foldersData } = useFoldersControllerFindAll();
-  const folders = (foldersData as any)?.data || [];
+  const { data: foldersData } = useFoldersControllerFindAll()
+  const folders = (foldersData as any)?.data || []
 
-  const { data: tagsData } = useTagsControllerFindAll();
-  const tags = (tagsData as any)?.data || [];
+  const { data: tagsData } = useTagsControllerFindAll()
+  const tags = (tagsData as any)?.data || []
 
   const {
     data: bookmarksInfiniteData,
@@ -237,222 +247,238 @@ export function CabinetDashboard() {
       tag: selectedTag,
       search: searchDebounced || undefined,
       limit: 20,
-      status: filterBroken ? 'BROKEN' : undefined,
+      status: filterBroken ? "BROKEN" : undefined,
     },
     {
       query: {
         initialPageParam: undefined,
-        getNextPageParam: (lastPage: any) => lastPage?.data?.nextCursor || undefined,
+        getNextPageParam: (lastPage: any) =>
+          lastPage?.data?.nextCursor || undefined,
       },
     }
-  );
-  const rawBookmarks = bookmarksInfiniteData?.pages.flatMap((page: any) => page?.data?.data || []) || [];
-  const bookmarks = Array.from(new Map(rawBookmarks.map((b: any) => [b.id, b])).values());
+  )
+  const rawBookmarks =
+    bookmarksInfiniteData?.pages.flatMap(
+      (page: any) => page?.data?.data || []
+    ) || []
+  const bookmarks = Array.from(
+    new Map(rawBookmarks.map((b: any) => [b.id, b])).values()
+  )
 
-  const [optimisticOrder, setOptimisticOrder] = React.useState<string[] | null>(null);
+  const [optimisticOrder, setOptimisticOrder] = React.useState<string[] | null>(
+    null
+  )
 
   // Reset optimistic order when query data updates
   React.useEffect(() => {
-    setOptimisticOrder(null);
-  }, [bookmarksInfiniteData]);
+    setOptimisticOrder(null)
+  }, [bookmarksInfiniteData])
 
-  const reorderMutation = useBookmarksControllerReorder();
+  const reorderMutation = useBookmarksControllerReorder()
 
   const handleReorder = React.useCallback(
     (newOrder: any[]) => {
-      const newIds = newOrder.map((b: any) => b.id);
-      setOptimisticOrder(newIds);
+      const newIds = newOrder.map((b: any) => b.id)
+      setOptimisticOrder(newIds)
       reorderMutation.mutate(
         { data: { ids: newIds } },
         {
           onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['infinite', '/v1/bookmarks'] });
-            queryClient.invalidateQueries({ queryKey: ['/v1/bookmarks'] });
+            queryClient.invalidateQueries({
+              queryKey: ["infinite", "/v1/bookmarks"],
+            })
+            queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks"] })
           },
           onError: () => {
-            setOptimisticOrder(null);
-            toast.error('Failed to save bookmark order');
+            setOptimisticOrder(null)
+            toast.error("Failed to save bookmark order")
           },
         }
-      );
+      )
     },
     [reorderMutation, queryClient]
-  );
+  )
 
   const filteredBookmarks = React.useMemo(() => {
-    if (!optimisticOrder || optimisticOrder.length === 0) return bookmarks;
-    const itemMap = new Map(bookmarks.map((b: any) => [b.id, b]));
-    const ordered: any[] = [];
+    if (!optimisticOrder || optimisticOrder.length === 0) return bookmarks
+    const itemMap = new Map(bookmarks.map((b: any) => [b.id, b]))
+    const ordered: any[] = []
     optimisticOrder.forEach((id) => {
       if (itemMap.has(id)) {
-        ordered.push(itemMap.get(id));
-        itemMap.delete(id);
+        ordered.push(itemMap.get(id))
+        itemMap.delete(id)
       }
-    });
-    itemMap.forEach((item) => ordered.push(item));
-    return ordered;
-  }, [bookmarks, optimisticOrder]);
+    })
+    itemMap.forEach((item) => ordered.push(item))
+    return ordered
+  }, [bookmarks, optimisticOrder])
 
   // Health and Duplicates Queries
-  const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary();
-  const healthSummary = (healthSummaryData as any)?.data || healthSummaryData;
+  const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary()
+  const healthSummary = (healthSummaryData as any)?.data || healthSummaryData
 
-  const { data: duplicatesData, refetch: refetchDuplicates } = useBookmarksControllerGetDuplicates({
-    query: { enabled: !!filterDuplicates },
-  });
-  const duplicateGroups = (duplicatesData as any)?.data || duplicatesData || [];
+  const { data: duplicatesData, refetch: refetchDuplicates } =
+    useBookmarksControllerGetDuplicates({
+      query: { enabled: !!filterDuplicates },
+    })
+  const duplicateGroups = (duplicatesData as any)?.data || duplicatesData || []
 
   // Mutations
-  const createFolderMutation = useFoldersControllerCreate();
-  const updateFolderMutation = useFoldersControllerUpdate();
-  const removeFolderMutation = useFoldersControllerRemove();
+  const createFolderMutation = useFoldersControllerCreate()
+  const updateFolderMutation = useFoldersControllerUpdate()
+  const removeFolderMutation = useFoldersControllerRemove()
 
-  const createBookmarkMutation = useBookmarksControllerCreate();
-  const updateBookmarkMutation = useBookmarksControllerUpdate();
-  const removeBookmarkMutation = useBookmarksControllerRemove();
-  const removeTagMutation = useTagsControllerRemove();
-  const importBookmarksMutation = useBookmarksControllerImport();
+  const createBookmarkMutation = useBookmarksControllerCreate()
+  const updateBookmarkMutation = useBookmarksControllerUpdate()
+  const removeBookmarkMutation = useBookmarksControllerRemove()
+  const removeTagMutation = useTagsControllerRemove()
+  const importBookmarksMutation = useBookmarksControllerImport()
 
-  const scanHealthMutation = useBookmarksControllerTriggerHealthCheck();
-  const cleanDuplicatesMutation = useBookmarksControllerCleanDuplicates();
+  const scanHealthMutation = useBookmarksControllerTriggerHealthCheck()
+  const cleanDuplicatesMutation = useBookmarksControllerCleanDuplicates()
 
   // Sync mount status
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   // Sync backend session into Zustand store
   useEffect(() => {
     if (!isMeLoading) {
       if ((meData as any)?.success && (meData as any)?.data) {
-        setUser((meData as any).data);
+        setUser((meData as any).data)
       } else {
-        setUser(null);
-        router.push('/login');
+        setUser(null)
+        router.push("/login")
       }
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [meData, isMeLoading, setUser, router]);
+  }, [meData, isMeLoading, setUser, router])
 
   // Handle logout mutation
-  const logoutMutation = useAuthControllerLogout();
+  const logoutMutation = useAuthControllerLogout()
 
   const handleLogout = async () => {
     try {
-      await logoutMutation.mutateAsync();
-      logout();
-      router.push('/login');
+      await logoutMutation.mutateAsync()
+      logout()
+      router.push("/login")
     } catch {
-      logout();
-      router.push('/login');
+      logout()
+      router.push("/login")
     }
-  };
+  }
 
   const handleEditFolder = (folder: any) => {
-    setFolderToEdit(folder);
-    folderForm.setFieldValue('name', folder.name);
-    folderForm.setFieldValue('description', folder.description || '');
-    folderForm.setFieldValue('parentId', folder.parentId || '');
-    setIsFolderModalOpen(true);
-  };
+    setFolderToEdit(folder)
+    folderForm.setFieldValue("name", folder.name)
+    folderForm.setFieldValue("description", folder.description || "")
+    folderForm.setFieldValue("parentId", folder.parentId || "")
+    setIsFolderModalOpen(true)
+  }
 
   const handleDeleteFolder = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Delete Folder',
-      description: 'Are you sure you want to delete this folder? All subfolders and bookmarks inside it will be soft-deleted.',
-      actionLabel: 'Delete',
-      variant: 'destructive',
-    });
+      title: "Delete Folder",
+      description:
+        "Are you sure you want to delete this folder? All subfolders and bookmarks inside it will be soft-deleted.",
+      actionLabel: "Delete",
+      variant: "destructive",
+    })
     if (isConfirmed) {
       try {
-        await removeFolderMutation.mutateAsync({ id });
-        invalidateAllQueries();
+        await removeFolderMutation.mutateAsync({ id })
+        invalidateAllQueries()
         if (selectedFolderId === id) {
-          setSelectedFolderId(undefined);
+          setSelectedFolderId(undefined)
         }
       } catch {
-        toast.error('Failed to delete folder');
+        toast.error("Failed to delete folder")
       }
     }
-  };
+  }
 
   const handleCreateSubfolder = (parentId: string) => {
-    setFolderToEdit(null);
-    folderForm.reset();
-    folderForm.setFieldValue('parentId', parentId);
-    setIsFolderModalOpen(true);
-  };
+    setFolderToEdit(null)
+    folderForm.reset()
+    folderForm.setFieldValue("parentId", parentId)
+    setIsFolderModalOpen(true)
+  }
 
   const handleScan = async () => {
     try {
-      await scanHealthMutation.mutateAsync();
-      invalidateAllQueries();
-      toast.success('Link status check started in the background!');
+      await scanHealthMutation.mutateAsync()
+      invalidateAllQueries()
+      toast.success("Link status check started in the background!")
     } catch {
-      toast.error('Failed to start link status scan.');
+      toast.error("Failed to start link status scan.")
     }
-  };
+  }
 
   const handleCleanDuplicates = async () => {
     const confirmed = await confirm({
-      title: 'Clean Duplicate Bookmarks?',
-      description: 'This will automatically delete duplicate bookmark copies and keep the single oldest instance per URL.',
-    });
+      title: "Clean Duplicate Bookmarks?",
+      description:
+        "This will automatically delete duplicate bookmark copies and keep the single oldest instance per URL.",
+    })
     if (confirmed) {
       try {
-        await cleanDuplicatesMutation.mutateAsync();
-        invalidateAllQueries();
-        toast.success('Duplicate bookmarks successfully cleaned!');
+        await cleanDuplicatesMutation.mutateAsync()
+        invalidateAllQueries()
+        toast.success("Duplicate bookmarks successfully cleaned!")
       } catch {
-        toast.error('Failed to clean duplicate bookmarks.');
+        toast.error("Failed to clean duplicate bookmarks.")
       }
     }
-  };
+  }
 
   const resetFolderForm = () => {
-    setFolderToEdit(null);
-    folderForm.reset();
-  };
+    setFolderToEdit(null)
+    folderForm.reset()
+  }
 
   const handleEditBookmark = (bookmark: any) => {
-    setBookmarkToEdit(bookmark);
-    bookmarkForm.setFieldValue('url', bookmark.url);
-    bookmarkForm.setFieldValue('title', bookmark.title || '');
-    bookmarkForm.setFieldValue('description', bookmark.description || '');
-    bookmarkForm.setFieldValue('folderId', bookmark.folderId || '');
-    bookmarkForm.setFieldValue('tags', bookmark.tags?.map((t: any) => `#${t.name}`) || []);
-    setIsBookmarkModalOpen(true);
-  };
+    setBookmarkToEdit(bookmark)
+    bookmarkForm.setFieldValue("url", bookmark.url)
+    bookmarkForm.setFieldValue("title", bookmark.title || "")
+    bookmarkForm.setFieldValue("description", bookmark.description || "")
+    bookmarkForm.setFieldValue("folderId", bookmark.folderId || "")
+    bookmarkForm.setFieldValue(
+      "tags",
+      bookmark.tags?.map((t: any) => `#${t.name}`) || []
+    )
+    setIsBookmarkModalOpen(true)
+  }
 
   const handleDeleteBookmark = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Delete Bookmark',
-      description: 'Are you sure you want to delete this bookmark?',
-      actionLabel: 'Delete',
-      variant: 'destructive',
-    });
+      title: "Delete Bookmark",
+      description: "Are you sure you want to delete this bookmark?",
+      actionLabel: "Delete",
+      variant: "destructive",
+    })
     if (isConfirmed) {
       try {
-        await removeBookmarkMutation.mutateAsync({ id });
-        invalidateAllQueries();
+        await removeBookmarkMutation.mutateAsync({ id })
+        invalidateAllQueries()
       } catch {
-        toast.error('Failed to delete bookmark');
+        toast.error("Failed to delete bookmark")
       }
     }
-  };
+  }
 
   const handleDeleteTag = async (id: string) => {
     try {
-      await removeTagMutation.mutateAsync({ id });
-      invalidateAllQueries();
-      const tagToDelete = tags.find((t: any) => t.id === id);
+      await removeTagMutation.mutateAsync({ id })
+      invalidateAllQueries()
+      const tagToDelete = tags.find((t: any) => t.id === id)
       if (tagToDelete && selectedTag === tagToDelete.name) {
-        setSelectedTag(undefined);
+        setSelectedTag(undefined)
       }
     } catch {
-      toast.error('Failed to delete tag');
+      toast.error("Failed to delete tag")
     }
-  };
+  }
 
   const toggleFavorite = async (bookmark: any) => {
     try {
@@ -461,12 +487,12 @@ export function CabinetDashboard() {
         data: {
           isFavorite: !bookmark.isFavorite,
         },
-      });
-      invalidateAllQueries();
+      })
+      invalidateAllQueries()
     } catch {
-      toast.error('Failed to update favorite status');
+      toast.error("Failed to update favorite status")
     }
-  };
+  }
 
   const toggleArchive = async (bookmark: any) => {
     try {
@@ -475,12 +501,12 @@ export function CabinetDashboard() {
         data: {
           isArchived: !bookmark.isArchived,
         },
-      });
-      invalidateAllQueries();
+      })
+      invalidateAllQueries()
     } catch {
-      toast.error('Failed to update archive status');
+      toast.error("Failed to update archive status")
     }
-  };
+  }
 
   const handleDuplicateBookmark = async (bookmark: any) => {
     try {
@@ -492,56 +518,87 @@ export function CabinetDashboard() {
           folderId: bookmark.folderId || undefined,
           tags: bookmark.tags?.map((t: any) => t.name) || [],
         },
-      });
-      invalidateAllQueries();
+      })
+      invalidateAllQueries()
     } catch {
-      toast.error('Failed to duplicate bookmark');
+      toast.error("Failed to duplicate bookmark")
     }
-  };
+  }
 
   const resetBookmarkForm = () => {
-    setBookmarkToEdit(null);
-    bookmarkForm.reset();
-  };
+    setBookmarkToEdit(null)
+    bookmarkForm.reset()
+  }
 
   const handleToggleSelectBookmark = (id: string) => {
     setSelectedBookmarkIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
+    )
+  }
 
   const handleClearSelection = () => {
-    setSelectedBookmarkIds([]);
-  };
+    setSelectedBookmarkIds([])
+  }
 
-  const handleSelectAll = () => {
-    const allIds = filteredBookmarks.map((b: any) => b.id);
-    const allSelected = allIds.every((id) => selectedBookmarkIds.includes(id));
-    if (allSelected) {
-      setSelectedBookmarkIds([]);
-    } else {
-      setSelectedBookmarkIds(allIds);
+  const handleSelectAll = async () => {
+    const isAllSelected =
+      !hasNextPage &&
+      filteredBookmarks.length > 0 &&
+      filteredBookmarks.every((b: any) => selectedBookmarkIds.includes(b.id))
+
+    if (isAllSelected) {
+      setSelectedBookmarkIds([])
+      return
     }
-  };
+
+    let currentBookmarks = filteredBookmarks
+
+    if (hasNextPage) {
+      const toastId = toast.loading("Loading all bookmarks...")
+      try {
+        let result = await fetchNextPage()
+        while (result.hasNextPage) {
+          result = await result.fetchNextPage()
+        }
+        const allPages = result.data?.pages || []
+        const loadedBookmarks = Array.from(
+          new Map(
+            allPages
+              .flatMap((page: any) => page?.data?.data || [])
+              .map((b: any) => [b.id, b])
+          ).values()
+        )
+        currentBookmarks = loadedBookmarks
+        toast.dismiss(toastId)
+      } catch {
+        toast.error("Failed to load all bookmarks", { id: toastId })
+      }
+    }
+
+    const allIds = currentBookmarks.map((b: any) => b.id)
+    setSelectedBookmarkIds(allIds)
+  }
 
   const handleBulkDelete = async () => {
     const isConfirmed = await confirm({
-      title: 'Delete Selected Bookmarks',
+      title: "Delete Selected Bookmarks",
       description: `Are you sure you want to delete ${selectedBookmarkIds.length} selected bookmarks?`,
-      actionLabel: 'Delete',
-      variant: 'destructive',
-    });
-    if (!isConfirmed) return;
+      actionLabel: "Delete",
+      variant: "destructive",
+    })
+    if (!isConfirmed) return
     try {
       await Promise.all(
-        selectedBookmarkIds.map((id) => removeBookmarkMutation.mutateAsync({ id }))
-      );
-      invalidateAllQueries();
-      setSelectedBookmarkIds([]);
+        selectedBookmarkIds.map((id) =>
+          removeBookmarkMutation.mutateAsync({ id })
+        )
+      )
+      invalidateAllQueries()
+      setSelectedBookmarkIds([])
     } catch {
-      toast.error('Failed to delete some bookmarks');
+      toast.error("Failed to delete some bookmarks")
     }
-  };
+  }
 
   const handleBulkArchive = async () => {
     try {
@@ -552,13 +609,13 @@ export function CabinetDashboard() {
             data: { isArchived: true },
           })
         )
-      );
-      invalidateAllQueries();
-      setSelectedBookmarkIds([]);
+      )
+      invalidateAllQueries()
+      setSelectedBookmarkIds([])
     } catch {
-      toast.error('Failed to archive some bookmarks');
+      toast.error("Failed to archive some bookmarks")
     }
-  };
+  }
 
   const handleBulkMove = async (folderId: string | null) => {
     try {
@@ -569,143 +626,173 @@ export function CabinetDashboard() {
             data: { folderId: folderId || undefined },
           })
         )
-      );
-      invalidateAllQueries();
-      setSelectedBookmarkIds([]);
+      )
+      invalidateAllQueries()
+      setSelectedBookmarkIds([])
     } catch {
-      toast.error('Failed to move some bookmarks');
+      toast.error("Failed to move some bookmarks")
     }
-  };
+  }
 
   // Import / Export handlers
-  const handleExport = async (format: 'html' | 'csv' | 'txt' | 'zip') => {
+  const handleExport = async (format: "html" | "csv" | "txt" | "zip") => {
     try {
-      if (format === 'html') {
-        const res = await AXIOS_INSTANCE.get('/v1/bookmarks/export', { responseType: 'blob' });
-        const blob = new Blob([res.data], { type: 'text/html' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'cabinet_bookmarks.html';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        toast.success('Bookmarks exported as HTML!');
-        return;
+      if (format === "html") {
+        const res = await AXIOS_INSTANCE.get("/v1/bookmarks/export", {
+          responseType: "blob",
+        })
+        const blob = new Blob([res.data], { type: "text/html" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "cabinet_bookmarks.html"
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success("Bookmarks exported as HTML!")
+        return
       }
 
       if (filteredBookmarks.length === 0) {
-        toast.error('No bookmarks available to export.');
-        return;
+        toast.error("No bookmarks available to export.")
+        return
       }
 
-      if (format === 'csv') {
-        const headers = ['ID', 'Title', 'URL', 'Description', 'Folder', 'Tags', 'Created At'];
+      if (format === "csv") {
+        const headers = [
+          "ID",
+          "Title",
+          "URL",
+          "Description",
+          "Folder",
+          "Tags",
+          "Created At",
+        ]
         const rows = filteredBookmarks.map((b: any) => [
-          `"${b.id || ''}"`,
-          `"${(b.title || '').replace(/"/g, '""')}"`,
-          `"${(b.url || '').replace(/"/g, '""')}"`,
-          `"${(b.description || '').replace(/"/g, '""')}"`,
-          `"${(b.folder?.name || '').replace(/"/g, '""')}"`,
-          `"${(b.tags || []).map((t: any) => t.name || t).join(', ').replace(/"/g, '""')}"`,
-          `"${b.createdAt || ''}"`,
-        ]);
-        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'cabinet_bookmarks.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        toast.success('Bookmarks exported as CSV!');
-        return;
+          `"${b.id || ""}"`,
+          `"${(b.title || "").replace(/"/g, '""')}"`,
+          `"${(b.url || "").replace(/"/g, '""')}"`,
+          `"${(b.description || "").replace(/"/g, '""')}"`,
+          `"${(b.folder?.name || "").replace(/"/g, '""')}"`,
+          `"${(b.tags || [])
+            .map((t: any) => t.name || t)
+            .join(", ")
+            .replace(/"/g, '""')}"`,
+          `"${b.createdAt || ""}"`,
+        ])
+        const csvContent = [
+          headers.join(","),
+          ...rows.map((r) => r.join(",")),
+        ].join("\n")
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "cabinet_bookmarks.csv"
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success("Bookmarks exported as CSV!")
+        return
       }
 
-      if (format === 'txt') {
-        const txtLines = filteredBookmarks.map((b: any) => `${b.title || 'Untitled'} - ${b.url}`);
-        const txtContent = txtLines.join('\n');
-        const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'cabinet_bookmarks.txt';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        toast.success('Bookmarks exported as TXT!');
-        return;
+      if (format === "txt") {
+        const txtLines = filteredBookmarks.map(
+          (b: any) => `${b.title || "Untitled"} - ${b.url}`
+        )
+        const txtContent = txtLines.join("\n")
+        const blob = new Blob([txtContent], {
+          type: "text/plain;charset=utf-8;",
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "cabinet_bookmarks.txt"
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success("Bookmarks exported as TXT!")
+        return
       }
 
-      if (format === 'zip') {
-        const res = await AXIOS_INSTANCE.get('/v1/bookmarks/export', { responseType: 'blob' });
-        const blob = new Blob([res.data], { type: 'application/zip' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'cabinet_bookmarks_archive.zip';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        toast.success('Bookmarks exported as ZIP Archive!');
-        return;
+      if (format === "zip") {
+        const res = await AXIOS_INSTANCE.get("/v1/bookmarks/export", {
+          responseType: "blob",
+        })
+        const blob = new Blob([res.data], { type: "application/zip" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "cabinet_bookmarks_archive.zip"
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success("Bookmarks exported as ZIP Archive!")
+        return
       }
     } catch {
-      toast.error(`Failed to export bookmarks as ${format.toUpperCase()}`);
+      toast.error(`Failed to export bookmarks as ${format.toUpperCase()}`)
     }
-  };
+  }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]
+    if (!file) return
 
-    const reader = new FileReader();
+    const reader = new FileReader()
     reader.onload = async (evt) => {
-      const content = evt.target?.result as string;
+      const content = evt.target?.result as string
       try {
         await importBookmarksMutation.mutateAsync({
           data: { htmlContent: content },
-        });
-        invalidateAllQueries();
-        toast.success('Bookmarks imported successfully!');
+        })
+        invalidateAllQueries()
+        toast.success("Bookmarks imported successfully!")
       } catch {
-        toast.error('Failed to import bookmarks. Ensure it is a valid Netscape Bookmark HTML file.');
+        toast.error(
+          "Failed to import bookmarks. Ensure it is a valid Netscape Bookmark HTML file."
+        )
       }
-    };
-    reader.readAsText(file);
-  };
+    }
+    reader.readAsText(file)
+  }
 
   // Rendering Loader
   if (!mounted || isLoading || !user) {
     return (
-      <div className="min-h-[100dvh] bg-brand-canvas p-8 flex flex-col items-center justify-center font-mono text-xs text-brand-muted space-y-4">
-        <div className="w-12 h-1 bg-[#EAEAEA] animate-pulse rounded-none" />
-        <div className="uppercase tracking-widest animate-pulse">Initializing session...</div>
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center space-y-4 bg-brand-canvas p-8 font-mono text-xs text-brand-muted">
+        <div className="h-1 w-12 animate-pulse rounded-none bg-[#EAEAEA]" />
+        <div className="animate-pulse tracking-widest uppercase">
+          Initializing session...
+        </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="h-screen flex flex-col bg-brand-canvas overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-brand-canvas">
       {/* Pinned Top Workspace Nav Header */}
-      <div className="shrink-0 pt-6 bg-brand-canvas z-30">
+      <div className="z-30 shrink-0 bg-brand-canvas pt-6">
         <ModuleContainer>
-          <WorkspaceHeader moduleName="Cabinet" moduleInitial="C" user={user} onLogout={handleLogout} />
+          <WorkspaceHeader
+            moduleName="Cabinet"
+            moduleInitial="C"
+            user={user}
+            onLogout={handleLogout}
+          />
         </ModuleContainer>
       </div>
 
       {/* Main Body Layout Container */}
       <div className="flex-1 overflow-hidden py-6">
         <ModuleContainer className="h-full">
-          <div className="h-full grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
-            
+          <div className="grid h-full grid-cols-1 items-start gap-8 md:grid-cols-4">
             {/* Left Pinned Sidebar (1 col) */}
-            <aside className="md:col-span-1 h-full overflow-y-auto pr-2">
+            <aside className="h-full overflow-y-auto pr-2 md:col-span-1">
               <CabinetSidebarFilters
                 selectedFolderId={selectedFolderId}
                 onSelectFolder={setSelectedFolderId}
@@ -727,24 +814,24 @@ export function CabinetDashboard() {
                 onCreateSubfolder={handleCreateSubfolder}
                 filterBroken={filterBroken}
                 onSelectBroken={(val) => {
-                  setFilterBroken(val);
+                  setFilterBroken(val)
                   if (val) {
-                    setSelectedFolderId(undefined);
-                    setSelectedTag(undefined);
-                    setFilterFavorite(undefined);
-                    setFilterArchived(undefined);
-                    setFilterDuplicates(undefined);
+                    setSelectedFolderId(undefined)
+                    setSelectedTag(undefined)
+                    setFilterFavorite(undefined)
+                    setFilterArchived(undefined)
+                    setFilterDuplicates(undefined)
                   }
                 }}
                 filterDuplicates={filterDuplicates}
                 onSelectDuplicates={(val) => {
-                  setFilterDuplicates(val);
+                  setFilterDuplicates(val)
                   if (val) {
-                    setSelectedFolderId(undefined);
-                    setSelectedTag(undefined);
-                    setFilterFavorite(undefined);
-                    setFilterArchived(undefined);
-                    setFilterBroken(undefined);
+                    setSelectedFolderId(undefined)
+                    setSelectedTag(undefined)
+                    setFilterFavorite(undefined)
+                    setFilterArchived(undefined)
+                    setFilterBroken(undefined)
                   }
                 }}
                 healthSummary={healthSummary}
@@ -756,79 +843,80 @@ export function CabinetDashboard() {
             </aside>
 
             {/* Main Independent Scrollable Content Area (3 cols) */}
-            <section className="md:col-span-3 h-full overflow-y-auto pr-2 space-y-6">
-            
-            {/* Toolbar (Search & Add) */}
-            <Toolbar
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              isBookmarkModalOpen={isBookmarkModalOpen}
-              setIsBookmarkModalOpen={setIsBookmarkModalOpen}
-              bookmarkToEdit={bookmarkToEdit}
-              bookmarkForm={bookmarkForm}
-              folders={folders}
-              tags={tags}
-              resetBookmarkForm={resetBookmarkForm}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-              columnCount={columnCount}
-              onColumnCountChange={handleColumnCountChange}
-            />
+            <section className="h-full space-y-6 overflow-y-auto pr-2 md:col-span-3">
+              {/* Toolbar (Search & Add) */}
+              <Toolbar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                isBookmarkModalOpen={isBookmarkModalOpen}
+                setIsBookmarkModalOpen={setIsBookmarkModalOpen}
+                bookmarkToEdit={bookmarkToEdit}
+                bookmarkForm={bookmarkForm}
+                folders={folders}
+                tags={tags}
+                resetBookmarkForm={resetBookmarkForm}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                columnCount={columnCount}
+                onColumnCountChange={handleColumnCountChange}
+              />
 
-             {/* Bookmarks Grid / List */}
-            <BookmarkList
-              bookmarks={filteredBookmarks}
-              isBookmarksLoading={isBookmarksLoading}
-              totalBookmarks={(bookmarksInfiniteData as any)?.pages?.[0]?.data?.totalCount || 0}
-              selectedFolderId={selectedFolderId}
-              selectedTag={selectedTag}
-              filterFavorite={filterFavorite}
-              filterArchived={filterArchived}
-              folders={folders}
-              viewMode={viewMode}
-              columnCount={columnCount}
-              selectedBookmarkIds={selectedBookmarkIds}
-              onToggleSelect={handleToggleSelectBookmark}
-              onSelectTag={(tag) => {
-                setSelectedTag(tag);
-                setSelectedFolderId(undefined);
-                setFilterFavorite(undefined);
-                setFilterBroken(undefined);
-                setFilterDuplicates(undefined);
-              }}
-              onToggleFavorite={toggleFavorite}
-              onToggleArchive={toggleArchive}
-              onEditBookmark={handleEditBookmark}
-              onDeleteBookmark={handleDeleteBookmark}
-              onDuplicateBookmark={handleDuplicateBookmark}
-              isDuplicatesView={filterDuplicates}
-              duplicateGroups={duplicateGroups}
-              onCleanDuplicates={handleCleanDuplicates}
-              onReorder={handleReorder}
-            />
+              {/* Bookmarks Grid / List */}
+              <BookmarkList
+                bookmarks={filteredBookmarks}
+                isBookmarksLoading={isBookmarksLoading}
+                totalBookmarks={
+                  (bookmarksInfiniteData as any)?.pages?.[0]?.data
+                    ?.totalCount || 0
+                }
+                selectedFolderId={selectedFolderId}
+                selectedTag={selectedTag}
+                filterFavorite={filterFavorite}
+                filterArchived={filterArchived}
+                folders={folders}
+                viewMode={viewMode}
+                columnCount={columnCount}
+                selectedBookmarkIds={selectedBookmarkIds}
+                onToggleSelect={handleToggleSelectBookmark}
+                onSelectTag={(tag) => {
+                  setSelectedTag(tag)
+                  setSelectedFolderId(undefined)
+                  setFilterFavorite(undefined)
+                  setFilterBroken(undefined)
+                  setFilterDuplicates(undefined)
+                }}
+                onToggleFavorite={toggleFavorite}
+                onToggleArchive={toggleArchive}
+                onEditBookmark={handleEditBookmark}
+                onDeleteBookmark={handleDeleteBookmark}
+                onDuplicateBookmark={handleDuplicateBookmark}
+                isDuplicatesView={filterDuplicates}
+                duplicateGroups={duplicateGroups}
+                onCleanDuplicates={handleCleanDuplicates}
+                onReorder={handleReorder}
+              />
 
-            {/* Load More Button */}
-            {!filterDuplicates && hasNextPage && (
-              <div className="flex justify-center pt-6 pb-4">
-                <Button
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  variant="outline"
-                  className="font-mono text-xs uppercase h-9 px-6 border-brand-border rounded-none hover:bg-brand-charcoal/5 gap-1.5 flex items-center justify-center min-w-[140px]"
-                >
-                  {isFetchingNextPage ? (
-                    <>
-                      <Spinner className="w-3.5 h-3.5 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    'Load More'
-                  )}
-                </Button>
-              </div>
-            )}
-
-          </section>
+              {/* Load More Button */}
+              {!filterDuplicates && hasNextPage && (
+                <div className="flex justify-center pt-6 pb-4">
+                  <Button
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    variant="outline"
+                    className="flex h-9 min-w-[140px] items-center justify-center gap-1.5 rounded-none border-brand-border px-6 font-mono text-xs uppercase hover:bg-brand-charcoal/5"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Spinner className="h-3.5 w-3.5 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Load More"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </section>
           </div>
         </ModuleContainer>
       </div>
@@ -836,22 +924,30 @@ export function CabinetDashboard() {
       <ActionBar
         open={selectedBookmarkIds.length > 0}
         align="center"
-        className="rounded-none border border-brand-border bg-white shadow-md p-1.5 gap-1.5"
+        className="gap-1.5 rounded-none border border-brand-border bg-white p-1.5 shadow-md"
       >
-        <ActionBarSelection className="border-none text-[10px] font-mono text-brand-muted uppercase tracking-wider px-2 py-0 bg-transparent">
+        <ActionBarSelection className="border-none bg-transparent px-2 py-0 font-mono text-[10px] tracking-wider text-brand-muted uppercase">
           {selectedBookmarkIds.length} Selected
         </ActionBarSelection>
         <ActionBarSeparator />
         <ActionBarGroup className="gap-1.5">
           <ActionBarItem
             onClick={handleSelectAll}
-            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-white text-brand-charcoal border border-brand-border hover:bg-brand-canvas px-3 rounded-none"
+            className="h-8 rounded-none border border-brand-border bg-white px-3 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase hover:bg-brand-canvas"
           >
-            {filteredBookmarks.length > 0 && filteredBookmarks.every((b: any) => selectedBookmarkIds.includes(b.id)) ? 'Deselect All' : 'Select All'}
+            {!hasNextPage &&
+            filteredBookmarks.length > 0 &&
+            filteredBookmarks.every((b: any) =>
+              selectedBookmarkIds.includes(b.id)
+            )
+              ? "Deselect All"
+              : "Select All"}
           </ActionBarItem>
 
-          <Select onValueChange={(folderId) => handleBulkMove(folderId || null)}>
-            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] font-mono font-bold uppercase text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none w-auto gap-1">
+          <Select
+            onValueChange={(folderId) => handleBulkMove(folderId || null)}
+          >
+            <SelectTrigger className="h-8 w-auto gap-1 rounded-none border-brand-border bg-white font-mono text-[10px] font-bold text-brand-charcoal uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
               <SelectValue placeholder="Move to folder..." />
             </SelectTrigger>
             <SelectContent>
@@ -866,32 +962,32 @@ export function CabinetDashboard() {
 
           <ActionBarItem
             onClick={handleBulkArchive}
-            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-white text-brand-charcoal border border-brand-border hover:bg-brand-canvas px-3 rounded-none"
+            className="h-8 rounded-none border border-brand-border bg-white px-3 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase hover:bg-brand-canvas"
           >
-            <Archive className="w-3.5 h-3.5 mr-1" />
+            <Archive className="mr-1 h-3.5 w-3.5" />
             Archive
           </ActionBarItem>
 
           <ActionBarItem
             onClick={handleBulkDelete}
-            className="h-8 text-[10px] tracking-wider uppercase font-bold bg-brand-red-bg text-brand-red-text border border-brand-red-text/20 hover:bg-[#fff0f2] px-3 rounded-none"
+            className="bg-brand-red-bg text-brand-red-text border-brand-red-text/20 h-8 rounded-none border px-3 text-[10px] font-bold tracking-wider uppercase hover:bg-[#fff0f2]"
           >
-            <Trash className="w-3.5 h-3.5 mr-1" />
+            <Trash className="mr-1 h-3.5 w-3.5" />
             Delete
           </ActionBarItem>
 
           <ActionBarSeparator />
-          
+
           <Button
             variant="ghost"
             size="xs"
             onClick={handleClearSelection}
-            className="h-8 font-mono text-[10px] uppercase font-bold text-brand-muted hover:text-brand-charcoal px-2.5 rounded-none"
+            className="h-8 rounded-none px-2.5 font-mono text-[10px] font-bold text-brand-muted uppercase hover:text-brand-charcoal"
           >
             Cancel
           </Button>
         </ActionBarGroup>
       </ActionBar>
     </div>
-  );
+  )
 }
