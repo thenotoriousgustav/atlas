@@ -21,6 +21,7 @@ import { FetchSidebarFilters } from './components/fetch-sidebar-filters';
 import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
 import { Input } from '@atlas/ui/components/input';
 import { Checkbox } from '@atlas/ui/components/checkbox';
@@ -504,7 +505,7 @@ export function FetchDashboard() {
               <div className="md:col-span-8 flex flex-col justify-between space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={`${getPlatformColor(extractedMedia.platform)} text-[8px] uppercase tracking-wider font-mono py-0`}>
+                    <Badge variant="outline" className={cn(getPlatformColor(extractedMedia.platform), "text-[8px] uppercase tracking-wider font-mono py-0")}>
                       {extractedMedia.platform}
                     </Badge>
                     {extractedMedia.duration && (
@@ -712,7 +713,7 @@ export function FetchDashboard() {
                   >
                     <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-2">
-                        <Badge variant="outline" className={`${getPlatformColor(item.platform)} text-[8px] uppercase font-mono py-0`}>
+                        <Badge variant="outline" className={cn(getPlatformColor(item.platform), "text-[8px] uppercase font-mono py-0")}>
                           {item.platform}
                         </Badge>
                         <Badge variant="outline" className="text-[8px] font-mono py-0 flex items-center gap-0.5 border-brand-border bg-brand-canvas">
@@ -780,17 +781,18 @@ export function FetchDashboard() {
 
                       <Tooltip>
                         <TooltipTrigger asChild>
-  <Button
+                          <Button
                             onClick={() => handleToggleFavorite(item)}
                             variant="ghost"
                             size="icon-xs"
-                            className={`size-8 hover:bg-[#fff0f2] ${
+                            className={cn(
+                              "size-8 hover:bg-[#fff0f2]",
                               item.isFavorite ? 'text-[#b3261e]' : 'text-brand-muted'
-                            }`}
+                            )}
                           >
                             <Heart className="w-4 h-4" weight={item.isFavorite ? 'fill' : 'regular'} />
                           </Button>
-</TooltipTrigger>
+                        </TooltipTrigger>
                         <TooltipContent>Favorite</TooltipContent>
                       </Tooltip>
 

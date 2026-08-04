@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "@tanstack/react-form"
+import * as z from "zod"
 import {
   useAuthControllerMe,
   useAuthControllerLogout,
@@ -50,6 +51,20 @@ import {
   ActionBarItem,
   ActionBarSeparator,
 } from "@atlas/ui/components/action-bar"
+
+const folderSchema = z.object({
+  name: z.string().min(1, "Folder name is required").max(50, "Folder name must be at most 50 characters"),
+  description: z.string(),
+  parentId: z.string(),
+})
+
+const bookmarkSchema = z.object({
+  url: z.string().min(1, "URL is required"),
+  title: z.string(),
+  description: z.string(),
+  folderId: z.string(),
+  tags: z.array(z.string()),
+})
 
 export const dynamic = "force-dynamic"
 
@@ -132,6 +147,9 @@ export function CabinetDashboard() {
       description: "",
       parentId: "",
     },
+    validators: {
+      onSubmit: folderSchema,
+    },
     onSubmit: async ({ value }) => {
       try {
         if (folderToEdit) {
@@ -168,6 +186,9 @@ export function CabinetDashboard() {
       description: "",
       folderId: "",
       tags: [] as string[],
+    },
+    validators: {
+      onSubmit: bookmarkSchema,
     },
     onSubmit: async ({ value }) => {
       const tagsArray = (value.tags || [])

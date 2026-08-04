@@ -1,5 +1,6 @@
 import React from 'react';
 import { Spinner } from '@atlas/ui/components/spinner';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogTrigger,
@@ -14,7 +15,11 @@ import {
   Field,
   FieldGroup,
   FieldLabel,
+  FieldError,
 } from '@atlas/ui/components/field';
+import { useForm } from '@tanstack/react-form';
+import { useQueryClient } from '@tanstack/react-query';
+import * as z from 'zod';
 import {
   Select,
   SelectTrigger,
@@ -34,7 +39,10 @@ import {
   Copy,
   Warning,
   ArrowClockwise,
+  Plus,
 } from '@phosphor-icons/react';
+import { AXIOS_INSTANCE } from '@atlas/api-client';
+import { toast } from 'sonner';
 import { FolderTree } from './folder-tree';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import {
@@ -56,6 +64,7 @@ interface SidebarFiltersProps {
   folders: any[];
   tags: any[];
   onDeleteTag: (id: string) => void;
+  onCreateTag?: (name: string) => Promise<void>;
   isFolderModalOpen: boolean;
   setIsFolderModalOpen: (open: boolean) => void;
   folderToEdit: any;
@@ -74,6 +83,10 @@ interface SidebarFiltersProps {
   resetFolderForm: () => void;
 }
 
+const tagSchema = z.object({
+  name: z.string().min(1, 'Tag name is required').max(30, 'Tag name must be at most 30 characters'),
+});
+
 export function CabinetSidebarFilters({
   selectedFolderId,
   onSelectFolder,
@@ -86,6 +99,7 @@ export function CabinetSidebarFilters({
   folders,
   tags,
   onDeleteTag,
+  onCreateTag,
   isFolderModalOpen,
   setIsFolderModalOpen,
   folderToEdit,
@@ -104,6 +118,38 @@ export function CabinetSidebarFilters({
   resetFolderForm,
 }: SidebarFiltersProps) {
   const confirm = useConfirm();
+  const queryClient = useQueryClient();
+  const [isTagModalOpen, setIsTagModalOpen] = React.useState(false);
+  const [isCreatingTag, setIsCreatingTag] = React.useState(false);
+
+  const tagForm = useForm({
+    defaultValues: {
+      name: '',
+    },
+    validators: {
+      onSubmit: tagSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const cleanName = value.name.replace(/^#/, '').trim();
+      if (!cleanName) return;
+      setIsCreatingTag(true);
+      try {
+        if (onCreateTag) {
+          await onCreateTag(cleanName);
+        } else {
+          await AXIOS_INSTANCE.post('/v1/tags', { name: cleanName });
+        }
+        await queryClient.invalidateQueries({ queryKey: ['/v1/tags'] });
+        tagForm.reset();
+        setIsTagModalOpen(false);
+        toast.success(`Tag #${cleanName} created!`);
+      } catch {
+        toast.error('Failed to create tag');
+      } finally {
+        setIsCreatingTag(false);
+      }
+    },
+  });
 
   return (
     <WorkspaceSidebar>
@@ -237,64 +283,77 @@ export function CabinetSidebarFilters({
                 <FieldGroup>
                   <folderForm.Field
                     name="name"
-                    children={(field: any) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Folder Name</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder="e.g. Design Inspiration"
-                          required
-                        />
-                      </Field>
-                    )}
+                    children={(field: any) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Folder Name</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            aria-invalid={isInvalid}
+                            placeholder="e.g. Design Inspiration"
+                          />
+                          {isInvalid && <FieldError errors={field.state.meta.errors.map((err: any) => typeof err === 'string' ? { message: err } : err)} />}
+                        </Field>
+                      );
+                    }}
                   />
 
                   <folderForm.Field
                     name="description"
-                    children={(field: any) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Description</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder="Describe folder contents..."
-                        />
-                      </Field>
-                    )}
+                    children={(field: any) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            aria-invalid={isInvalid}
+                            placeholder="Describe folder contents..."
+                          />
+                          {isInvalid && <FieldError errors={field.state.meta.errors.map((err: any) => typeof err === 'string' ? { message: err } : err)} />}
+                        </Field>
+                      );
+                    }}
                   />
 
                   <folderForm.Field
                     name="parentId"
-                    children={(field: any) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>Parent Folder (Optional)</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(val) => field.handleChange(val)}
-                        >
-                          <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-medium">
-                            <SelectValue placeholder="None (Root)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">None (Root)</SelectItem>
-                            {folders
-                              .filter((f: any) => f.id !== folderToEdit?.id)
-                              .map((f: any) => (
-                                <SelectItem key={f.id} value={f.id}>
-                                  {f.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
+                    children={(field: any) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Parent Folder (Optional)</FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(val) => field.handleChange(val)}
+                          >
+                            <SelectTrigger aria-invalid={isInvalid} className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-medium">
+                              <SelectValue placeholder="None (Root)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">None (Root)</SelectItem>
+                              {folders
+                                .filter((f: any) => f.id !== folderToEdit?.id)
+                                .map((f: any) => (
+                                  <SelectItem key={f.id} value={f.id}>
+                                    {f.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          {isInvalid && <FieldError errors={field.state.meta.errors.map((err: any) => typeof err === 'string' ? { message: err } : err)} />}
+                        </Field>
+                      );
+                    }}
                   />
                 </FieldGroup>
 
@@ -308,15 +367,20 @@ export function CabinetSidebarFilters({
                     Cancel
                   </Button>
                   <folderForm.Subscribe
-                    selector={(state: any) => [state.isSubmitting]}
-                    children={([isSubmitting]: [boolean]) => (
+                    selector={(state: any) => [state.canSubmit, state.isSubmitting]}
+                    children={([canSubmit, isSubmitting]: any) => (
                       <Button
                         type="submit"
-                        disabled={isSubmitting}
-                        className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90 gap-1.5 flex items-center justify-center"
+                        disabled={!canSubmit || isSubmitting}
+                        className="flex-1 text-xs uppercase"
                       >
-                        {isSubmitting && <Spinner className="w-3.5 h-3.5" />}
-                        Save Folder
+                        {isSubmitting ? (
+                          <Spinner className="w-3.5 h-3.5 animate-spin" />
+                        ) : folderToEdit ? (
+                          'Save Changes'
+                        ) : (
+                          'Save Folder'
+                        )}
                       </Button>
                     )}
                   />
@@ -344,7 +408,82 @@ export function CabinetSidebarFilters({
       </WorkspaceSidebarGroup>
 
       {/* Tags Group */}
-      <WorkspaceSidebarGroup title="Tags">
+      <WorkspaceSidebarGroup
+        title="Tags"
+        action={
+          <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
+            <DialogTrigger
+              onClick={() => {
+                tagForm.reset();
+                setIsTagModalOpen(true);
+              }}
+              className="p-1 hover:bg-brand-charcoal/5 rounded-none text-brand-muted hover:text-brand-charcoal"
+              title="Create tag"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>New Tag</DialogTitle>
+                <DialogDescription>Add a new tag for bookmark organization</DialogDescription>
+              </DialogHeader>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  tagForm.handleSubmit();
+                }}
+                className="space-y-4"
+              >
+                <FieldGroup>
+                  <tagForm.Field
+                    name="name"
+                    children={(field: any) => {
+                      const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
+                          <Input
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            aria-invalid={isInvalid}
+                            placeholder="e.g. design, reading, article"
+                            autoFocus
+                          />
+                          {isInvalid && <FieldError errors={field.state.meta.errors.map((err: any) => typeof err === 'string' ? { message: err } : err)} />}
+                        </Field>
+                      );
+                    }}
+                  />
+                </FieldGroup>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsTagModalOpen(false)}
+                    className="rounded-none font-mono text-xs uppercase"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isCreatingTag}
+                    className="rounded-none font-mono text-xs uppercase"
+                  >
+                    {isCreatingTag ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : 'Create Tag'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+      >
         <div className="flex flex-wrap gap-1 pt-1 px-2">
           {tags.length === 0 ? (
             <p className="text-[10px] font-mono text-brand-muted italic">No tags created</p>
@@ -354,11 +493,12 @@ export function CabinetSidebarFilters({
               return (
                 <div
                   key={tag.id}
-                  className={`inline-flex items-center h-6 rounded-none font-mono text-[10px] transition-colors ${
+                  className={cn(
+                    'inline-flex items-center h-6 rounded-none font-mono text-[10px] transition-colors',
                     isSelected
                       ? 'bg-brand-charcoal text-white font-semibold'
                       : 'bg-brand-canvas text-brand-muted hover:bg-brand-charcoal/10 hover:text-brand-charcoal border border-brand-border'
-                  }`}
+                  )}
                 >
                   <button
                     onClick={() => {
@@ -373,7 +513,7 @@ export function CabinetSidebarFilters({
                   >
                     <TagIcon className="size-3" />
                     <span>{tag.name}</span>
-                    <span className={`text-[9px] ${isSelected ? 'text-white/70' : 'text-brand-muted'}`}>
+                    <span className={cn('text-[9px]', isSelected ? 'text-white/70' : 'text-brand-muted')}>
                       ({tag.bookmarkCount})
                     </span>
                   </button>
@@ -390,11 +530,12 @@ export function CabinetSidebarFilters({
                         onDeleteTag(tag.id);
                       }
                     }}
-                    className={`h-full px-1.5 border-l flex items-center justify-center transition-colors ${
+                    className={cn(
+                      'h-full px-1.5 border-l flex items-center justify-center transition-colors',
                       isSelected
                         ? 'border-white/20 hover:bg-white/10 hover:text-white'
                         : 'border-brand-border hover:bg-red-50 hover:text-red-600'
-                    }`}
+                    )}
                     title="Delete tag"
                   >
                     <X className="size-2.5" />

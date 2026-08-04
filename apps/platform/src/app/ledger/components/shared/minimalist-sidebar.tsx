@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from '@atlas/ui/components/badge';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import {
   ChartBar,
   List,
@@ -74,9 +75,10 @@ export function MinimalistSidebar({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed bottom-0 top-0 z-50 flex w-64 flex-col border-r border-[#EAEAEA] bg-[#FFFFFF] transition-transform duration-200 ease-in-out md:translate-x-0 ${
+        className={cn(
+          'fixed bottom-0 top-0 z-50 flex w-64 flex-col border-r border-[#EAEAEA] bg-[#FFFFFF] transition-transform duration-200 ease-in-out md:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        )}
       >
         {/* Brand & App Title */}
         <div className="flex h-16 items-center justify-between border-b border-[#EAEAEA] px-5">
@@ -126,11 +128,12 @@ export function MinimalistSidebar({
                   setActiveView(item.id);
                   setMobileOpen(false);
                 }}
-                className={`flex w-full items-center justify-between rounded-none px-3 py-2 text-xs font-medium transition-all ${
+                className={cn(
+                  'flex w-full items-center justify-between rounded-none px-3 py-2 text-xs font-medium transition-all',
                   isActive
                     ? 'bg-[#111111] text-white shadow-2xs'
                     : 'text-[#787774] hover:bg-[#F7F6F3] hover:text-[#111111]'
-                }`}
+                )}
               >
                 <div className="flex items-center gap-2.5">
                   {item.icon}

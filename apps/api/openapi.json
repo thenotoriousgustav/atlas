@@ -744,6 +744,24 @@
       }
     },
     "/v1/tags": {
+      "post": {
+        "operationId": "TagsController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new tag",
+        "tags": [
+          "tags"
+        ]
+      },
       "get": {
         "operationId": "TagsController_findAll",
         "parameters": [],

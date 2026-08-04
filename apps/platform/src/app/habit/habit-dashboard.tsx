@@ -12,6 +12,7 @@ import { HabitHeatmap } from './components/habit-heatmap';
 import { HabitCommandPalette } from './components/habit-command-palette';
 import { StandardWorkspaceHeader } from '@/components/workspace-header';
 import { ModuleContainer } from '@/components/module-container';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
   Plus,
@@ -334,9 +335,10 @@ export function HabitDashboard() {
                           <div className="flex flex-col items-end gap-1">
                             <Badge
                               variant={isCompleted ? 'default' : 'secondary'}
-                              className={`text-[10px] font-mono gap-1 rounded-none ${
+                              className={cn(
+                                'text-[10px] font-mono gap-1 rounded-none',
                                 isCompleted ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30' : 'border border-brand-border'
-                              }`}
+                              )}
                             >
                               {isCompleted ? <Check className="size-3" /> : null}
                               {isCompleted ? 'Completed' : 'Pending'}

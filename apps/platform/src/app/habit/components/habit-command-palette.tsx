@@ -14,6 +14,7 @@ import {
 import { HabitTracker } from '@atlas/api-client';
 import { Plus, CheckCircle, Flame, CalendarCheck, SlidersHorizontal, House } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 interface HabitCommandPaletteProps {
   open: boolean;
@@ -86,7 +87,7 @@ export function HabitCommandPalette({
                 className="cursor-pointer justify-between gap-2"
               >
                 <div className="flex items-center gap-2">
-                  <CalendarCheck className={`size-4 ${t.isCompletedToday ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+                  <CalendarCheck className={cn("size-4", t.isCompletedToday ? 'text-emerald-500' : 'text-muted-foreground')} />
                   <span className="font-semibold text-xs">{t.name}</span>
                   <span className="text-[10px] font-mono text-muted-foreground">
                     ({t.category} • {t.type})

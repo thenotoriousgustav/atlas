@@ -18,6 +18,7 @@ import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Check } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 
 interface CreateHabitDialogProps {
   open: boolean;
@@ -168,9 +169,10 @@ export function CreateHabitDialog({ open, onOpenChange, onSuccess }: CreateHabit
                       key={emoji}
                       type="button"
                       onClick={() => field.handleChange(emoji)}
-                      className={`text-sm p-1 rounded hover:bg-muted transition-colors ${
+                      className={cn(
+                        'text-sm p-1 rounded hover:bg-muted transition-colors',
                         field.state.value === emoji ? 'bg-muted ring-1 ring-border' : ''
-                      }`}
+                      )}
                     >
                       {emoji}
                     </button>
@@ -329,9 +331,11 @@ export function CreateHabitDialog({ open, onOpenChange, onSuccess }: CreateHabit
                         key={c.name}
                         type="button"
                         onClick={() => field.handleChange(c.name)}
-                        className={`size-7 rounded-full ${c.bg} flex items-center justify-center transition-all ${
+                        className={cn(
+                          'size-7 rounded-full flex items-center justify-center transition-all',
+                          c.bg,
                           field.state.value === c.name ? 'ring-2 ring-foreground ring-offset-2 scale-110' : 'opacity-70 hover:opacity-100'
-                        }`}
+                        )}
                       >
                         {field.state.value === c.name && <Check className="size-4 text-white font-bold" />}
                       </button>

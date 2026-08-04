@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@atlas/ui/components/button';
 import { Input } from '@atlas/ui/components/input';
 import { Label } from '@atlas/ui/components/label';
+import { cn } from '@/lib/utils';
 import { useAuthControllerLogin, useAuthControllerMe } from '@atlas/api-client';
 import { useAuthStore } from '../../store/useAuthStore';
 import { startAuthentication } from '@simplewebauthn/browser';
@@ -343,9 +344,10 @@ export default function LoginPage() {
                           type="email"
                           autoComplete="email"
                           placeholder="admin@gustam.dev"
-                          className={`h-11 px-3 border rounded-none bg-brand-canvas text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
+                          className={cn(
+                            'h-11 px-3 border rounded-none bg-brand-canvas text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors',
                             hasError ? 'border-[#9F2F2D]' : 'border-brand-border'
-                          }`}
+                          )}
                         />
                         {hasError && (
                           <p className="text-[10px] font-bold text-[#9F2F2D] uppercase tracking-wide">
@@ -382,9 +384,10 @@ export default function LoginPage() {
                           type="password"
                           autoComplete="current-password"
                           placeholder="••••••••"
-                          className={`h-11 px-3 border rounded-none bg-brand-canvas text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors ${
+                          className={cn(
+                            'h-11 px-3 border rounded-none bg-brand-canvas text-brand-charcoal focus-visible:outline-none focus-visible:ring-0 focus-visible:border-brand-charcoal font-mono text-xs placeholder:text-brand-muted/50 transition-colors',
                             hasError ? 'border-[#9F2F2D]' : 'border-brand-border'
-                          }`}
+                          )}
                         />
                         {hasError && (
                           <p className="text-[10px] font-bold text-[#9F2F2D] uppercase tracking-wide">

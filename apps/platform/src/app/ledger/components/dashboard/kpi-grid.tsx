@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '@atlas/ui/components/card';
+import { cn } from '@/lib/utils';
 import {
   Wallet,
   Coins,
@@ -105,7 +106,7 @@ export function KpiGrid({
               {kpi.value}
             </span>
             <div className="mt-1.5 flex items-center">
-              <span className={`rounded-none px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider ${kpi.bgBadge}`}>
+              <span className={cn("rounded-none px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider", kpi.bgBadge)}>
                 {kpi.badge}
               </span>
             </div>

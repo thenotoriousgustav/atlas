@@ -33,6 +33,7 @@ import { WorkspaceHeader } from '@/components/workspace-header';
 import { Badge } from '@atlas/ui/components/badge';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
 import { Input } from '@atlas/ui/components/input';
 import {
@@ -691,14 +692,15 @@ export function GarageDashboard() {
             {/* Health Score */}
             <Card className="border-brand-border bg-white rounded-none p-5 shadow-none space-y-2">
               <span className="text-[10px] text-brand-muted uppercase tracking-wider flex items-center gap-1.5">
-                <Heart className={`w-3.5 h-3.5 ${healthScore > 75 ? 'text-[#1e4620]' : 'text-[#b3261e]'}`} />
+                <Heart className={cn("w-3.5 h-3.5", healthScore > 75 ? 'text-[#1e4620]' : 'text-[#b3261e]')} />
                 Health Condition
               </span>
               <div className="font-serif text-3xl font-semibold tracking-tight text-brand-charcoal flex items-baseline gap-1.5">
                 {healthScore}%
-                <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 ${
+                <span className={cn(
+                  'text-[9px] font-mono uppercase px-1.5 py-0.5',
                   healthScore > 75 ? 'bg-[#edf7ed] text-[#1e4620]' : 'bg-[#fdeded] text-[#5f2120]'
-                }`}>
+                )}>
                   {healthScore > 75 ? 'Excellent' : 'Needs Servicing'}
                 </span>
               </div>
@@ -817,22 +819,24 @@ export function GarageDashboard() {
                       return (
                         <div
                           key={rem.id}
-                          className={`p-3 flex items-center justify-between transition-colors ${
+                          className={cn(
+                            'p-3 flex items-center justify-between transition-colors',
                             rem.status !== 'ACTIVE' ? 'opacity-50 bg-brand-charcoal/3' : 'hover:bg-brand-charcoal/2'
-                          }`}
+                          )}
                         >
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-brand-charcoal">{rem.type}</span>
                               <Badge
                                 variant="outline"
-                                className={`text-[8px] px-1.5 py-0 uppercase font-mono ${
+                                className={cn(
+                                  'text-[8px] px-1.5 py-0 uppercase font-mono',
                                   rem.status !== 'ACTIVE'
                                     ? 'bg-brand-charcoal/10 text-brand-muted border-none'
                                     : isOverdue
                                     ? 'bg-brand-red-bg text-brand-red-text border-[#b3261e]/20'
                                     : 'bg-[#edf7ed] text-[#1e4620] border-[#1e4620]/20'
-                                }`}
+                                )}
                               >
                                 {rem.status !== 'ACTIVE' ? 'completed' : isOverdue ? 'overdue' : 'active'}
                               </Badge>
@@ -903,41 +907,45 @@ export function GarageDashboard() {
               <div className="flex items-center gap-1.5 border-b border-brand-border pb-2.5 font-bold uppercase tracking-tight text-[10px]">
                 <span
                   onClick={() => setActiveTab('service')}
-                  className={`px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30 ${
+                  className={cn(
+                    'px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30',
                     activeTab === 'service'
                       ? 'border-brand-charcoal bg-brand-charcoal text-white'
                       : 'border-brand-border bg-white text-brand-muted'
-                  }`}
+                  )}
                 >
                   Service Logs
                 </span>
                 <span
                   onClick={() => setActiveTab('fuel')}
-                  className={`px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30 ${
+                  className={cn(
+                    'px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30',
                     activeTab === 'fuel'
                       ? 'border-brand-charcoal bg-brand-charcoal text-white'
                       : 'border-brand-border bg-white text-brand-muted'
-                  }`}
+                  )}
                 >
                   Refuelings
                 </span>
                 <span
                   onClick={() => setActiveTab('expenses')}
-                  className={`px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30 ${
+                  className={cn(
+                    'px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30',
                     activeTab === 'expenses'
                       ? 'border-brand-charcoal bg-brand-charcoal text-white'
                       : 'border-brand-border bg-white text-brand-muted'
-                  }`}
+                  )}
                 >
                   Expenses
                 </span>
                 <span
                   onClick={() => setActiveTab('documents')}
-                  className={`px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30 ${
+                  className={cn(
+                    'px-3 py-1.5 border cursor-pointer hover:border-brand-charcoal/30',
                     activeTab === 'documents'
                       ? 'border-brand-charcoal bg-brand-charcoal text-white'
                       : 'border-brand-border bg-white text-brand-muted'
-                  }`}
+                  )}
                 >
                   Documents
                 </span>

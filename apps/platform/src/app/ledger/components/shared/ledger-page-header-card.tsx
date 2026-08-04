@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 export interface HeaderStatItem {
   label: string;
@@ -47,9 +48,10 @@ export function LedgerPageHeaderCard({
                   {st.label}
                 </span>
                 <span
-                  className={`font-mono text-sm font-bold ${
+                  className={cn(
+                    'font-mono text-sm font-bold',
                     st.highlight ? 'text-[#346538]' : 'text-[#111111]'
-                  }`}
+                  )}
                 >
                   {st.value}
                   {st.subtext && (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@atlas/ui/components/card';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import { Shield, PencilSimple, Trash, CheckCircle } from '@phosphor-icons/react';
 
 export interface GoalItem {
@@ -38,11 +39,12 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div
-              className={`flex size-8 items-center justify-center rounded-none border ${
+              className={cn(
+                'flex size-8 items-center justify-center rounded-none border',
                 isCompleted
                   ? 'border-[#346538]/30 bg-[#EDF3EC] text-[#346538]'
                   : 'border-[#EAEAEA] bg-[#F7F6F3] text-[#111111]'
-              }`}
+              )}
             >
               {isCompleted ? <CheckCircle className="size-4" /> : <Shield className="size-4" />}
             </div>
@@ -85,9 +87,10 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
           {/* Custom Sharp Progress Bar */}
           <div className="h-2 w-full rounded-none bg-[#F7F6F3] overflow-hidden border border-[#EAEAEA]">
             <div
-              className={`h-full transition-all duration-300 ${
+              className={cn(
+                'h-full transition-all duration-300',
                 isCompleted ? 'bg-[#346538]' : 'bg-[#111111]'
-              }`}
+              )}
               style={{ width: `${percentage}%` }}
             />
           </div>

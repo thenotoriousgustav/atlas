@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -205,13 +206,14 @@ export function ZeroBasedBudgetGrid({
 
                           <TableCell className="text-right">
                             <span
-                              className={`inline-block rounded-none px-2 py-0.5 font-mono text-xs font-bold ${
+                              className={cn(
+                                'inline-block rounded-none px-2 py-0.5 font-mono text-xs font-bold',
                                 isAvailablePositive
                                   ? 'bg-[#EDF3EC] text-[#346538]'
                                   : isAvailableNegative
                                   ? 'bg-[#FDEBEC] text-[#9F2F2D]'
                                   : 'text-[#787774]'
-                              }`}
+                              )}
                             >
                               {formatCurrency(cat.available)}
                             </span>

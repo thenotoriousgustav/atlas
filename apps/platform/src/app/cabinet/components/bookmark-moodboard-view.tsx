@@ -355,7 +355,8 @@ export function BookmarkMoodboardView({
     >
       <SortableContent withoutSlot>
         <div
-          className={`grid gap-4 ${
+          className={cn(
+            "grid items-start gap-4",
             activeColumnCount === 1
               ? "grid-cols-1"
               : activeColumnCount === 2
@@ -363,7 +364,7 @@ export function BookmarkMoodboardView({
                 : activeColumnCount === 3
                   ? "grid-cols-3"
                   : "grid-cols-4"
-          } items-start`}
+          )}
         >
           {Array.from({ length: activeColumnCount }).map((_, colIndex) => {
             const colBookmarks = bookmarks.filter(

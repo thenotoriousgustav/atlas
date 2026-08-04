@@ -23,6 +23,7 @@ import {
 } from '@atlas/ui/components/alert-dialog';
 import { Button } from '@atlas/ui/components/button';
 import { Input } from '@atlas/ui/components/input';
+import { cn } from '@/lib/utils';
 import { Label } from '@atlas/ui/components/label';
 import { Checkbox } from '@atlas/ui/components/checkbox';
 import {
@@ -179,22 +180,24 @@ export function EmailSyncModal({ isOpen, onClose, onSuccessSync }: EmailSyncModa
           <div className="flex border-b border-[#EAEAEA] mt-2">
             <button
               onClick={() => setActiveTab('sync')}
-              className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-colors ${
+              className={cn(
+                'px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-colors',
                 activeTab === 'sync'
                   ? 'border-[#111111] text-[#111111]'
                   : 'border-transparent text-[#787774] hover:text-[#111111]'
-              }`}
+              )}
             >
               <ArrowsClockwise className="size-3.5" />
               Sync Now
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-colors ${
+              className={cn(
+                'px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-colors',
                 activeTab === 'settings'
                   ? 'border-[#111111] text-[#111111]'
                   : 'border-transparent text-[#787774] hover:text-[#111111]'
-              }`}
+              )}
             >
               <Gear className="size-3.5" />
               IMAP Configuration
@@ -219,7 +222,7 @@ export function EmailSyncModal({ isOpen, onClose, onSuccessSync }: EmailSyncModa
                 disabled={syncEmailsMutation.isPending}
                 className="w-full h-10 rounded-none bg-[#111111] text-xs font-medium text-white hover:bg-[#333333] flex items-center justify-center gap-2"
               >
-                <ArrowsClockwise className={`size-4 ${syncEmailsMutation.isPending ? 'animate-spin' : ''}`} />
+                <ArrowsClockwise className={cn("size-4", syncEmailsMutation.isPending ? 'animate-spin' : '')} />
                 <span>{syncEmailsMutation.isPending ? 'Scanning Email Inbox...' : 'Fetch & Sync Email Transactions'}</span>
               </Button>
             </div>

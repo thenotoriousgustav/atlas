@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '@atlas/ui/components/card';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -67,9 +68,10 @@ export function IncomeExpenseReport({
             <Vault className="size-4 text-[#111111]" />
           </div>
           <div
-            className={`mt-2 font-mono text-lg font-bold ${
+            className={cn(
+              'mt-2 font-mono text-lg font-bold',
               netSavings >= 0 ? 'text-[#346538]' : 'text-[#9F2F2D]'
-            }`}
+            )}
           >
             {formatCurrency(netSavings)}
           </div>
@@ -126,9 +128,10 @@ export function IncomeExpenseReport({
                         {formatCurrency(item.expense)}
                       </TableCell>
                       <TableCell
-                        className={`text-right font-mono text-xs font-bold ${
+                        className={cn(
+                          'text-right font-mono text-xs font-bold',
                           net >= 0 ? 'text-[#346538]' : 'text-[#9F2F2D]'
-                        }`}
+                        )}
                       >
                         {formatCurrency(net)}
                       </TableCell>

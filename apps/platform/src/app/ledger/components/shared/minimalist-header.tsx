@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from '@atlas/ui/components/badge';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import {
   ChartBar,
   List,
@@ -90,11 +91,12 @@ export function MinimalistHeader({
               <button
                 key={item.id}
                 onClick={() => setActiveView(item.id)}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all',
                   isActive
                     ? 'bg-[#111111] text-white shadow-xs'
                     : 'text-[#787774] hover:bg-[#F7F6F3] hover:text-[#111111]'
-                }`}
+                )}
               >
                 {item.icon}
                 <span>{item.label}</span>

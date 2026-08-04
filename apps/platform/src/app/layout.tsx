@@ -28,7 +28,7 @@ export default function RootLayout({
   // ponytail: theme provider wrapping providers at html root level to enable class-based dark mode
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
-      <body className={`${instrumentSerif.variable} bg-brand-canvas text-brand-charcoal antialiased`}>
+      <body className={cn(instrumentSerif.variable, "bg-brand-canvas text-brand-charcoal antialiased")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Providers>
             {children}

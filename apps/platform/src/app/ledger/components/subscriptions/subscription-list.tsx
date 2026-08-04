@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -98,11 +99,12 @@ export function SubscriptionList({
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-block rounded-none px-2 py-0.5 font-mono text-[10px] font-semibold uppercase ${
+                      className={cn(
+                        'inline-block rounded-none px-2 py-0.5 font-mono text-[10px] font-semibold uppercase',
                         sub.isActive
                           ? 'bg-[#EDF3EC] text-[#346538]'
                           : 'bg-[#F7F6F3] text-[#787774]'
-                      }`}
+                      )}
                     >
                       {sub.isActive ? 'Active' : 'Paused'}
                     </span>

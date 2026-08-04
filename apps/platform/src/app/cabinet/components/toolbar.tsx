@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react"
 import {
   Dialog,
   DialogTrigger,
@@ -6,28 +6,45 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@atlas/ui/components/dialog';
-import { Button } from '@atlas/ui/components/button';
-import { ButtonGroup } from '@atlas/ui/components/button-group';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@atlas/ui/components/tooltip';
-import { Input } from '@atlas/ui/components/input';
+} from "@atlas/ui/components/dialog"
+import { Button } from "@atlas/ui/components/button"
+import { ButtonGroup } from "@atlas/ui/components/button-group"
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@atlas/ui/components/tooltip"
+import { Input } from "@atlas/ui/components/input"
 import {
   Field,
   FieldGroup,
   FieldLabel,
-} from '@atlas/ui/components/field';
+  FieldError,
+} from "@atlas/ui/components/field"
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@atlas/ui/components/select';
-import { MagnifyingGlass, Plus, SquaresFour, List, Cards, Sparkle, CaretDown } from '@phosphor-icons/react';
-import { AXIOS_INSTANCE } from '@atlas/api-client';
-import { Spinner } from '@atlas/ui/components/spinner';
-import { Item } from '@atlas/ui/components/item';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@atlas/ui/components/input-group';
+} from "@atlas/ui/components/select"
+import {
+  MagnifyingGlass,
+  Plus,
+  SquaresFour,
+  List,
+  Cards,
+  Sparkle,
+  CaretDown,
+} from "@phosphor-icons/react"
+import { AXIOS_INSTANCE } from "@atlas/api-client"
+import { Spinner } from "@atlas/ui/components/spinner"
+import { Item } from "@atlas/ui/components/item"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@atlas/ui/components/input-group"
 import {
   Combobox,
   ComboboxContent,
@@ -40,28 +57,28 @@ import {
   ComboboxTrigger,
   useComboboxAnchor,
   ComboboxAnchor,
-} from '@atlas/ui/components/combobox';
+} from "@atlas/ui/components/combobox"
 import {
   TagsInput,
   TagsInputList,
   TagsInputInput,
   TagsInputItem,
-} from '@atlas/ui/components/tags-input';
+} from "@atlas/ui/components/tags-input"
 
 interface ToolbarProps {
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  isBookmarkModalOpen: boolean;
-  setIsBookmarkModalOpen: (open: boolean) => void;
-  bookmarkToEdit: any;
-  bookmarkForm: any;
-  folders: any[];
-  tags?: any[];
-  resetBookmarkForm: () => void;
-  viewMode: 'list' | 'moodboard';
-  onViewModeChange: (mode: 'list' | 'moodboard') => void;
-  columnCount?: number;
-  onColumnCountChange?: (count: number) => void;
+  searchQuery: string
+  onSearchChange: (value: string) => void
+  isBookmarkModalOpen: boolean
+  setIsBookmarkModalOpen: (open: boolean) => void
+  bookmarkToEdit: any
+  bookmarkForm: any
+  folders: any[]
+  tags?: any[]
+  resetBookmarkForm: () => void
+  viewMode: "list" | "moodboard"
+  onViewModeChange: (mode: "list" | "moodboard") => void
+  columnCount?: number
+  onColumnCountChange?: (count: number) => void
 }
 
 export function Toolbar({
@@ -79,47 +96,50 @@ export function Toolbar({
   columnCount = 3,
   onColumnCountChange = () => {},
 }: ToolbarProps) {
-  const [isScraping, setIsScraping] = React.useState(false);
-  const [tagInputValue, setTagInputValue] = React.useState('');
+  const [isScraping, setIsScraping] = React.useState(false)
+  const [tagInputValue, setTagInputValue] = React.useState("")
   const filteredTags = React.useMemo(() => {
-    const query = tagInputValue.trim().toLowerCase().replace(/^#/, '');
-    if (!query) return tags;
-    return tags.filter((t: any) => t.name.toLowerCase().includes(query));
-  }, [tags, tagInputValue]);
-  const anchorRef = useComboboxAnchor();
+    const query = tagInputValue.trim().toLowerCase().replace(/^#/, "")
+    if (!query) return tags
+    return tags.filter((t: any) => t.name.toLowerCase().includes(query))
+  }, [tags, tagInputValue])
+  const anchorRef = useComboboxAnchor()
   const handleScrape = async (url: string) => {
-    if (!url) return;
-    let targetUrl = url.trim();
+    if (!url) return
+    let targetUrl = url.trim()
     if (!/^https?:\/\//i.test(targetUrl)) {
-      targetUrl = 'https://' + targetUrl;
-      bookmarkForm.setFieldValue('url', targetUrl);
+      targetUrl = "https://" + targetUrl
+      bookmarkForm.setFieldValue("url", targetUrl)
     }
-    setIsScraping(true);
+    setIsScraping(true)
     try {
-      const res = await AXIOS_INSTANCE.get('/v1/bookmarks/scrape', {
+      const res = await AXIOS_INSTANCE.get("/v1/bookmarks/scrape", {
         params: { url: targetUrl },
-      });
-      const data = res.data;
+      })
+      const data = res.data
       if (data && data.success && data.data) {
-        const metadata = data.data;
+        const metadata = data.data
         if (metadata.title) {
-          bookmarkForm.setFieldValue('title', metadata.title);
+          bookmarkForm.setFieldValue("title", metadata.title)
         }
         if (metadata.description) {
-          bookmarkForm.setFieldValue('description', metadata.description);
+          bookmarkForm.setFieldValue("description", metadata.description)
         }
       }
     } catch (err) {
-      console.error('Failed to scrape URL:', err);
+      console.error("Failed to scrape URL:", err)
     } finally {
-      setIsScraping(false);
+      setIsScraping(false)
     }
-  };
+  }
 
   return (
-    <Item variant="outline" className="flex-col sm:flex-row gap-3 justify-between bg-white p-3.5 shadow-none rounded-none">
-      <div className="flex items-center gap-3 w-full sm:flex-1">
-        <InputGroup className="w-full sm:max-w-md h-9">
+    <Item
+      variant="outline"
+      className="flex-col justify-between gap-3 rounded-none bg-white p-3.5 shadow-none sm:flex-row"
+    >
+      <div className="flex w-full items-center gap-3 sm:flex-1">
+        <InputGroup className="h-9 w-full sm:max-w-md">
           <InputGroupInput
             type="text"
             placeholder="Search titles, descriptions, URLs..."
@@ -133,43 +153,42 @@ export function Toolbar({
         </InputGroup>
 
         {/* View Mode Toggle Group */}
-        <ButtonGroup className="shrink-0 bg-brand-charcoal/5 border border-brand-border p-0.5">
+        <ButtonGroup className="shrink-0 border border-brand-border bg-brand-charcoal/5 p-0.5">
           <Tooltip>
             <TooltipTrigger asChild>
-  <Button
-                onClick={() => onViewModeChange('moodboard')}
-                variant={viewMode === 'moodboard' ? 'default' : 'ghost'}
+              <Button
+                onClick={() => onViewModeChange("moodboard")}
+                variant={viewMode === "moodboard" ? "default" : "ghost"}
                 size="icon-xs"
                 className="size-7"
               >
-                <SquaresFour className="w-4 h-4" />
+                <SquaresFour className="h-4 w-4" />
               </Button>
-</TooltipTrigger>
+            </TooltipTrigger>
             <TooltipContent>Moodboard View</TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-  <Button
-                onClick={() => onViewModeChange('list')}
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
+              <Button
+                onClick={() => onViewModeChange("list")}
+                variant={viewMode === "list" ? "default" : "ghost"}
                 size="icon-xs"
                 className="size-7"
               >
-                <List className="w-4 h-4" />
+                <List className="h-4 w-4" />
               </Button>
-</TooltipTrigger>
+            </TooltipTrigger>
             <TooltipContent>List View</TooltipContent>
           </Tooltip>
-
         </ButtonGroup>
 
-        {viewMode === 'moodboard' && (
+        {viewMode === "moodboard" && (
           <Select
             value={columnCount.toString()}
             onValueChange={(val) => onColumnCountChange(parseInt(val, 10))}
           >
-            <SelectTrigger className="h-8 border-brand-border bg-white text-[10px] tracking-wider uppercase font-bold text-brand-charcoal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 rounded-none w-24 px-2">
+            <SelectTrigger className="h-8 w-24 rounded-none border-brand-border bg-white px-2 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
               <SelectValue placeholder="COLUMNS" />
             </SelectTrigger>
             <SelectContent>
@@ -184,215 +203,296 @@ export function Toolbar({
 
       <Dialog open={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen}>
         <DialogTrigger asChild>
-  <Button
+          <Button
             onClick={() => {
-              resetBookmarkForm();
-              setIsBookmarkModalOpen(true);
+              resetBookmarkForm()
+              setIsBookmarkModalOpen(true)
             }}
-            className="w-full sm:w-auto h-9 flex items-center gap-1.5 text-xs font-semibold uppercase bg-brand-charcoal hover:bg-brand-charcoal/90"
+            className="flex h-9 w-full items-center gap-1.5 bg-brand-charcoal text-xs font-semibold uppercase hover:bg-brand-charcoal/90 sm:w-auto"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-4 w-4" />
             Add Bookmark
           </Button>
-</DialogTrigger>
+        </DialogTrigger>
 
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{bookmarkToEdit ? 'Edit Bookmark' : 'New Bookmark'}</DialogTitle>
+            <DialogTitle>
+              {bookmarkToEdit ? "Edit Bookmark" : "New Bookmark"}
+            </DialogTitle>
             <DialogDescription>Resource collection</DialogDescription>
           </DialogHeader>
 
           <form
             onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              bookmarkForm.handleSubmit();
+              e.preventDefault()
+              e.stopPropagation()
+              bookmarkForm.handleSubmit()
             }}
             className="space-y-4"
           >
             <FieldGroup>
-               <bookmarkForm.Field
-                 name="url"
-                 children={(field: any) => (
-                   <Field>
-                     <FieldLabel htmlFor={field.name}>URL</FieldLabel>
-                     <div className="flex gap-2">
-                       <Input
-                         id={field.name}
-                         name={field.name}
-                         value={field.state.value}
-                         onBlur={field.handleBlur}
-                         onChange={(e) => field.handleChange(e.target.value)}
-                         placeholder="https://example.com"
-                         type="url"
-                         required
-                         className="flex-1"
-                       />
-                       <Button
-                         type="button"
-                         variant="outline"
-                         disabled={!field.state.value || isScraping}
-                         onClick={() => handleScrape(field.state.value)}
-                         className="shrink-0 h-8 px-3 font-mono text-[10px] uppercase font-semibold flex items-center gap-1.5 border border-brand-border hover:bg-brand-canvas"
-                       >
-                         {isScraping ? (
-                           <>
-                             <Spinner className="w-3.5 h-3.5" />
-                             Scraping...
-                           </>
-                         ) : (
-                           <>
-                             <Sparkle className="w-3.5 h-3.5" />
-                             Auto Fill
-                           </>
-                         )}
-                       </Button>
-                     </div>
-                   </Field>
-                 )}
-               />
+              <bookmarkForm.Field
+                name="url"
+                children={(field: any) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+                      <div className="flex gap-2">
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                          placeholder="https://example.com"
+                          type="url"
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!field.state.value || isScraping}
+                          onClick={() => handleScrape(field.state.value)}
+                          className="flex h-8 shrink-0 items-center gap-1.5 border border-brand-border px-3 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas"
+                        >
+                          {isScraping ? (
+                            <>
+                              <Spinner className="h-3.5 w-3.5" />
+                              Scraping...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkle className="h-3.5 w-3.5" />
+                              Auto Fill
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {isInvalid && (
+                        <FieldError
+                          errors={field.state.meta.errors.map((err: any) =>
+                            typeof err === "string" ? { message: err } : err
+                          )}
+                        />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
 
               <bookmarkForm.Field
                 name="title"
-                children={(field: any) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Title (Optional)</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Leave blank to fetch from URL metadata"
-                    />
-                  </Field>
-                )}
+                children={(field: any) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Title (Optional)
+                      </FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="Leave blank to fetch from URL metadata"
+                      />
+                      {isInvalid && (
+                        <FieldError
+                          errors={field.state.meta.errors.map((err: any) =>
+                            typeof err === "string" ? { message: err } : err
+                          )}
+                        />
+                      )}
+                    </Field>
+                  )
+                }}
               />
 
               <bookmarkForm.Field
                 name="description"
-                children={(field: any) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Description (Optional)</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Optional notes or details"
-                    />
-                  </Field>
-                )}
+                children={(field: any) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Description (Optional)
+                      </FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="Optional notes or details"
+                      />
+                      {isInvalid && (
+                        <FieldError
+                          errors={field.state.meta.errors.map((err: any) =>
+                            typeof err === "string" ? { message: err } : err
+                          )}
+                        />
+                      )}
+                    </Field>
+                  )
+                }}
               />
 
               <div className="grid grid-cols-2 gap-4">
                 <bookmarkForm.Field
                   name="folderId"
-                  children={(field: any) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>Folder</FieldLabel>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={(val) => field.handleChange(val)}
-                      >
-                        <SelectTrigger className="w-full h-10 px-3 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 font-medium">
-                          <SelectValue placeholder="None (Root)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">None (Root)</SelectItem>
-                          {folders.map((f: any) => (
-                            <SelectItem key={f.id} value={f.id}>
-                              {f.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
+                  children={(field: any) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Folder</FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(val) => field.handleChange(val)}
+                        >
+                          <SelectTrigger
+                            aria-invalid={isInvalid}
+                            className="h-10 w-full rounded-none border border-brand-border bg-white px-3 text-sm font-medium text-brand-charcoal focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none"
+                          >
+                            <SelectValue placeholder="None (Root)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None (Root)</SelectItem>
+                            {folders.map((f: any) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                {f.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError
+                            errors={field.state.meta.errors.map((err: any) =>
+                              typeof err === "string" ? { message: err } : err
+                            )}
+                          />
+                        )}
+                      </Field>
+                    )
+                  }}
                 />
 
                 <bookmarkForm.Field
                   name="tags"
-                  children={(field: any) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
-                      <Combobox
-                        value={field.state.value || []}
-                        onValueChange={(val) => {
-                          const formatted = val.map((t: string) => (t.startsWith('#') ? t : `#${t}`));
-                          field.handleChange(formatted);
-                          setTagInputValue('');
-                        }}
-                        inputValue={tagInputValue}
-                        onInputValueChange={setTagInputValue}
-                      >
-                        <ComboboxAnchor className="w-full">
-                          <TagsInput
-                            value={field.state.value || []}
-                            onValueChange={(val) => {
-                              const formatted = val.map((t: string) => (t.startsWith('#') ? t : `#${t}`));
-                              field.handleChange(formatted);
-                              setTagInputValue('');
-                            }}
-                            className="w-full gap-0"
-                          >
-                            <TagsInputList className="w-full min-h-10 px-3 py-1.5 rounded-none border border-brand-border bg-white text-brand-charcoal text-sm focus-within:ring-1 focus-within:ring-brand-charcoal/30 flex flex-wrap items-center gap-1.5">
-                              {(field.state.value || []).map((tag: string) => (
-                                <TagsInputItem
-                                  key={tag}
-                                  value={tag}
-                                  className="bg-brand-charcoal/5 border-brand-border text-brand-charcoal rounded-none text-xs py-0.5 px-2 gap-1"
-                                >
-                                  {tag}
-                                </TagsInputItem>
-                              ))}
-                              <ComboboxChipsInput
-                                render={
-                                  <TagsInputInput
-                                    placeholder="Select or add tags..."
-                                    className="text-xs text-brand-charcoal placeholder:text-brand-muted outline-none focus:outline-none flex-1"
-                                  />
-                                }
-                              />
-                            </TagsInputList>
-                          </TagsInput>
-                        </ComboboxAnchor>
-                        <ComboboxContent className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto bg-white border border-brand-border rounded-none shadow-sm z-50 p-1">
-                          <ComboboxList className="no-scrollbar max-h-[200px] overflow-y-auto overscroll-contain">
-                            {filteredTags.length === 0 ? (
-                              <ComboboxEmpty className="py-4 text-center text-xs text-brand-muted">
-                                {tagInputValue.trim() ? `Press enter to create "${tagInputValue}"` : 'No tags found.'}
-                              </ComboboxEmpty>
-                            ) : (
-                              <ComboboxGroup>
-                                {filteredTags.map((tag: any) => {
-                                  const tagValue = `#${tag.name}`;
-                                  const isSelected = (field.state.value || []).includes(tagValue);
-                                  return (
-                                    <ComboboxItem
-                                      key={tag.id}
-                                      value={tagValue}
-                                      onClick={() => {
-                                        const nextValue = isSelected
-                                          ? field.state.value.filter((v: string) => v !== tagValue)
-                                          : [...(field.state.value || []), tagValue];
-                                        field.handleChange(nextValue);
-                                        setTagInputValue('');
-                                      }}
-                                      className="cursor-pointer hover:bg-brand-canvas text-xs px-3 py-2 text-brand-charcoal flex justify-between items-center"
+                  children={(field: any) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
+                        <Combobox
+                          value={field.state.value || []}
+                          onValueChange={(val) => {
+                            const formatted = val.map((t: string) =>
+                              t.startsWith("#") ? t : `#${t}`
+                            )
+                            field.handleChange(formatted)
+                            setTagInputValue("")
+                          }}
+                          inputValue={tagInputValue}
+                          onInputValueChange={setTagInputValue}
+                        >
+                          <ComboboxAnchor className="w-full">
+                            <TagsInput
+                              value={field.state.value || []}
+                              onValueChange={(val) => {
+                                const formatted = val.map((t: string) =>
+                                  t.startsWith("#") ? t : `#${t}`
+                                )
+                                field.handleChange(formatted)
+                                setTagInputValue("")
+                              }}
+                              className="w-full gap-0"
+                            >
+                              <TagsInputList className="flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-none border border-brand-border bg-white px-3 py-1.5 text-sm text-brand-charcoal focus-within:ring-1 focus-within:ring-brand-charcoal/30">
+                                {(field.state.value || []).map(
+                                  (tag: string) => (
+                                    <TagsInputItem
+                                      key={tag}
+                                      value={tag}
+                                      className="gap-1 rounded-none border-brand-border bg-brand-charcoal/5 px-2 py-0.5 text-xs text-brand-charcoal"
                                     >
-                                      <span>{tagValue}</span>
-                                    </ComboboxItem>
-                                  );
-                                })}
-                              </ComboboxGroup>
+                                      {tag}
+                                    </TagsInputItem>
+                                  )
+                                )}
+                                <ComboboxChipsInput
+                                  render={
+                                    <TagsInputInput
+                                      placeholder="Select or add tags..."
+                                      className="flex-1 text-xs text-brand-charcoal outline-none placeholder:text-brand-muted focus:outline-none"
+                                    />
+                                  }
+                                />
+                              </TagsInputList>
+                            </TagsInput>
+                          </ComboboxAnchor>
+                          <ComboboxContent className="z-50 max-h-60 w-[var(--radix-popover-trigger-width)] overflow-y-auto rounded-none border border-brand-border bg-white p-1 shadow-sm">
+                            <ComboboxList className="no-scrollbar max-h-[200px] overflow-y-auto overscroll-contain">
+                              {filteredTags.length === 0 ? (
+                                <ComboboxEmpty className="py-4 text-center text-xs text-brand-muted">
+                                  {tagInputValue.trim()
+                                    ? `Press enter to create "${tagInputValue}"`
+                                    : "No tags found."}
+                                </ComboboxEmpty>
+                              ) : (
+                                <ComboboxGroup>
+                                  {filteredTags.map((tag: any) => {
+                                    const tagValue = `#${tag.name}`
+                                    return (
+                                      <ComboboxItem
+                                        key={tag.id}
+                                        value={tagValue}
+                                        onSelect={() => {
+                                          const isSelected = (
+                                            field.state.value || []
+                                          ).includes(tagValue)
+                                          const nextValue = isSelected
+                                            ? (field.state.value || []).filter(
+                                                (t: string) => t !== tagValue
+                                              )
+                                            : [
+                                                ...(field.state.value || []),
+                                                tagValue,
+                                              ]
+                                          field.handleChange(nextValue)
+                                          setTagInputValue("")
+                                        }}
+                                        className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs text-brand-charcoal hover:bg-brand-canvas"
+                                      >
+                                        <span>{tagValue}</span>
+                                      </ComboboxItem>
+                                    )
+                                  })}
+                                </ComboboxGroup>
+                              )}
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
+                        {isInvalid && (
+                          <FieldError
+                            errors={field.state.meta.errors.map((err: any) =>
+                              typeof err === "string" ? { message: err } : err
                             )}
-                          </ComboboxList>
-                        </ComboboxContent>
-                      </Combobox>
-                    </Field>
-                  )}
+                          />
+                        )}
+                      </Field>
+                    )
+                  }}
                 />
               </div>
             </FieldGroup>
@@ -412,9 +512,9 @@ export function Toolbar({
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 text-xs uppercase bg-brand-charcoal hover:bg-brand-charcoal/90 gap-1.5 flex items-center justify-center"
+                    className="flex flex-1 items-center justify-center gap-1.5 bg-brand-charcoal text-xs uppercase hover:bg-brand-charcoal/90"
                   >
-                    {isSubmitting && <Spinner className="w-3.5 h-3.5" />}
+                    {isSubmitting && <Spinner className="h-3.5 w-3.5" />}
                     Save Bookmark
                   </Button>
                 )}
@@ -424,5 +524,5 @@ export function Toolbar({
         </DialogContent>
       </Dialog>
     </Item>
-  );
+  )
 }

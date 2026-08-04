@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@atlas/ui/components/button';
+import { cn } from '@/lib/utils';
 import { Input } from '@atlas/ui/components/input';
 import {
   Select,
@@ -159,13 +160,14 @@ export function TransactionTable({
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 font-mono text-[10px] font-semibold uppercase ${
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-none px-2 py-0.5 font-mono text-[10px] font-semibold uppercase',
                         tx.type === 'INCOME'
                           ? 'bg-[#EDF3EC] text-[#346538]'
                           : tx.type === 'EXPENSE'
                           ? 'bg-[#FDEBEC] text-[#9F2F2D]'
                           : 'bg-[#E1F3FE] text-[#1F6C9F]'
-                      }`}
+                      )}
                     >
                       {tx.type === 'INCOME' && <ArrowDownLeft className="size-3" />}
                       {tx.type === 'EXPENSE' && <ArrowUpRight className="size-3" />}

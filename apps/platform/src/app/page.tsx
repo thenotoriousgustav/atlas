@@ -28,6 +28,7 @@ import {
 } from "@atlas/ui/components/alert-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ModuleContainer } from "@/components/module-container"
+import { cn } from "@/lib/utils"
 import {
   BookmarkSimple,
   Coins,
@@ -449,9 +450,10 @@ export default function HomePortalPage() {
                     Cash Flow
                   </span>
                   <span
-                    className={`flex items-center gap-0.5 font-semibold ${
+                    className={cn(
+                      "flex items-center gap-0.5 font-semibold",
                       netCashFlow >= 0 ? "text-[#1e4620]" : "text-[#5f2120]"
-                    }`}
+                    )}
                   >
                     {netCashFlow >= 0 ? "+" : ""}
                     {formatCurrency(netCashFlow)}
