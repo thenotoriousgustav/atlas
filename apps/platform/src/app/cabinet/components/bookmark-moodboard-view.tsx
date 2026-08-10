@@ -24,6 +24,7 @@ import {
   SortableItem,
   SortableOverlay,
 } from "@atlas/ui/components/sortable"
+import { RedditPreviewBox } from "./reddit-preview-box"
 
 interface MoodboardCardProps {
   bookmark: any
@@ -53,16 +54,17 @@ export function MoodboardCard({
   onToggleSelect,
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
+  const isReddit = bookmark.provider === "REDDIT" || hostname.includes("reddit.com")
   const color = getPastelColor(hostname)
 
   const imageSrc = bookmark.imageUrl || ""
   const [imageStatus, setImageStatus] = React.useState<
     "loading" | "loaded" | "error"
-  >(bookmark.imageUrl ? "loading" : "error")
+  >(bookmark.imageUrl && !isReddit ? "loading" : "error")
 
   React.useEffect(() => {
-    setImageStatus(bookmark.imageUrl ? "loading" : "error")
-  }, [bookmark.imageUrl])
+    setImageStatus(bookmark.imageUrl && !isReddit ? "loading" : "error")
+  }, [bookmark.imageUrl, isReddit])
 
   const handleImageError = () => {
     setImageStatus("error")
@@ -99,51 +101,57 @@ export function MoodboardCard({
           rel="noreferrer"
           className="group/header relative block h-full w-full"
         >
-          {imageStatus === "loading" && (
-            <div className="absolute inset-0 flex animate-pulse items-center justify-center bg-gray-50/50">
-              <Clock className="h-5 w-5 animate-spin text-gray-400" />
-            </div>
-          )}
-
-          {imageStatus !== "error" && imageSrc && (
-            <img
-              src={imageSrc}
-              alt={bookmark.title || hostname}
-              onLoad={() => setImageStatus("loaded")}
-              onError={handleImageError}
-              className={cn(
-                "h-full w-full object-cover transition-opacity duration-300",
-                imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+          {isReddit ? (
+            <RedditPreviewBox bookmark={bookmark} hostname={hostname} />
+          ) : (
+            <>
+              {imageStatus === "loading" && (
+                <div className="absolute inset-0 flex animate-pulse items-center justify-center bg-gray-50/50">
+                  <Clock className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
               )}
-            />
-          )}
 
-          {imageStatus === "error" && (
-            <div
-              className={cn(
-                "relative flex h-full w-full flex-col items-center justify-center p-4",
-                color.bg
-              )}
-            >
-              <div className="flex size-12 items-center justify-center rounded-xl border border-brand-border/60 bg-white shadow-sm">
+              {imageStatus !== "error" && imageSrc && (
                 <img
-                  src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
-                  alt=""
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none"
-                  }}
-                  className="size-7 object-contain"
+                  src={imageSrc}
+                  alt={bookmark.title || hostname}
+                  onLoad={() => setImageStatus("loaded")}
+                  onError={handleImageError}
+                  className={cn(
+                    "h-full w-full object-cover transition-opacity duration-300",
+                    imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+                  )}
                 />
-              </div>
-              <span
-                className={cn(
-                  "mt-2 max-w-full truncate px-2 font-mono text-[11px] font-medium tracking-wider uppercase",
-                  color.text
-                )}
-              >
-                {hostname}
-              </span>
-            </div>
+              )}
+
+              {imageStatus === "error" && (
+                <div
+                  className={cn(
+                    "relative flex h-full w-full flex-col items-center justify-center p-4",
+                    color.bg
+                  )}
+                >
+                  <div className="flex size-12 items-center justify-center rounded-xl border border-brand-border/60 bg-white shadow-sm">
+                    <img
+                      src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none"
+                      }}
+                      className="size-7 object-contain"
+                    />
+                  </div>
+                  <span
+                    className={cn(
+                      "mt-2 max-w-full truncate px-2 font-mono text-[11px] font-medium tracking-wider uppercase",
+                      color.text
+                    )}
+                  >
+                    {hostname}
+                  </span>
+                </div>
+              )}
+            </>
           )}
 
           {/* Folder Badge */}

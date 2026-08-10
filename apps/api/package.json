@@ -18,6 +18,7 @@
     "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.28",
@@ -29,9 +30,11 @@
     "@simplewebauthn/server": "^13.3.2",
     "argon2": "^0.44.0",
     "axios": "^1.18.1",
+    "bullmq": "^6.0.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
+    "ioredis": "^6.0.0",
     "nest-winston": "^1.10.2",
     "pg": "^8.22.0",
     "reflect-metadata": "^0.2.2",

@@ -1,21 +1,30 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { BookmarkProvider, MetadataStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MetadataService } from '../services/metadata.service';
 import { LinkCheckerService } from '../services/link-checker.service';
+import { RedditProvider } from '../providers/reddit.provider';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
 
 @Injectable()
 export class BookmarksService {
+  private readonly logger = new Logger(BookmarksService.name);
+
   constructor(
     private prisma: PrismaService,
     private metadataService: MetadataService,
     @Inject(forwardRef(() => LinkCheckerService))
     private linkCheckerService: LinkCheckerService,
+    private redditProvider: RedditProvider,
+    @InjectQueue('bookmark-enrichment')
+    private enrichmentQueue: Queue,
   ) {}
 
   async create(userId: string, createBookmarkDto: CreateBookmarkDto) {
-    // 1. Extract metadata if needed
+    // 1. Extract basic metadata if needed for fast response
     const extracted = await this.metadataService.extract(createBookmarkDto.url);
 
     // 2. Prep tags
@@ -37,7 +46,18 @@ export class BookmarksService {
       }
     }
 
-    return this.prisma.bookmark.create({
+    // 4. Detect provider
+    let detectedProvider: BookmarkProvider | null = null;
+    try {
+      const urlObj = new URL(createBookmarkDto.url);
+      if (this.redditProvider.supports(urlObj)) {
+        detectedProvider = BookmarkProvider.REDDIT;
+      }
+    } catch {
+      // Ignore invalid URL parsing errors here, handled downstream
+    }
+
+    const bookmark = await this.prisma.bookmark.create({
       data: {
         url: createBookmarkDto.url,
         title: createBookmarkDto.title || extracted.title,
@@ -45,6 +65,8 @@ export class BookmarksService {
         imageUrl: extracted.imageUrl,
         folderId: createBookmarkDto.folderId || null,
         userId,
+        provider: detectedProvider,
+        metadataStatus: MetadataStatus.PENDING,
         tags: {
           connectOrCreate: tagConnectOrCreate,
         },
@@ -54,6 +76,51 @@ export class BookmarksService {
         folder: true,
       },
     });
+
+    // 5. Enqueue enrichment job
+    try {
+      await this.enrichmentQueue.add('enrich', {
+        bookmarkId: bookmark.id,
+        url: bookmark.url,
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to queue enrichment job for ${bookmark.id}: ${err.message}`);
+    }
+
+    return bookmark;
+  }
+
+  async refreshEnrichment(userId: string, id: string) {
+    const bookmark = await this.prisma.bookmark.findFirst({
+      where: { id, userId, deletedAt: null },
+    });
+
+    if (!bookmark) {
+      throw new NotFoundException('Bookmark not found');
+    }
+
+    const updated = await this.prisma.bookmark.update({
+      where: { id: bookmark.id },
+      data: {
+        metadataStatus: MetadataStatus.PENDING,
+        metadataError: null,
+      },
+      include: {
+        tags: true,
+        folder: true,
+      },
+    });
+
+    try {
+      await this.enrichmentQueue.add('enrich', {
+        bookmarkId: bookmark.id,
+        url: bookmark.url,
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to queue refresh enrichment job for ${bookmark.id}: ${err.message}`);
+    }
+
+    return updated;
   }
 
   async findAll(

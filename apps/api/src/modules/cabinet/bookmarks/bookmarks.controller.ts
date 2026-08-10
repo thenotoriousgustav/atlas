@@ -152,6 +152,12 @@ export class BookmarksController {
     return this.bookmarksService.update(user.id, id, updateBookmarkDto);
   }
 
+  @Post(':id/enrichment/refresh')
+  @ApiOperation({ summary: 'Refresh enrichment metadata for a bookmark' })
+  async refreshEnrichment(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.bookmarksService.refreshEnrichment(user.id, id);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Soft delete a bookmark by ID' })
   async remove(@CurrentUser() user: any, @Param('id') id: string) {
