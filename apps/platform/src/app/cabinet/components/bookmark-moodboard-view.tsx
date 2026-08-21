@@ -73,8 +73,10 @@ export function MoodboardCard({
   return (
     <Card
       className={cn(
-        "group/card flex h-auto w-full flex-col overflow-hidden rounded-none border border-brand-border bg-white shadow-none transition-all hover:border-brand-charcoal/40",
-        isSelected && "border-brand-charcoal ring-1 ring-brand-charcoal"
+        "group/card flex h-auto w-full flex-col overflow-hidden rounded-none border bg-white shadow-none ring-0 transition-all",
+        isSelected
+          ? "border-brand-charcoal"
+          : "border-brand-border hover:border-brand-charcoal/40"
       )}
     >
       {/* Top Visual Image Header Container */}

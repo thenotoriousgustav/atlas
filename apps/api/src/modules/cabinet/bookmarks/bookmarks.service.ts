@@ -214,7 +214,6 @@ export class BookmarksService {
   }
 
   async findOne(userId: string, id: string) {
-    console.log('[DEBUG FINDONE] User ID:', userId, 'Bookmark ID:', id);
     const bookmark = await this.prisma.bookmark.findFirst({
       where: {
         id,
@@ -228,7 +227,6 @@ export class BookmarksService {
     });
 
     if (!bookmark) {
-      console.log('[DEBUG FINDONE] NOT FOUND OR SOFT DELETED');
       throw new NotFoundException('Bookmark not found');
     }
 
@@ -394,12 +392,7 @@ export class BookmarksService {
   }
 
   async scrapeUrl(url: string) {
-    const extracted = await this.metadataService.extract(url);
-    const tags = await this.metadataService.generateTags(extracted.title, extracted.description);
-    return {
-      ...extracted,
-      tags,
-    };
+    return this.metadataService.extract(url);
   }
 
   async getHealthSummary(userId: string) {
@@ -481,25 +474,34 @@ export class BookmarksService {
     });
 
     const urls = duplicatesGrouped.map((g) => g.url);
-    let deletedCount = 0;
+    if (urls.length === 0) {
+      return { deleted: 0 };
+    }
 
-    for (const url of urls) {
-      const list = await this.prisma.bookmark.findMany({
-        where: { userId, url, deletedAt: null },
-        orderBy: { createdAt: 'asc' }, // oldest first
-      });
+    const allDuplicates = await this.prisma.bookmark.findMany({
+      where: { userId, url: { in: urls }, deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+    });
 
-      const toDelete = list.slice(1);
-      for (const b of toDelete) {
-        await this.prisma.bookmark.update({
-          where: { id: b.id },
-          data: { deletedAt: new Date() },
-        });
-        deletedCount++;
+    const seenUrls = new Set<string>();
+    const idsToDelete: string[] = [];
+
+    for (const item of allDuplicates) {
+      if (seenUrls.has(item.url)) {
+        idsToDelete.push(item.id);
+      } else {
+        seenUrls.add(item.url);
       }
     }
 
-    return { deleted: deletedCount };
+    if (idsToDelete.length > 0) {
+      await this.prisma.bookmark.updateMany({
+        where: { id: { in: idsToDelete } },
+        data: { deletedAt: new Date() },
+      });
+    }
+
+    return { deleted: idsToDelete.length };
   }
 
   async triggerHealthCheck(userId: string) {

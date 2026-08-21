@@ -9,7 +9,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { useAuthControllerLogout } from '@atlas/api-client';
-import { toast } from 'sonner';
+import { toast } from '@atlas/ui/components/sonner';
 
 export interface WorkspaceHeaderProps {
   moduleName: string;

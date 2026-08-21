@@ -1,79 +1,93 @@
-import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import { Injectable, Logger } from "@nestjs/common"
+
+function decodeHtmlEntities(str: string): string {
+  if (!str) return ""
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, "/")
+    .replace(/&nbsp;/g, " ")
+}
 
 @Injectable()
 export class MetadataService {
-  private readonly logger = new Logger(MetadataService.name);
+  private readonly logger = new Logger(MetadataService.name)
 
-  async extract(url: string): Promise<{ title: string; description?: string; imageUrl?: string }> {
+  async extract(
+    url: string
+  ): Promise<{ title: string; description?: string; imageUrl?: string }> {
     try {
-      const response = await axios.get(url, {
+      const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
-        timeout: 5000,
-      });
+        signal: AbortSignal.timeout(6000),
+        redirect: "follow",
+      })
 
-      const html = response.data;
-      if (typeof html !== 'string') {
-        return { title: this.getDomain(url) };
+      const html = await response.text()
+      if (typeof html !== "string" || !html) {
+        return { title: this.getDomain(url) }
       }
 
-      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-      const title = titleMatch ? titleMatch[1].trim() : this.getDomain(url);
+      // Title (og:title -> <title>)
+      const ogTitle =
+        this.getMetaContent(html, "property", "og:title") ||
+        this.getMetaContent(html, "name", "og:title")
+      const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]
+      const rawTitle = ogTitle || titleTag || this.getDomain(url)
+      const title = decodeHtmlEntities(rawTitle.trim())
 
-      const descriptionMatch = 
-        html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i) ||
-        html.match(/<meta\s+content=["']([^"']+)["']\s+name=["']description["']/i) ||
-        html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
-      const description = descriptionMatch ? descriptionMatch[1].trim() : undefined;
+      // Description (og:description -> description)
+      const rawDescription =
+        this.getMetaContent(html, "property", "og:description") ||
+        this.getMetaContent(html, "name", "description")
+      const description = rawDescription
+        ? decodeHtmlEntities(rawDescription.trim())
+        : undefined
 
-      const imageMatch = 
-        html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-        html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
-      let imageUrl = imageMatch ? imageMatch[1].trim() : undefined;
+      // Image (og:image)
+      const rawImage = this.getMetaContent(html, "property", "og:image")
+      let imageUrl = rawImage ? decodeHtmlEntities(rawImage.trim()) : undefined
 
       // Handle relative image URL
-      if (imageUrl && imageUrl.startsWith('/')) {
-        const urlObj = new URL(url);
-        imageUrl = `${urlObj.origin}${imageUrl}`;
+      if (imageUrl && imageUrl.startsWith("/")) {
+        const urlObj = new URL(url)
+        imageUrl = `${urlObj.origin}${imageUrl}`
       }
 
       return {
         title,
         description,
         imageUrl,
-      };
+      }
     } catch (error) {
-      this.logger.warn(`Failed to extract metadata for ${url}: ${(error as any).message}`);
-      return { title: this.getDomain(url) };
+      this.logger.warn(
+        `Failed to extract metadata for ${url}: ${(error as any).message}`
+      )
+      return { title: this.getDomain(url) }
     }
   }
 
-  async generateTags(title: string, description?: string): Promise<string[]> {
-    // Local Tag Extraction
-    const stopWords = new Set([
-      'the', 'and', 'or', 'a', 'an', 'to', 'in', 'of', 'for', 'with', 'is', 'on', 'that', 'this',
-      'these', 'those', 'it', 'its', 'code', 'web', 'site', 'home', 'page', 'app', 'application',
-      'welcome', 'official', 'online', 'free', 'best', 'new', 'how', 'why', 'what', 'who', 'where'
-    ]);
-    const words = `${title} ${description || ''}`
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .split(/\s+/)
-      .map(w => w.trim())
-      .filter(w => w.length > 3 && !stopWords.has(w));
-
-    const uniqueWords = Array.from(new Set(words)).slice(0, 4);
-    return uniqueWords;
+  private getMetaContent(html: string, attr: "name" | "property", value: string): string | undefined {
+    const pattern1 = new RegExp(`<meta\\s+${attr}=["']${value}["']\\s+content=["']([^"']+)["']`, "i")
+    const pattern2 = new RegExp(`<meta\\s+content=["']([^"']+)["']\\s+${attr}=["']${value}["']`, "i")
+    return html.match(pattern1)?.[1] || html.match(pattern2)?.[1]
   }
 
   private getDomain(url: string): string {
     try {
-      const domain = new URL(url).hostname;
-      return domain.startsWith('www.') ? domain.slice(4) : domain;
+      const domain = new URL(url).hostname
+      return domain.startsWith("www.") ? domain.slice(4) : domain
     } catch {
-      return url;
+      return url
     }
   }
 }

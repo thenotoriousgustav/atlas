@@ -1,6 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import axios from 'axios';
 
 @Injectable()
 export class LinkCheckerService implements OnModuleInit {
@@ -9,22 +8,17 @@ export class LinkCheckerService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
 
   onModuleInit() {
-    // ponytail: simple background interval timer prevents importing external cron/schedule libraries
-    // Run initial scan in background after 1 minute of startup
+    // ponytail: native interval timer avoids external scheduler dependencies
     setTimeout(() => this.runScan().catch(err => this.logger.error('Startup link scan failed', err)), 60000);
-    // Run scan once every 24 hours
     setInterval(() => this.runScan().catch(err => this.logger.error('Daily link scan failed', err)), 24 * 60 * 60 * 1000);
   }
 
   async runScan() {
     this.logger.log('Starting bookmark health check scan...');
-    // Find active bookmarks (not soft-deleted), prioritizing those unchecked or oldest checked
     const bookmarks = await this.prisma.bookmark.findMany({
       where: { deletedAt: null },
-      orderBy: [
-        { lastChecked: 'asc' }
-      ],
-      take: 100, // Batch of 100 to prevent database lock or network choke
+      orderBy: [{ lastChecked: 'asc' }],
+      take: 100,
     });
 
     if (bookmarks.length === 0) {
@@ -39,69 +33,50 @@ export class LinkCheckerService implements OnModuleInit {
     this.logger.log('Bookmark health check scan finished.');
   }
 
-  async checkBookmark(bookmark: any) {
+  async checkBookmark(bookmark: { id: string; url: string }) {
+    // ponytail: use native fetch with HEAD and manual redirect to avoid axios dependency
     try {
-      const response = await axios.head(bookmark.url, {
-        timeout: 5000,
-        maxRedirects: 0,
-        validateStatus: (status) => status < 400, // Handle redirects (3xx) as successful check candidates
+      const response = await fetch(bookmark.url, {
+        method: 'HEAD',
+        redirect: 'manual',
+        signal: AbortSignal.timeout(5000),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; AtlasBot/1.0; +http://atlasapp.internal)',
+        },
       });
 
-      // Handle redirect
-      if (response.status === 301 || response.status === 308) {
-        const newUrl = response.headers.location;
-        if (newUrl && newUrl !== bookmark.url) {
-          await this.prisma.bookmark.update({
-            where: { id: bookmark.id },
-            data: {
-              url: newUrl,
-              status: 'REDIRECTED',
-              statusCode: response.status,
-              lastChecked: new Date(),
-            },
-          });
-          this.logger.log(`Auto-redirected bookmark ${bookmark.id} from ${bookmark.url} to ${newUrl}`);
-          return;
-        }
+      const isRedirect = response.status === 301 || response.status === 308;
+      const redirectLocation = response.headers.get('location');
+
+      if (isRedirect && redirectLocation && redirectLocation !== bookmark.url) {
+        await this.prisma.bookmark.update({
+          where: { id: bookmark.id },
+          data: {
+            url: redirectLocation,
+            status: 'REDIRECTED',
+            statusCode: response.status,
+            lastChecked: new Date(),
+          },
+        });
+        this.logger.log(`Auto-redirected bookmark ${bookmark.id} to ${redirectLocation}`);
+        return;
       }
 
+      const isOk = response.ok || response.status < 400;
       await this.prisma.bookmark.update({
         where: { id: bookmark.id },
         data: {
-          status: 'OK',
+          status: isOk ? 'OK' : 'BROKEN',
           statusCode: response.status,
           lastChecked: new Date(),
         },
       });
-    } catch (err: any) {
-      let statusCode = 500;
-      if (err.response) {
-        statusCode = err.response.status;
-        if ((statusCode === 301 || statusCode === 308) && err.response.headers.location) {
-          const newUrl = err.response.headers.location;
-          if (newUrl !== bookmark.url) {
-            await this.prisma.bookmark.update({
-              where: { id: bookmark.id },
-              data: {
-                url: newUrl,
-                status: 'REDIRECTED',
-                statusCode,
-                lastChecked: new Date(),
-              },
-            });
-            this.logger.log(`Auto-redirected bookmark ${bookmark.id} on error catch from ${bookmark.url} to ${newUrl}`);
-            return;
-          }
-        }
-      } else if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
-        statusCode = 404;
-      }
-
+    } catch {
       await this.prisma.bookmark.update({
         where: { id: bookmark.id },
         data: {
           status: 'BROKEN',
-          statusCode,
+          statusCode: 500,
           lastChecked: new Date(),
         },
       });

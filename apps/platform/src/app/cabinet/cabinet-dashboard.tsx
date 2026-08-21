@@ -28,7 +28,7 @@ import {
 } from "@atlas/api-client"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useConfirm } from "@atlas/ui/hooks/use-confirm"
-import { toast } from "sonner"
+import { toast } from "@atlas/ui/components/sonner"
 import { WorkspaceHeader } from "@/components/workspace-header"
 import { ModuleContainer } from "@/components/module-container"
 import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
@@ -53,7 +53,10 @@ import {
 } from "@atlas/ui/components/action-bar"
 
 const folderSchema = z.object({
-  name: z.string().min(1, "Folder name is required").max(50, "Folder name must be at most 50 characters"),
+  name: z
+    .string()
+    .min(1, "Folder name is required")
+    .max(50, "Folder name must be at most 50 characters"),
   description: z.string(),
   parentId: z.string(),
 })
@@ -200,6 +203,9 @@ export function CabinetDashboard() {
         targetUrl = "https://" + targetUrl
       }
 
+      const toastId = toast.loading(
+        bookmarkToEdit ? "Updating bookmark..." : "Saving bookmark..."
+      )
       try {
         if (bookmarkToEdit) {
           await updateBookmarkMutation.mutateAsync({
@@ -212,6 +218,7 @@ export function CabinetDashboard() {
               tags: tagsArray,
             },
           })
+          toast.success("Bookmark updated", { id: toastId })
         } else {
           await createBookmarkMutation.mutateAsync({
             data: {
@@ -222,12 +229,13 @@ export function CabinetDashboard() {
               tags: tagsArray,
             },
           })
+          toast.success("Bookmark saved", { id: toastId })
         }
         invalidateAllQueries()
         setIsBookmarkModalOpen(false)
         resetBookmarkForm()
       } catch {
-        toast.error("Failed to save bookmark")
+        toast.error("Failed to save bookmark", { id: toastId })
       }
     },
   })
@@ -375,6 +383,88 @@ export function CabinetDashboard() {
       setIsLoading(false)
     }
   }, [meData, isMeLoading, setUser, router])
+
+  // Quick save bookmark via Command/Ctrl + V shortcut
+  useEffect(() => {
+    const saveBookmarkFromUrl = async (rawText: string) => {
+      const text = rawText.trim()
+      if (!text) return false
+
+      let targetUrl = ""
+      try {
+        const urlObj = new URL(text)
+        if (urlObj.protocol === "http:" || urlObj.protocol === "https:") {
+          targetUrl = urlObj.toString()
+        }
+      } catch {
+        // Tolerant match for domain-like strings (e.g. www.google.com, github.com, etc)
+        if (/^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/.*)?$/i.test(text)) {
+          targetUrl = `https://${text}`
+        }
+      }
+
+      if (!targetUrl) {
+        return false
+      }
+
+      const toastId = toast.loading("Saving bookmark from clipboard...")
+
+      try {
+        const res = await createBookmarkMutation.mutateAsync({
+          data: {
+            url: targetUrl,
+            folderId: selectedFolderId || undefined,
+          },
+        })
+        invalidateAllQueries()
+        const savedTitle =
+          (res as any)?.data?.title || (res as any)?.title || targetUrl
+        toast.success(`Saved: ${savedTitle}`, { id: toastId })
+        return true
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to save bookmark from clipboard", {
+          id: toastId,
+        })
+        return false
+      }
+    }
+
+    // 1. Native paste event (fires on Cmd+V / Ctrl+V in most browsers)
+    const handlePaste = async (e: ClipboardEvent) => {
+      const activeTag = (document.activeElement?.tagName || "").toLowerCase()
+      const isEditable =
+        activeTag === "input" ||
+        activeTag === "textarea" ||
+        (document.activeElement as HTMLElement)?.isContentEditable
+
+      if (isEditable || isBookmarkModalOpen || isFolderModalOpen) {
+        return
+      }
+
+      const clipboardText =
+        e.clipboardData?.getData("text/plain") ||
+        e.clipboardData?.getData("text") ||
+        ""
+
+      if (!clipboardText) return
+
+      const saved = await saveBookmarkFromUrl(clipboardText)
+      if (saved) {
+        e.preventDefault()
+      }
+    }
+
+    window.addEventListener("paste", handlePaste)
+    return () => {
+      window.removeEventListener("paste", handlePaste)
+    }
+  }, [
+    createBookmarkMutation,
+    invalidateAllQueries,
+    isBookmarkModalOpen,
+    isFolderModalOpen,
+    selectedFolderId,
+  ])
 
   // Handle logout mutation
   const logoutMutation = useAuthControllerLogout()

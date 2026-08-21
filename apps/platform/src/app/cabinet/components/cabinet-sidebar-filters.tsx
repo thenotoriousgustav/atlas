@@ -42,7 +42,7 @@ import {
   Plus,
 } from '@phosphor-icons/react';
 import { AXIOS_INSTANCE } from '@atlas/api-client';
-import { toast } from 'sonner';
+import { toast } from '@atlas/ui/components/sonner';
 import { FolderTree } from './folder-tree';
 import { useConfirm } from '@atlas/ui/hooks/use-confirm';
 import {
