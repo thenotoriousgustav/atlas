@@ -30,11 +30,23 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
     .replace(new RegExp(`\\s*:\\s*(r\\/)?${subredditClean}$`, "i"), "")
     .trim()
 
-  // Clean description / selftext: ignore generic strings
+  const isGenericDescription = (desc?: string) => {
+    if (!desc) return true
+    const lower = desc.toLowerCase().trim()
+    if (lower.startsWith("r/") && !lower.includes(" ")) return true
+    if (
+      lower.startsWith("posted by u/") &&
+      lower.endsWith("reddit") &&
+      lower.length < 50
+    ) {
+      return true
+    }
+    return false
+  }
+
+  // Clean description / selftext
   let rawSelftext =
-    bookmark.description &&
-    !bookmark.description.includes("• Posted by") &&
-    !bookmark.description.startsWith("r/")
+    bookmark.description && !isGenericDescription(bookmark.description)
       ? bookmark.description
       : metadata.post?.selftext || ""
 
@@ -64,8 +76,8 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
 
         {/* Post Body Snippet / Selftext with bottom fade */}
         {rawSelftext ? (
-          <div className="relative mt-2 max-h-20 overflow-hidden">
-            <p className="line-clamp-3 text-xs leading-relaxed font-normal text-neutral-500 sm:text-[13px]">
+          <div className="relative mt-2 max-h-24 overflow-hidden">
+            <p className="line-clamp-4 text-xs leading-relaxed font-normal text-neutral-600 sm:text-[13px]">
               {rawSelftext}
             </p>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-white to-transparent" />
