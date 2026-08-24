@@ -126,7 +126,7 @@ export function MoodboardCard({
       )}
     >
       {/* Top Visual Image Header Container */}
-      <div className="relative flex min-h-[160px] max-h-[260px] w-full shrink-0 items-center justify-center overflow-hidden border-b border-brand-border bg-brand-canvas">
+      <div className="relative w-full shrink-0 overflow-hidden border-b border-brand-border bg-brand-canvas">
         {/* Checkbox Overlay */}
         <div
           className={cn(
@@ -147,14 +147,14 @@ export function MoodboardCard({
           href={bookmark.url}
           target="_blank"
           rel="noreferrer"
-          className="group/header relative flex h-full min-h-[160px] max-h-[260px] w-full items-center justify-center bg-brand-canvas"
+          className="group/header relative block w-full bg-brand-canvas"
         >
           {isReddit && !bookmark.imageUrl ? (
             <RedditPreviewBox bookmark={bookmark} hostname={hostname} />
           ) : (
             <>
               {imageStatus === "loading" && (
-                <div className="absolute inset-0 flex animate-pulse items-center justify-center bg-gray-50/50">
+                <div className="absolute inset-0 flex min-h-[160px] animate-pulse items-center justify-center bg-gray-50/50">
                   <Clock className="h-5 w-5 animate-spin text-gray-400" />
                 </div>
               )}
@@ -166,7 +166,7 @@ export function MoodboardCard({
                   onLoad={() => setImageStatus("loaded")}
                   onError={handleImageError}
                   className={cn(
-                    "h-auto max-h-[260px] w-full max-w-full object-contain transition-opacity duration-300",
+                    "block h-auto max-h-[320px] w-full object-contain transition-opacity duration-300",
                     imageStatus === "loaded" ? "opacity-100" : "opacity-0"
                   )}
                 />
@@ -175,7 +175,7 @@ export function MoodboardCard({
               {imageStatus === "error" && (
                 <div
                   className={cn(
-                    "relative flex h-full min-h-[160px] w-full flex-col items-center justify-center p-4",
+                    "relative flex min-h-[140px] w-full flex-col items-center justify-center p-4",
                     color.bg
                   )}
                 >
