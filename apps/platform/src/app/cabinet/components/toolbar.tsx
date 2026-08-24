@@ -156,7 +156,7 @@ export function Toolbar({
   }
 
   return (
-    <div className="flex-col justify-between gap-3 rounded-none bg-white p-3 shadow-none sm:flex-row sm:items-center sm:p-3.5">
+    <div className="flex flex-col justify-between gap-3 rounded-none border border-brand-border bg-white p-3 shadow-none sm:flex-row sm:items-center sm:p-3.5">
       <div className="flex w-full flex-col gap-2.5 sm:flex-1 sm:flex-row sm:items-center sm:gap-3">
         {/* Mobile Filter Button (visible only on < md) */}
         <div className="flex items-center gap-2 md:hidden">
