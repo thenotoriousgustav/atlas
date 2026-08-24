@@ -70,7 +70,7 @@ export class RedditProvider implements BookmarkEnrichmentProvider {
 
         const description = post.selftext
           ? post.selftext.slice(0, 300)
-          : `r/${post.subreddit} • Posted by u/${post.author} • ${post.score} points • ${post.num_comments} comments`;
+          : undefined;
 
         let contentType: BookmarkContentType = BookmarkContentType.SOCIAL_POST;
         if (rawPostType === 'image' || rawPostType === 'gallery') {
@@ -142,7 +142,7 @@ export class RedditProvider implements BookmarkEnrichmentProvider {
       provider: BookmarkProvider.REDDIT,
       contentType: BookmarkContentType.SOCIAL_POST,
       title: fallbackTitle,
-      description: extracted.description || `r/${subreddit}`,
+      description: extracted.description || undefined,
       imageUrl: extracted.imageUrl,
       siteName: 'Reddit',
       faviconUrl: 'https://www.redditstatic.com/shreddit/assets/favicon/192x192.png',

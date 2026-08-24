@@ -30,25 +30,20 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
     .replace(new RegExp(`\\s*:\\s*(r\\/)?${subredditClean}$`, "i"), "")
     .trim()
 
-  const isGenericDescription = (desc?: string) => {
-    if (!desc) return true
-    const lower = desc.toLowerCase().trim()
-    if (lower.startsWith("r/") && !lower.includes(" ")) return true
-    if (
-      lower.startsWith("posted by u/") &&
-      lower.endsWith("reddit") &&
-      lower.length < 50
-    ) {
-      return true
-    }
-    return false
+  // Clean description / selftext: ignore generic strings and 'Posted by'
+  let rawSelftext = ""
+  if (
+    bookmark.description &&
+    !bookmark.description.toLowerCase().includes("posted by") &&
+    !bookmark.description.startsWith("r/")
+  ) {
+    rawSelftext = bookmark.description
+  } else if (
+    metadata.post?.selftext &&
+    !metadata.post.selftext.toLowerCase().includes("posted by")
+  ) {
+    rawSelftext = metadata.post.selftext
   }
-
-  // Clean description / selftext
-  let rawSelftext =
-    bookmark.description && !isGenericDescription(bookmark.description)
-      ? bookmark.description
-      : metadata.post?.selftext || ""
 
   return (
     <div className="relative flex min-h-[140px] w-full flex-col justify-between overflow-hidden border-b border-brand-border bg-white p-4 text-neutral-900 select-none sm:p-5">
@@ -76,8 +71,8 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
 
         {/* Post Body Snippet / Selftext with bottom fade */}
         {rawSelftext ? (
-          <div className="relative mt-2 max-h-24 overflow-hidden">
-            <p className="line-clamp-4 text-xs leading-relaxed font-normal text-neutral-600 sm:text-[13px]">
+          <div className="relative mt-2.5 max-h-24 overflow-hidden">
+            <p className="line-clamp-4 text-xs leading-relaxed font-normal text-neutral-600 sm:text-[13px] whitespace-pre-line">
               {rawSelftext}
             </p>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-white to-transparent" />

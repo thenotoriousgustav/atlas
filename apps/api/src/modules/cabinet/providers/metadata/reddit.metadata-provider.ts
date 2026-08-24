@@ -40,80 +40,7 @@ export class RedditMetadataProvider implements MetadataProvider {
         dynamicCardUrl = `https://share.redd.it/preview/post/${postId}`
       }
 
-      // 2. Try Reddit RSS Atom Feed (.rss) to extract full post selftext description & title
-      try {
-        const cleanPath = urlObj.pathname.replace(/\/+$/, "")
-        const rssUrl = `https://www.reddit.com${cleanPath}/.rss`
-        const rssRes = await fetch(rssUrl, {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            Accept: "application/atom+xml,text/xml,application/xml,*/*",
-          },
-          signal: AbortSignal.timeout(4000),
-        })
-
-        if (rssRes.ok) {
-          const xml = await rssRes.text()
-          const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/i)
-          if (entryMatch) {
-            const entry = entryMatch[1]
-            const rawPostTitle = entry.match(/<title>([^<]+)<\/title>/i)?.[1]
-            const author = entry.match(/<author>\s*<name>([^<]+)<\/name>/i)?.[1]
-            const rawContent = entry.match(
-              /<content[^>]*>([\s\S]*?)<\/content>/i
-            )?.[1]
-
-            if (rawPostTitle) {
-              const title = decodeHtmlEntities(rawPostTitle.trim())
-              let description: string | undefined = undefined
-
-              if (rawContent) {
-                const decodedContent = decodeHtmlEntities(rawContent)
-                const mdMatch =
-                  decodedContent.match(
-                    /<!-- SC_OFF -->([\s\S]*?)<!-- SC_ON -->/i
-                  ) ||
-                  decodedContent.match(/<div class="md">([\s\S]*?)<\/div>/i)
-
-                if (mdMatch) {
-                  const cleanMd = mdMatch[1]
-                    .replace(/<[^>]+>/g, " ")
-                    .replace(/\s+/g, " ")
-                    .trim()
-                  if (cleanMd) {
-                    description = cleanMd
-                  }
-                }
-              }
-
-              if (!description && author) {
-                description = `Posted by ${author} on Reddit`
-              }
-
-              const mediaThumbnail =
-                entry.match(
-                  /<media:thumbnail[^>]+url=["']([^"']+)["']/i
-                )?.[1] ||
-                entry.match(
-                  /<link[^>]+rel=["']enclosure["'][^>]+href=["']([^"']+)["']/i
-                )?.[1]
-
-              return {
-                title,
-                description,
-                imageUrl: mediaThumbnail
-                  ? decodeHtmlEntities(mediaThumbnail)
-                  : dynamicCardUrl,
-              }
-            }
-          }
-        }
-      } catch (rssErr) {
-        this.logger.debug(`Reddit RSS error for ${url}: ${rssErr}`)
-      }
-
-      // 3. Try Reddit oEmbed endpoint
+      // 2. Try Reddit oEmbed endpoint
       try {
         const oembedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`
         const oembedRes = await fetch(oembedUrl, {
@@ -132,10 +59,7 @@ export class RedditMetadataProvider implements MetadataProvider {
           const author = oembedData.author_name
           const provider = oembedData.provider_name || "Reddit"
 
-          let description: string | undefined
-          if (author) {
-            description = `Posted by u/${author} on ${provider}`
-          }
+          const description = undefined
 
           const imageUrl =
             dynamicCardUrl ||
@@ -153,6 +77,72 @@ export class RedditMetadataProvider implements MetadataProvider {
         }
       } catch (oembedErr) {
         this.logger.debug(`Reddit oEmbed error for ${url}: ${oembedErr}`)
+      }
+
+      // 3. Try Reddit JSON endpoint (.json)
+      try {
+        let jsonUrl = url
+        if (!jsonUrl.includes(".json")) {
+          const cleanPath = urlObj.pathname.replace(/\/+$/, "")
+          jsonUrl = `https://www.reddit.com${cleanPath}.json?raw_json=1`
+        }
+
+        const jsonRes = await fetch(jsonUrl, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (compatible; AtlasCabinetBot/1.0; +https://atlas.app)",
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(4000),
+        })
+
+        if (jsonRes.ok) {
+          const postDataArray = await jsonRes.json()
+          const post =
+            Array.isArray(postDataArray) &&
+            postDataArray[0]?.data?.children?.[0]?.data
+              ? postDataArray[0].data.children[0].data
+              : postDataArray?.data?.children?.[0]?.data
+
+          if (post) {
+            const subreddit =
+              post.subreddit_name_prefixed || `r/${post.subreddit}`
+            const rawTitle = post.title
+              ? `${post.title} : ${subreddit}`
+              : subreddit
+            const title = decodeHtmlEntities(rawTitle.trim())
+            const description = post.selftext
+              ? decodeHtmlEntities(post.selftext.slice(0, 300).trim())
+              : undefined
+
+            let imageUrl = dynamicCardUrl
+            if (!imageUrl && post.preview?.images?.[0]?.source?.url) {
+              imageUrl = decodeHtmlEntities(
+                post.preview.images[0].source.url.replace(/&amp;/g, "&")
+              )
+            } else if (
+              !imageUrl &&
+              post.url_overridden_by_dest &&
+              /\.(jpg|jpeg|png|webp|gif)/i.test(post.url_overridden_by_dest)
+            ) {
+              imageUrl = post.url_overridden_by_dest
+            } else if (
+              !imageUrl &&
+              post.thumbnail &&
+              post.thumbnail.startsWith("http")
+            ) {
+              imageUrl = post.thumbnail
+            }
+
+            return {
+              title,
+              description,
+              imageUrl,
+            }
+          }
+        }
+      } catch (jsonErr) {
+        this.logger.debug(`Reddit JSON error for ${url}: ${jsonErr}`)
       }
 
       // 4. Fallback to generic extractor with dynamic Reddit card
