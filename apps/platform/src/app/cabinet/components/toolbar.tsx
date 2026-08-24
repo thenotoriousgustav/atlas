@@ -156,11 +156,8 @@ export function Toolbar({
   }
 
   return (
-    <Item
-      variant="outline"
-      className="flex-col justify-between gap-3 rounded-none bg-white p-3 shadow-none sm:flex-row sm:items-center sm:p-3.5"
-    >
-      <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 sm:flex-1">
+    <div className="flex-col justify-between gap-3 rounded-none bg-white p-3 shadow-none sm:flex-row sm:items-center sm:p-3.5">
+      <div className="flex w-full flex-col gap-2.5 sm:flex-1 sm:flex-row sm:items-center sm:gap-3">
         {/* Mobile Filter Button (visible only on < md) */}
         <div className="flex items-center gap-2 md:hidden">
           <Button
@@ -175,7 +172,7 @@ export function Toolbar({
               <span>Filters & Folders</span>
             </span>
             {activeFilterLabel && (
-              <span className="rounded-none bg-brand-charcoal px-1.5 py-0.5 text-[9px] font-bold text-white uppercase truncate max-w-[120px]">
+              <span className="max-w-[120px] truncate rounded-none bg-brand-charcoal px-1.5 py-0.5 text-[9px] font-bold text-white uppercase">
                 {activeFilterLabel}
               </span>
             )}
@@ -186,7 +183,7 @@ export function Toolbar({
               resetBookmarkForm()
               setIsBookmarkModalOpen(true)
             }}
-            className="flex h-9 shrink-0 items-center gap-1 rounded-none bg-brand-charcoal px-3 text-xs font-semibold uppercase text-white hover:bg-brand-charcoal/90"
+            className="flex h-9 shrink-0 items-center gap-1 rounded-none bg-brand-charcoal px-3 text-xs font-semibold text-white uppercase hover:bg-brand-charcoal/90"
           >
             <Plus className="size-4" />
             Add
@@ -265,7 +262,7 @@ export function Toolbar({
               resetBookmarkForm()
               setIsBookmarkModalOpen(true)
             }}
-            className="hidden h-9 shrink-0 items-center gap-1.5 rounded-none bg-brand-charcoal px-4 text-xs font-semibold uppercase text-white hover:bg-brand-charcoal/90 sm:flex sm:w-auto"
+            className="hidden h-9 shrink-0 items-center gap-1.5 rounded-none bg-brand-charcoal px-4 text-xs font-semibold text-white uppercase hover:bg-brand-charcoal/90 sm:flex sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Add Bookmark
@@ -277,7 +274,9 @@ export function Toolbar({
             <DialogTitle>
               {bookmarkToEdit ? "Edit Bookmark" : "New Bookmark"}
             </DialogTitle>
-            <DialogDescription>Save link with auto-extracted metadata</DialogDescription>
+            <DialogDescription>
+              Save link with auto-extracted metadata
+            </DialogDescription>
           </DialogHeader>
 
           <form
@@ -309,7 +308,7 @@ export function Toolbar({
                           type="url"
                           className="flex-1"
                         />
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex shrink-0 items-center gap-1.5">
                           <Button
                             type="button"
                             variant="outline"
@@ -592,6 +591,6 @@ export function Toolbar({
           </form>
         </DialogContent>
       </Dialog>
-    </Item>
+    </div>
   )
 }

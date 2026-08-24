@@ -2,7 +2,9 @@
   "extends": "@atlas/typescript-config/nestjs.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "declaration": false,
+    "declarationMap": false
   },
   "include": ["src/**/*", "prisma/**/*", "test/**/*"]
 }
