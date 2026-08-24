@@ -78,7 +78,9 @@ export function MoodboardCard({
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
   const isReddit =
-    bookmark.provider === "REDDIT" || hostname.includes("reddit.com")
+    bookmark.provider === "REDDIT" ||
+    hostname.includes("reddit.com") ||
+    hostname.includes("redd.it")
   const color = getPastelColor(hostname)
 
   const rawImageUrl = bookmark.imageUrl || ""
@@ -149,7 +151,7 @@ export function MoodboardCard({
           rel="noreferrer"
           className="group/header relative block w-full bg-brand-canvas"
         >
-          {isReddit && !bookmark.imageUrl ? (
+          {isReddit ? (
             <RedditPreviewBox bookmark={bookmark} hostname={hostname} />
           ) : (
             <>
