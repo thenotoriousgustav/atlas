@@ -59,8 +59,7 @@ function getProxiedImageUrl(imageUrl?: string | null): string {
   ) {
     return imageUrl
   }
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
   return `${apiBase}/v1/bookmarks/proxy-image?url=${encodeURIComponent(imageUrl)}`
 }
 
@@ -78,7 +77,8 @@ export function MoodboardCard({
   onToggleSelect,
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
-  const isReddit = bookmark.provider === "REDDIT" || hostname.includes("reddit.com")
+  const isReddit =
+    bookmark.provider === "REDDIT" || hostname.includes("reddit.com")
   const color = getPastelColor(hostname)
 
   const rawImageUrl = bookmark.imageUrl || ""
@@ -133,7 +133,7 @@ export function MoodboardCard({
             "absolute top-2.5 left-2.5 z-20 border border-brand-border bg-white p-px shadow-xs transition-opacity",
             isSelected
               ? "opacity-100"
-              : "opacity-80 sm:opacity-0 sm:group-hover/card:opacity-100 focus-within:opacity-100"
+              : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100"
           )}
         >
           <Checkbox
@@ -308,10 +308,13 @@ export function MoodboardCard({
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    className="size-8 sm:size-7 text-brand-muted hover:text-brand-charcoal"
+                    className="size-8 text-brand-muted hover:text-brand-charcoal sm:size-7"
                     title="Bookmark actions"
                   >
-                    <DotsThreeVertical className="size-4 sm:size-3.5" weight="bold" />
+                    <DotsThreeVertical
+                      className="size-4 sm:size-3.5"
+                      weight="bold"
+                    />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44 rounded-none">
