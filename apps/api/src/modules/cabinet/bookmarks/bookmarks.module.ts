@@ -9,7 +9,6 @@ import { EnrichmentProcessor } from '../workers/enrichment.processor';
 import { GenericMetadataProvider } from '../providers/metadata/generic.metadata-provider';
 import { RedditMetadataProvider } from '../providers/metadata/reddit.metadata-provider';
 import { TwitterMetadataProvider } from '../providers/metadata/twitter.metadata-provider';
-import { ThreadsMetadataProvider } from '../providers/metadata/threads.metadata-provider';
 
 @Module({
   imports: [
@@ -28,7 +27,6 @@ import { ThreadsMetadataProvider } from '../providers/metadata/threads.metadata-
     GenericMetadataProvider,
     RedditMetadataProvider,
     TwitterMetadataProvider,
-    ThreadsMetadataProvider,
   ],
   exports: [BookmarksService, MetadataService],
 })
