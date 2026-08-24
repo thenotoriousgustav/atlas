@@ -5,7 +5,6 @@ import {
 } from "../providers/metadata/metadata-provider.interface"
 import { RedditMetadataProvider } from "../providers/metadata/reddit.metadata-provider"
 import { TwitterMetadataProvider } from "../providers/metadata/twitter.metadata-provider"
-import { ThreadsMetadataProvider } from "../providers/metadata/threads.metadata-provider"
 import { GenericMetadataProvider } from "../providers/metadata/generic.metadata-provider"
 
 export type { ExtractedMetadata } from "../providers/metadata/metadata-provider.interface"
@@ -18,15 +17,10 @@ export class MetadataService {
   constructor(
     private readonly redditProvider: RedditMetadataProvider,
     private readonly twitterProvider: TwitterMetadataProvider,
-    private readonly threadsProvider: ThreadsMetadataProvider,
     private readonly genericProvider: GenericMetadataProvider
   ) {
     // ponytail: register specialized providers in prioritized evaluation order
-    this.specializedProviders = [
-      this.redditProvider,
-      this.twitterProvider,
-      this.threadsProvider,
-    ]
+    this.specializedProviders = [this.redditProvider, this.twitterProvider]
   }
 
   async extract(url: string): Promise<ExtractedMetadata> {
