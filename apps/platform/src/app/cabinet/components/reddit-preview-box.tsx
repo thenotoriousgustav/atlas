@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 
 interface RedditPreviewBoxProps {
   bookmark: any
@@ -8,7 +8,6 @@ interface RedditPreviewBoxProps {
 }
 
 export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
-  const [iconError, setIconError] = useState(false)
   const metadata = bookmark.metadata?.reddit || {}
 
   function extractSubreddit(url: string): string {
@@ -21,12 +20,14 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
     }
   }
 
-  const subreddit = metadata.subreddit?.name || extractSubreddit(bookmark.url)
+  const rawSubreddit = metadata.subreddit?.name || extractSubreddit(bookmark.url)
+  const subredditClean = rawSubreddit.replace(/^r\//i, "")
+  const displaySubreddit = `r/${subredditClean}`
 
   // Clean post title: remove suffix like " : r/indotech" or " : indotech" if present
   let rawTitle = metadata.post?.title || bookmark.title || "Reddit Post"
   const cleanTitle = rawTitle
-    .replace(new RegExp(`\\s*:\\s*(r\\/)?${subreddit}$`, "i"), "")
+    .replace(new RegExp(`\\s*:\\s*(r\\/)?${subredditClean}$`, "i"), "")
     .trim()
 
   // Clean description / selftext: ignore generic strings
@@ -37,43 +38,23 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
       ? bookmark.description
       : metadata.post?.selftext || ""
 
-  // Subreddit community icon attempt (Reddit standard icon url)
-  const communityIcon = `https://styles.redditmedia.com/t5_${subreddit}/styles/communityIcon_default.png`
-
   return (
     <div className="relative flex min-h-[140px] w-full flex-col justify-between overflow-hidden border-b border-brand-border bg-white p-4 text-neutral-900 select-none sm:p-5">
       <div>
-        {/* Subreddit Header + Reddit Orange Logo */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Subreddit Info */}
-          <div className="flex min-w-0 items-center gap-2.5">
-            {!iconError ? (
-              <img
-                src={communityIcon}
-                alt={subreddit}
-                onError={() => setIconError(true)}
-                className="size-6 shrink-0 rounded-full border border-neutral-100 object-cover shadow-2xs"
-              />
-            ) : (
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 text-[10px] font-bold text-white shadow-2xs">
-                {subreddit.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="truncate text-[13px] font-semibold tracking-tight text-neutral-800">
-              {subreddit}
-            </span>
-          </div>
-
-          {/* Official Reddit Orange Icon */}
-          <div className="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-[#FF4500] shadow-2xs">
+        {/* Header: Reddit Orange Logo + r/subreddit */}
+        <div className="flex items-center gap-2">
+          <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-[#FF4500] shadow-2xs">
             <svg
-              className="size-4 fill-white"
+              className="size-3.5 fill-white"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.196-.491.956 0 1.733.777 1.733 1.733 0 .658-.363 1.226-.897 1.52.01.144.017.29.017.435 0 3.057-3.55 5.534-7.931 5.534-4.382 0-7.932-2.477-7.932-5.534 0-.14.006-.28.016-.423C3.655 14.85 3.3 14.288 3.3 13.636c0-.956.777-1.733 1.733-1.733.468 0 .89.183 1.198.494 1.192-.857 2.846-1.418 4.668-1.489l.915-4.29 3.197.674a1.25 1.25 0 0 1 1.25-.993zm-8.878 7.37a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm6.368 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm-5.067 3.99a.53.53 0 0 0-.084.743A5.452 5.452 0 0 0 12 17.8c1.558 0 2.91-.703 3.653-1.953a.53.53 0 0 0-.898-.564c-.58.972-1.637 1.517-2.755 1.517-1.118 0-2.175-.545-2.755-1.517a.53.53 0 0 0-.743-.083z" />
             </svg>
           </div>
+          <span className="truncate text-[13px] font-semibold tracking-tight text-neutral-800">
+            {displaySubreddit}
+          </span>
         </div>
 
         {/* Post Title */}
