@@ -36,6 +36,8 @@ import {
   Cards,
   Sparkle,
   CaretDown,
+  Faders,
+  ClipboardText,
 } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@atlas/api-client"
 import { Spinner } from "@atlas/ui/components/spinner"
@@ -79,6 +81,8 @@ interface ToolbarProps {
   onViewModeChange: (mode: "list" | "moodboard") => void
   columnCount?: number
   onColumnCountChange?: (count: number) => void
+  onOpenMobileFilters?: () => void
+  activeFilterLabel?: string
 }
 
 export function Toolbar({
@@ -95,6 +99,8 @@ export function Toolbar({
   onViewModeChange,
   columnCount = 3,
   onColumnCountChange = () => {},
+  onOpenMobileFilters,
+  activeFilterLabel,
 }: ToolbarProps) {
   const [isScraping, setIsScraping] = React.useState(false)
   const [tagInputValue, setTagInputValue] = React.useState("")
@@ -104,6 +110,7 @@ export function Toolbar({
     return tags.filter((t: any) => t.name.toLowerCase().includes(query))
   }, [tags, tagInputValue])
   const anchorRef = useComboboxAnchor()
+
   const handleScrape = async (url: string) => {
     if (!url) return
     let targetUrl = url.trim()
@@ -133,12 +140,60 @@ export function Toolbar({
     }
   }
 
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard?.readText) {
+        const text = await navigator.clipboard.readText()
+        if (text) {
+          const trimmed = text.trim()
+          bookmarkForm.setFieldValue("url", trimmed)
+          handleScrape(trimmed)
+        }
+      }
+    } catch (err) {
+      console.warn("Clipboard access denied or unavailable", err)
+    }
+  }
+
   return (
     <Item
       variant="outline"
-      className="flex-col justify-between gap-3 rounded-none bg-white p-3.5 shadow-none sm:flex-row"
+      className="flex-col justify-between gap-3 rounded-none bg-white p-3 shadow-none sm:flex-row sm:items-center sm:p-3.5"
     >
-      <div className="flex w-full items-center gap-3 sm:flex-1">
+      <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 sm:flex-1">
+        {/* Mobile Filter Button (visible only on < md) */}
+        <div className="flex items-center gap-2 md:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenMobileFilters}
+            className="flex h-9 flex-1 items-center justify-between gap-2 rounded-none border border-brand-border bg-white px-3 font-mono text-xs font-semibold text-brand-charcoal hover:bg-brand-canvas"
+          >
+            <span className="flex items-center gap-1.5">
+              <Faders className="size-4 text-brand-muted" />
+              <span>Filters & Folders</span>
+            </span>
+            {activeFilterLabel && (
+              <span className="rounded-none bg-brand-charcoal px-1.5 py-0.5 text-[9px] font-bold text-white uppercase truncate max-w-[120px]">
+                {activeFilterLabel}
+              </span>
+            )}
+          </Button>
+
+          <Button
+            onClick={() => {
+              resetBookmarkForm()
+              setIsBookmarkModalOpen(true)
+            }}
+            className="flex h-9 shrink-0 items-center gap-1 rounded-none bg-brand-charcoal px-3 text-xs font-semibold uppercase text-white hover:bg-brand-charcoal/90"
+          >
+            <Plus className="size-4" />
+            Add
+          </Button>
+        </div>
+
+        {/* Search Input */}
         <InputGroup className="h-9 w-full sm:max-w-md">
           <InputGroupInput
             type="text"
@@ -152,53 +207,55 @@ export function Toolbar({
           </InputGroupAddon>
         </InputGroup>
 
-        {/* View Mode Toggle Group */}
-        <ButtonGroup className="shrink-0 border border-brand-border bg-brand-charcoal/5 p-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => onViewModeChange("moodboard")}
-                variant={viewMode === "moodboard" ? "default" : "ghost"}
-                size="icon-xs"
-                className="size-7"
-              >
-                <SquaresFour className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Moodboard View</TooltipContent>
-          </Tooltip>
+        {/* View Mode & Column Toggles */}
+        <div className="flex items-center justify-between gap-2 sm:justify-start">
+          <ButtonGroup className="shrink-0 border border-brand-border bg-brand-charcoal/5 p-0.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => onViewModeChange("moodboard")}
+                  variant={viewMode === "moodboard" ? "default" : "ghost"}
+                  size="icon-xs"
+                  className="size-7"
+                >
+                  <SquaresFour className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Moodboard View</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => onViewModeChange("list")}
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="icon-xs"
-                className="size-7"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>List View</TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => onViewModeChange("list")}
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="icon-xs"
+                  className="size-7"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>List View</TooltipContent>
+            </Tooltip>
+          </ButtonGroup>
 
-        {viewMode === "moodboard" && (
-          <Select
-            value={columnCount.toString()}
-            onValueChange={(val) => onColumnCountChange(parseInt(val, 10))}
-          >
-            <SelectTrigger className="h-8 w-24 rounded-none border-brand-border bg-white px-2 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
-              <SelectValue placeholder="COLUMNS" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 Col</SelectItem>
-              <SelectItem value="2">2 Cols</SelectItem>
-              <SelectItem value="3">3 Cols</SelectItem>
-              <SelectItem value="4">4 Cols</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
+          {viewMode === "moodboard" && (
+            <Select
+              value={columnCount.toString()}
+              onValueChange={(val) => onColumnCountChange(parseInt(val, 10))}
+            >
+              <SelectTrigger className="h-8 w-24 rounded-none border-brand-border bg-white px-2 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
+                <SelectValue placeholder="COLUMNS" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 Col</SelectItem>
+                <SelectItem value="2">2 Cols</SelectItem>
+                <SelectItem value="3">3 Cols</SelectItem>
+                <SelectItem value="4">4 Cols</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       <Dialog open={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen}>
@@ -208,19 +265,19 @@ export function Toolbar({
               resetBookmarkForm()
               setIsBookmarkModalOpen(true)
             }}
-            className="flex h-9 w-full items-center gap-1.5 bg-brand-charcoal text-xs font-semibold uppercase hover:bg-brand-charcoal/90 sm:w-auto"
+            className="hidden h-9 shrink-0 items-center gap-1.5 rounded-none bg-brand-charcoal px-4 text-xs font-semibold uppercase text-white hover:bg-brand-charcoal/90 sm:flex sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Add Bookmark
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl rounded-none sm:w-full">
           <DialogHeader>
             <DialogTitle>
               {bookmarkToEdit ? "Edit Bookmark" : "New Bookmark"}
             </DialogTitle>
-            <DialogDescription>Resource collection</DialogDescription>
+            <DialogDescription>Save link with auto-extracted metadata</DialogDescription>
           </DialogHeader>
 
           <form
@@ -240,7 +297,7 @@ export function Toolbar({
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>URL</FieldLabel>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row">
                         <Input
                           id={field.name}
                           name={field.name}
@@ -252,25 +309,37 @@ export function Toolbar({
                           type="url"
                           className="flex-1"
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={!field.state.value || isScraping}
-                          onClick={() => handleScrape(field.state.value)}
-                          className="flex h-8 shrink-0 items-center gap-1.5 border border-brand-border px-3 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas"
-                        >
-                          {isScraping ? (
-                            <>
-                              <Spinner className="h-3.5 w-3.5" />
-                              Scraping...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkle className="h-3.5 w-3.5" />
-                              Auto Fill
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handlePasteFromClipboard}
+                            className="flex h-9 flex-1 items-center justify-center gap-1 rounded-none border border-brand-border px-2.5 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas sm:flex-initial"
+                            title="Paste from clipboard and auto-fill"
+                          >
+                            <ClipboardText className="size-3.5" />
+                            Paste
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={!field.state.value || isScraping}
+                            onClick={() => handleScrape(field.state.value)}
+                            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-none border border-brand-border px-3 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas sm:flex-initial"
+                          >
+                            {isScraping ? (
+                              <>
+                                <Spinner className="size-3.5" />
+                                Scraping...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkle className="size-3.5" />
+                                Auto Fill
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                       {isInvalid && (
                         <FieldError

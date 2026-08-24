@@ -8,7 +8,23 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@atlas/ui/components/tooltip"
-import { Star, Archive, PencilSimple, Trash, Copy } from "@phosphor-icons/react"
+import {
+  Star,
+  Archive,
+  PencilSimple,
+  Trash,
+  Copy,
+  DotsThreeVertical,
+  LinkSimple,
+} from "@phosphor-icons/react"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@atlas/ui/components/dropdown-menu"
+import { toast } from "@atlas/ui/components/sonner"
 import {
   Sortable,
   SortableContent,
@@ -43,6 +59,12 @@ export function BookmarkListView({
   getHostname,
   onReorder,
 }: BookmarkListViewProps) {
+  const handleCopyUrl = (url: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard?.writeText(url)
+    toast.success("URL copied to clipboard")
+  }
+
   return (
     <Sortable
       value={bookmarks}
@@ -60,17 +82,17 @@ export function BookmarkListView({
               value={bookmark.id}
               asHandle
               className={cn(
-                "group/item flex items-center justify-between gap-4 bg-white px-3 py-2.5 text-xs transition-all hover:bg-brand-charcoal/5",
+                "group/item flex items-center justify-between gap-2.5 bg-white px-2.5 py-2.5 text-xs transition-all hover:bg-brand-charcoal/5 sm:gap-4 sm:px-3",
                 isSelected && "bg-brand-charcoal/5"
               )}
             >
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                 <div
                   className={cn(
                     "shrink-0 transition-opacity",
                     isSelected
                       ? "opacity-100"
-                      : "opacity-0 group-hover/item:opacity-100 focus-within:opacity-100"
+                      : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100"
                   )}
                 >
                   <Checkbox
@@ -79,7 +101,7 @@ export function BookmarkListView({
                     className="rounded-none border-brand-border data-[state=checked]:border-brand-charcoal data-[state=checked]:bg-brand-charcoal"
                   />
                 </div>
-                <span className="flex min-w-0 items-center gap-2">
+                <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
                   <img
                     src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
                     alt=""
@@ -92,7 +114,7 @@ export function BookmarkListView({
                     href={bookmark.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="shrink-0 truncate font-semibold text-brand-charcoal hover:underline"
+                    className="truncate font-semibold text-brand-charcoal hover:underline"
                   >
                     {bookmark.title || bookmark.url}
                   </a>
@@ -103,7 +125,7 @@ export function BookmarkListView({
                 {bookmark.folder && (
                   <Badge
                     variant="outline"
-                    className="bg-brand-green-bg text-brand-green-text shrink-0 border-none px-1.5 py-0.5 font-mono text-[9px] uppercase"
+                    className="bg-brand-green-bg text-brand-green-text hidden shrink-0 rounded-none border-none px-1.5 py-0.5 font-mono text-[9px] uppercase sm:inline-flex"
                   >
                     {bookmark.folder.name}
                   </Badge>
@@ -111,7 +133,7 @@ export function BookmarkListView({
                 {bookmark.status === "BROKEN" && (
                   <Badge
                     variant="outline"
-                    className="shrink-0 border-none bg-red-50 px-1.5 py-0.5 font-mono text-[9px] text-red-600 uppercase"
+                    className="shrink-0 rounded-none border-none bg-red-50 px-1.5 py-0.5 font-mono text-[9px] text-red-600 uppercase"
                   >
                     Broken
                   </Badge>
@@ -119,7 +141,7 @@ export function BookmarkListView({
                 {bookmark.status === "REDIRECTED" && (
                   <Badge
                     variant="outline"
-                    className="shrink-0 border-none bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 uppercase"
+                    className="shrink-0 rounded-none border-none bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 uppercase"
                     title="URL updated automatically to new address"
                   >
                     Redirected
@@ -127,15 +149,15 @@ export function BookmarkListView({
                 )}
               </div>
 
-              <div className="flex shrink-0 items-center gap-4">
+              <div className="flex shrink-0 items-center gap-2 sm:gap-4">
                 {/* Tags */}
                 {bookmark.tags && bookmark.tags.length > 0 && (
-                  <div className="hidden items-center gap-1 sm:flex">
+                  <div className="hidden items-center gap-1 md:flex">
                     {bookmark.tags.slice(0, 3).map((tag: any) => (
                       <span
                         key={tag.id}
                         onClick={() => onSelectTag(tag.name)}
-                        className="bg-brand-blue-bg text-brand-blue-text shrink-0 cursor-pointer px-1.5 py-0.5 font-mono text-[9px] hover:opacity-80"
+                        className="bg-brand-blue-bg text-brand-blue-text shrink-0 cursor-pointer rounded-none px-1.5 py-0.5 font-mono text-[9px] hover:opacity-80"
                       >
                         #{tag.name}
                       </span>
@@ -160,10 +182,11 @@ export function BookmarkListView({
                         variant="ghost"
                         size="icon-xs"
                         className="size-7"
+                        title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}
                       >
                         <Star
                           className={cn(
-                            "h-3.5 w-3.5",
+                            "size-3.5",
                             bookmark.isFavorite
                               ? "text-[#956400]"
                               : "text-brand-muted"
@@ -175,69 +198,61 @@ export function BookmarkListView({
                     <TooltipContent>Favorite</TooltipContent>
                   </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button
-                        onClick={() => onToggleArchive(bookmark)}
                         variant="ghost"
                         size="icon-xs"
-                        className="size-7"
+                        className="size-7 text-brand-muted hover:text-brand-charcoal"
+                        title="More actions"
                       >
-                        <Archive
-                          className={cn(
-                            "h-3.5 w-3.5",
-                            bookmark.isArchived
-                              ? "text-brand-blue-text"
-                              : "text-brand-muted"
-                          )}
-                          weight={bookmark.isArchived ? "fill" : "regular"}
-                        />
+                        <DotsThreeVertical className="size-3.5" weight="bold" />
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Archive</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => onDuplicateBookmark(bookmark)}
-                        variant="ghost"
-                        size="icon-xs"
-                        className="size-7"
-                      >
-                        <Copy className="h-3.5 w-3.5 text-brand-muted" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Duplicate</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-44 rounded-none"
+                    >
+                      <DropdownMenuItem
                         onClick={() => onEditBookmark(bookmark)}
-                        variant="ghost"
-                        size="icon-xs"
-                        className="size-7"
+                        className="flex items-center gap-2 text-xs"
                       >
-                        <PencilSimple className="h-3.5 w-3.5 text-brand-muted" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Edit</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
+                        <PencilSimple className="size-3.5" />
+                        <span>Edit Details</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => handleCopyUrl(bookmark.url, e)}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <LinkSimple className="size-3.5" />
+                        <span>Copy Link</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDuplicateBookmark(bookmark)}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <Copy className="size-3.5" />
+                        <span>Duplicate</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onToggleArchive(bookmark)}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <Archive className="size-3.5" />
+                        <span>
+                          {bookmark.isArchived ? "Unarchive" : "Archive"}
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
                         onClick={() => onDeleteBookmark(bookmark.id)}
-                        variant="ghost"
-                        size="icon-xs"
-                        className="hover:bg-brand-red-bg hover:text-brand-red-text size-7"
+                        className="flex items-center gap-2 text-xs text-red-600 focus:bg-red-50 focus:text-red-700"
                       >
-                        <Trash className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Delete</TooltipContent>
-                  </Tooltip>
+                        <Trash className="size-3.5" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </SortableItem>

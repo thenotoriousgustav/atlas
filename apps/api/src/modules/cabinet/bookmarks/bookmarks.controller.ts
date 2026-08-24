@@ -14,6 +14,7 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { Public } from '../../../common/decorators/public.decorator';
 import { BookmarksService } from './bookmarks.service';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
@@ -27,6 +28,14 @@ import { ReorderBookmarksDto } from './dto/reorder-bookmarks.dto';
 @UseGuards(JwtAuthGuard)
 export class BookmarksController {
   constructor(private readonly bookmarksService: BookmarksService) {}
+
+  @Public()
+  @Get('proxy-image')
+  @ApiOperation({ summary: 'Proxy external image to bypass CORS and hotlink protection' })
+  @ApiQuery({ name: 'url', required: true })
+  async proxyImage(@Query('url') url: string, @Res() res: Response) {
+    return this.bookmarksService.proxyImage(url, res);
+  }
 
   @Get('scrape')
   @ApiOperation({ summary: 'Scrape metadata and generate tags for a URL' })

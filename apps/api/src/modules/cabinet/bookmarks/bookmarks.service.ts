@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, Inject, forwardRef, Logger } from '@nest
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { BookmarkProvider, MetadataStatus } from '@prisma/client';
+import { Response } from 'express';
+import axios from 'axios';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MetadataService } from '../services/metadata.service';
 import { LinkCheckerService } from '../services/link-checker.service';
@@ -522,5 +524,44 @@ export class BookmarksService {
       ),
     );
     return { success: true };
+  }
+
+  async proxyImage(imageUrl: string, res: Response) {
+    if (!imageUrl || (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://'))) {
+      return res.status(400).send('Invalid or non-HTTP image URL');
+    }
+
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: 'stream',
+        timeout: 10000,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          Referer: new URL(imageUrl).origin,
+        },
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400,
+      });
+
+      const contentType = response.headers['content-type']
+        ? String(response.headers['content-type'])
+        : 'image/jpeg';
+      const contentLength = response.headers['content-length']
+        ? String(response.headers['content-length'])
+        : undefined;
+
+      res.setHeader('Content-Type', contentType);
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength);
+      }
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, immutable');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      response.data.pipe(res);
+    } catch (error: any) {
+      return res.status(502).send(`Failed to proxy image: ${error.message}`);
+    }
   }
 }

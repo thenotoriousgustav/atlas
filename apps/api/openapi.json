@@ -207,6 +207,35 @@
         ]
       }
     },
+    "/v1/bookmarks/proxy-image": {
+      "get": {
+        "operationId": "BookmarksController_proxyImage",
+        "parameters": [
+          {
+            "name": "url",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Proxy external image to bypass CORS and hotlink protection",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/scrape": {
       "get": {
         "operationId": "BookmarksController_scrape",

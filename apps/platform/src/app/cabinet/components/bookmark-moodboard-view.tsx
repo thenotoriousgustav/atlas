@@ -17,7 +17,17 @@ import {
   Clock,
   ArrowSquareOut,
   Copy,
+  DotsThreeVertical,
+  LinkSimple,
 } from "@phosphor-icons/react"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@atlas/ui/components/dropdown-menu"
+import { toast } from "@atlas/ui/components/sonner"
 import {
   Sortable,
   SortableContent,
@@ -40,6 +50,20 @@ interface MoodboardCardProps {
   onToggleSelect: () => void
 }
 
+function getProxiedImageUrl(imageUrl?: string | null): string {
+  if (!imageUrl) return ""
+  if (
+    imageUrl.startsWith("/") ||
+    imageUrl.startsWith("blob:") ||
+    imageUrl.startsWith("data:")
+  ) {
+    return imageUrl
+  }
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+  return `${apiBase}/v1/bookmarks/proxy-image?url=${encodeURIComponent(imageUrl)}`
+}
+
 export function MoodboardCard({
   bookmark,
   onSelectTag,
@@ -57,17 +81,39 @@ export function MoodboardCard({
   const isReddit = bookmark.provider === "REDDIT" || hostname.includes("reddit.com")
   const color = getPastelColor(hostname)
 
-  const imageSrc = bookmark.imageUrl || ""
+  const rawImageUrl = bookmark.imageUrl || ""
+  const proxiedImageUrl = React.useMemo(
+    () => getProxiedImageUrl(rawImageUrl),
+    [rawImageUrl]
+  )
+  const [currentSrc, setCurrentSrc] = React.useState<string>(proxiedImageUrl)
   const [imageStatus, setImageStatus] = React.useState<
     "loading" | "loaded" | "error"
-  >(bookmark.imageUrl && !isReddit ? "loading" : "error")
+  >(rawImageUrl ? "loading" : "error")
 
   React.useEffect(() => {
-    setImageStatus(bookmark.imageUrl && !isReddit ? "loading" : "error")
-  }, [bookmark.imageUrl, isReddit])
+    const nextProxied = getProxiedImageUrl(bookmark.imageUrl)
+    setCurrentSrc(nextProxied)
+    setImageStatus(bookmark.imageUrl ? "loading" : "error")
+  }, [bookmark.imageUrl])
 
   const handleImageError = () => {
-    setImageStatus("error")
+    // If the proxied image failed, try falling back directly to raw URL before giving up
+    if (
+      currentSrc === proxiedImageUrl &&
+      rawImageUrl &&
+      proxiedImageUrl !== rawImageUrl
+    ) {
+      setCurrentSrc(rawImageUrl)
+    } else {
+      setImageStatus("error")
+    }
+  }
+
+  const handleCopyUrl = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard?.writeText(bookmark.url)
+    toast.success("URL copied to clipboard")
   }
 
   return (
@@ -80,14 +126,14 @@ export function MoodboardCard({
       )}
     >
       {/* Top Visual Image Header Container */}
-      <div className="relative aspect-16/10 w-full shrink-0 overflow-hidden border-b border-brand-border bg-brand-canvas">
+      <div className="relative flex min-h-[160px] max-h-[260px] w-full shrink-0 items-center justify-center overflow-hidden border-b border-brand-border bg-brand-canvas">
         {/* Checkbox Overlay */}
         <div
           className={cn(
             "absolute top-2.5 left-2.5 z-20 border border-brand-border bg-white p-px shadow-xs transition-opacity",
             isSelected
               ? "opacity-100"
-              : "opacity-0 group-hover/card:opacity-100 focus-within:opacity-100"
+              : "opacity-80 sm:opacity-0 sm:group-hover/card:opacity-100 focus-within:opacity-100"
           )}
         >
           <Checkbox
@@ -101,9 +147,9 @@ export function MoodboardCard({
           href={bookmark.url}
           target="_blank"
           rel="noreferrer"
-          className="group/header relative block h-full w-full"
+          className="group/header relative flex h-full min-h-[160px] max-h-[260px] w-full items-center justify-center bg-brand-canvas"
         >
-          {isReddit ? (
+          {isReddit && !bookmark.imageUrl ? (
             <RedditPreviewBox bookmark={bookmark} hostname={hostname} />
           ) : (
             <>
@@ -113,14 +159,14 @@ export function MoodboardCard({
                 </div>
               )}
 
-              {imageStatus !== "error" && imageSrc && (
+              {imageStatus !== "error" && currentSrc && (
                 <img
-                  src={imageSrc}
+                  src={currentSrc}
                   alt={bookmark.title || hostname}
                   onLoad={() => setImageStatus("loaded")}
                   onError={handleImageError}
                   className={cn(
-                    "h-full w-full object-cover transition-opacity duration-300",
+                    "h-auto max-h-[260px] w-full max-w-full object-contain transition-opacity duration-300",
                     imageStatus === "loaded" ? "opacity-100" : "opacity-0"
                   )}
                 />
@@ -129,7 +175,7 @@ export function MoodboardCard({
               {imageStatus === "error" && (
                 <div
                   className={cn(
-                    "relative flex h-full w-full flex-col items-center justify-center p-4",
+                    "relative flex h-full min-h-[160px] w-full flex-col items-center justify-center p-4",
                     color.bg
                   )}
                 >
@@ -160,7 +206,7 @@ export function MoodboardCard({
           {bookmark.folder && (
             <Badge
               variant="outline"
-              className="absolute top-3 right-3 shrink-0 rounded-full border-none bg-white/90 px-2 py-0.5 font-mono text-[9px] font-medium uppercase shadow-sm backdrop-blur-sm"
+              className="absolute top-3 right-3 shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
             >
               {bookmark.folder.name}
             </Badge>
@@ -169,7 +215,7 @@ export function MoodboardCard({
       </div>
 
       {/* Card Content */}
-      <div className="flex flex-col justify-between gap-4 p-4">
+      <div className="flex flex-col justify-between gap-3 p-3 sm:gap-4 sm:p-4">
         <div className="space-y-1.5">
           <a
             href={bookmark.url}
@@ -184,7 +230,7 @@ export function MoodboardCard({
             {bookmark.status === "BROKEN" && (
               <Badge
                 variant="outline"
-                className="shrink-0 border-none bg-red-50 px-1.5 py-0.5 font-mono text-[9px] text-red-600 uppercase"
+                className="shrink-0 rounded-none border-none bg-red-50 px-1.5 py-0.5 font-mono text-[9px] text-red-600 uppercase"
               >
                 Broken
               </Badge>
@@ -192,7 +238,7 @@ export function MoodboardCard({
             {bookmark.status === "REDIRECTED" && (
               <Badge
                 variant="outline"
-                className="shrink-0 border-none bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 uppercase"
+                className="shrink-0 rounded-none border-none bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 uppercase"
                 title="URL updated automatically to new address"
               >
                 Redirected
@@ -200,13 +246,13 @@ export function MoodboardCard({
             )}
           </div>
           {bookmark.description && (
-            <p className="mt-1 text-[11px] leading-relaxed text-brand-muted">
+            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-brand-muted">
               {bookmark.description}
             </p>
           )}
         </div>
 
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2.5 pt-1 sm:space-y-3 sm:pt-2">
           {/* Tags */}
           {bookmark.tags && bookmark.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
@@ -223,7 +269,7 @@ export function MoodboardCard({
           )}
 
           {/* Actions footer */}
-          <div className="flex items-center justify-between border-t border-brand-border pt-2.5">
+          <div className="flex items-center justify-between border-t border-brand-border pt-2">
             <span className="font-mono text-[9px] text-brand-muted/70">
               {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
                 month: "short",
@@ -231,18 +277,20 @@ export function MoodboardCard({
                 year: "numeric",
               })}
             </span>
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1">
+              {/* Star / Favorite Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => onToggleFavorite(bookmark)}
                     variant="ghost"
                     size="icon-xs"
-                    className="size-7"
+                    className="size-8 sm:size-7"
+                    title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}
                   >
                     <Star
                       className={cn(
-                        "h-3.5 w-3.5",
+                        "size-4 sm:size-3.5",
                         bookmark.isFavorite
                           ? "text-[#956400]"
                           : "text-brand-muted"
@@ -254,69 +302,57 @@ export function MoodboardCard({
                 <TooltipContent>Favorite</TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {/* 3-Dot Dropdown Action Menu (Touch Friendly on Mobile) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
-                    onClick={() => onToggleArchive(bookmark)}
                     variant="ghost"
                     size="icon-xs"
-                    className="size-7"
+                    className="size-8 sm:size-7 text-brand-muted hover:text-brand-charcoal"
+                    title="Bookmark actions"
                   >
-                    <Archive
-                      className={cn(
-                        "h-3.5 w-3.5",
-                        bookmark.isArchived
-                          ? "text-brand-blue-text"
-                          : "text-brand-muted"
-                      )}
-                      weight={bookmark.isArchived ? "fill" : "regular"}
-                    />
+                    <DotsThreeVertical className="size-4 sm:size-3.5" weight="bold" />
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>Archive</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => onDuplicateBookmark(bookmark)}
-                    variant="ghost"
-                    size="icon-xs"
-                    className="size-7"
-                  >
-                    <Copy className="h-3.5 w-3.5 text-brand-muted" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Duplicate</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 rounded-none">
+                  <DropdownMenuItem
                     onClick={() => onEditBookmark(bookmark)}
-                    variant="ghost"
-                    size="icon-xs"
-                    className="size-7"
+                    className="flex items-center gap-2 text-xs"
                   >
-                    <PencilSimple className="h-3.5 w-3.5 text-brand-muted" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Edit</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
+                    <PencilSimple className="size-3.5" />
+                    <span>Edit Details</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleCopyUrl}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <LinkSimple className="size-3.5" />
+                    <span>Copy Link</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onDuplicateBookmark(bookmark)}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <Copy className="size-3.5" />
+                    <span>Duplicate</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onToggleArchive(bookmark)}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <Archive className="size-3.5" />
+                    <span>{bookmark.isArchived ? "Unarchive" : "Archive"}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
                     onClick={() => onDeleteBookmark(bookmark.id)}
-                    variant="ghost"
-                    size="icon-xs"
-                    className="hover:bg-brand-red-bg hover:text-brand-red-text size-7"
+                    className="flex items-center gap-2 text-xs text-red-600 focus:bg-red-50 focus:text-red-700"
                   >
-                    <Trash className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete</TooltipContent>
-              </Tooltip>
+                    <Trash className="size-3.5" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

@@ -51,6 +51,13 @@ import {
   ActionBarItem,
   ActionBarSeparator,
 } from "@atlas/ui/components/action-bar"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@atlas/ui/components/sheet"
 
 const folderSchema = z.object({
   name: z
@@ -101,6 +108,7 @@ export function CabinetDashboard() {
     undefined
   )
   const [columnCount, setColumnCount] = useState<number>(3)
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
 
   // Load viewMode and columnCount from localStorage on mount
   useEffect(() => {
@@ -261,6 +269,27 @@ export function CabinetDashboard() {
 
   const { data: tagsData } = useTagsControllerFindAll()
   const tags = (tagsData as any)?.data || []
+
+  const activeFilterLabel = React.useMemo(() => {
+    if (selectedFolderId) {
+      const folder = folders.find((f: any) => f.id === selectedFolderId)
+      return folder ? folder.name : "Folder"
+    }
+    if (selectedTag) return `#${selectedTag}`
+    if (filterFavorite) return "Favorites"
+    if (filterArchived) return "Archive"
+    if (filterBroken) return "Broken"
+    if (filterDuplicates) return "Duplicates"
+    return undefined
+  }, [
+    selectedFolderId,
+    selectedTag,
+    filterFavorite,
+    filterArchived,
+    filterBroken,
+    filterDuplicates,
+    folders,
+  ])
 
   const {
     data: bookmarksInfiniteData,
@@ -899,11 +928,11 @@ export function CabinetDashboard() {
       </div>
 
       {/* Main Body Layout Container */}
-      <div className="flex-1 overflow-hidden py-6">
+      <div className="flex-1 overflow-hidden py-4 sm:py-6">
         <ModuleContainer className="h-full">
-          <div className="grid h-full grid-cols-1 items-start gap-8 md:grid-cols-4">
-            {/* Left Pinned Sidebar (1 col) */}
-            <aside className="h-full overflow-y-auto pr-2 md:col-span-1">
+          <div className="grid h-full grid-cols-1 items-start gap-4 md:grid-cols-4 md:gap-8">
+            {/* Desktop Left Pinned Sidebar (1 col) */}
+            <aside className="hidden h-full overflow-y-auto pr-2 md:col-span-1 md:block">
               <CabinetSidebarFilters
                 selectedFolderId={selectedFolderId}
                 onSelectFolder={setSelectedFolderId}
@@ -953,8 +982,78 @@ export function CabinetDashboard() {
               />
             </aside>
 
-            {/* Main Independent Scrollable Content Area (3 cols) */}
-            <section className="h-full space-y-6 overflow-y-auto pr-2 md:col-span-3">
+            {/* Mobile Slide-over Drawer / Sheet for Sidebar Filters */}
+            <Sheet
+              open={isMobileFiltersOpen}
+              onOpenChange={setIsMobileFiltersOpen}
+            >
+              <SheetContent
+                side="left"
+                className="w-[85vw] max-w-sm overflow-y-auto rounded-none border-r border-brand-border bg-brand-canvas p-4"
+              >
+                <SheetHeader className="border-b border-brand-border pb-3 text-left">
+                  <SheetTitle className="font-serif text-lg font-medium text-brand-charcoal">
+                    Collections & Filters
+                  </SheetTitle>
+                  <SheetDescription className="font-mono text-[10px] text-brand-muted uppercase">
+                    Cabinet Workspace Navigation
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="py-2">
+                  <CabinetSidebarFilters
+                    selectedFolderId={selectedFolderId}
+                    onSelectFolder={setSelectedFolderId}
+                    selectedTag={selectedTag}
+                    onSelectTag={setSelectedTag}
+                    filterFavorite={filterFavorite}
+                    onSelectFavorite={setFilterFavorite}
+                    filterArchived={filterArchived}
+                    onSelectArchived={setFilterArchived}
+                    folders={folders}
+                    tags={tags}
+                    onDeleteTag={handleDeleteTag}
+                    isFolderModalOpen={isFolderModalOpen}
+                    setIsFolderModalOpen={setIsFolderModalOpen}
+                    folderToEdit={folderToEdit}
+                    folderForm={folderForm}
+                    onEditFolder={handleEditFolder}
+                    onDeleteFolder={handleDeleteFolder}
+                    onCreateSubfolder={handleCreateSubfolder}
+                    filterBroken={filterBroken}
+                    onSelectBroken={(val) => {
+                      setFilterBroken(val)
+                      if (val) {
+                        setSelectedFolderId(undefined)
+                        setSelectedTag(undefined)
+                        setFilterFavorite(undefined)
+                        setFilterArchived(undefined)
+                        setFilterDuplicates(undefined)
+                      }
+                    }}
+                    filterDuplicates={filterDuplicates}
+                    onSelectDuplicates={(val) => {
+                      setFilterDuplicates(val)
+                      if (val) {
+                        setSelectedFolderId(undefined)
+                        setSelectedTag(undefined)
+                        setFilterFavorite(undefined)
+                        setFilterArchived(undefined)
+                        setFilterBroken(undefined)
+                      }
+                    }}
+                    healthSummary={healthSummary}
+                    onScan={handleScan}
+                    onExport={handleExport}
+                    onImport={handleImport}
+                    resetFolderForm={resetFolderForm}
+                    onItemSelect={() => setIsMobileFiltersOpen(false)}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Main Independent Scrollable Content Area (3 cols desktop, full width mobile) */}
+            <section className="col-span-1 h-full space-y-4 overflow-y-auto pr-0 sm:space-y-6 sm:pr-2 md:col-span-3">
               {/* Toolbar (Search & Add) */}
               <Toolbar
                 searchQuery={searchQuery}
@@ -970,6 +1069,8 @@ export function CabinetDashboard() {
                 onViewModeChange={handleViewModeChange}
                 columnCount={columnCount}
                 onColumnCountChange={handleColumnCountChange}
+                onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
+                activeFilterLabel={activeFilterLabel}
               />
 
               {/* Bookmarks Grid / List */}
@@ -1009,7 +1110,7 @@ export function CabinetDashboard() {
 
               {/* Load More Button */}
               {!filterDuplicates && hasNextPage && (
-                <div className="flex justify-center pt-6 pb-4">
+                <div className="flex justify-center pt-4 pb-4 sm:pt-6">
                   <Button
                     onClick={() => fetchNextPage()}
                     disabled={isFetchingNextPage}
@@ -1035,7 +1136,7 @@ export function CabinetDashboard() {
       <ActionBar
         open={selectedBookmarkIds.length > 0}
         align="center"
-        className="gap-1.5 rounded-none border border-brand-border bg-white p-1.5 shadow-md"
+        className="max-w-[calc(100vw-1.5rem)] gap-1.5 overflow-x-auto rounded-none border border-brand-border bg-white p-1.5 shadow-md"
       >
         <ActionBarSelection className="border-none bg-transparent px-2 py-0 font-mono text-[10px] tracking-wider text-brand-muted uppercase">
           {selectedBookmarkIds.length} Selected
