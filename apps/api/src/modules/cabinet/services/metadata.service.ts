@@ -20,10 +20,7 @@ export class MetadataService {
     private readonly genericProvider: GenericMetadataProvider
   ) {
     // ponytail: register specialized providers in prioritized evaluation order
-    this.specializedProviders = [
-      this.redditProvider,
-      this.twitterProvider,
-    ]
+    this.specializedProviders = [this.redditProvider, this.twitterProvider]
   }
 
   async extract(url: string): Promise<ExtractedMetadata> {
