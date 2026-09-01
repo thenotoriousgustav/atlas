@@ -32,7 +32,7 @@ export interface WorkspaceSidebarWidgetProps {
 }
 
 /**
- * Standardized Reusable WorkspaceSidebar for Atlas Platform (Habit, Ledger, Cabinet, Garage, Fetch)
+ * Standardized Reusable WorkspaceSidebar for Atlas Platform (Habit, Cabinet, Garage, Fetch)
  * Built with Compound Components (<WorkspaceSidebarGroup>, <WorkspaceSidebarItem>, <WorkspaceSidebarWidget>)
  */
 export function WorkspaceSidebar({

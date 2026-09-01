@@ -8,8 +8,6 @@ import {
   useAuthControllerLogout,
   useFoldersControllerFindAll,
   useBookmarksControllerFindAll,
-  useTransactionsControllerFindAll,
-  useSubscriptionsControllerFindAll,
   useVehiclesControllerFindAll,
   useRemindersControllerFindAll,
   useFetchControllerGetHistory,
@@ -31,12 +29,10 @@ import { ModuleContainer } from "@/components/module-container"
 import { cn } from "@/lib/utils"
 import {
   BookmarkSimple,
-  Coins,
   Clock,
   ArrowRight,
   SignOut,
   FolderSimple,
-  CreditCard,
   User,
   GasPump,
   Gauge,
@@ -102,20 +98,6 @@ export default function HomePortalPage() {
   const { data: bookmarksData } = useBookmarksControllerFindAll(undefined, {
     query: { enabled: !!user },
   })
-
-  // Fetch Ledger Stats
-  const { data: transactionsData } = useTransactionsControllerFindAll(
-    undefined,
-    {
-      query: { enabled: !!user },
-    }
-  )
-  const { data: subscriptionsData } = useSubscriptionsControllerFindAll(
-    undefined,
-    {
-      query: { enabled: !!user },
-    }
-  )
 
   // Fetch Garage Stats
   const { data: vehiclesData } = useVehiclesControllerFindAll({
@@ -229,33 +211,6 @@ export default function HomePortalPage() {
       []
     ).filter((b: any) => !b.deletedAt).length || 0
 
-  // Calculations for Ledger
-  const transactions = (transactionsData as any)?.data || []
-  const subscriptions = (subscriptionsData as any)?.data || []
-
-  const now = new Date()
-  const currentMonth = now.getMonth()
-  const currentYear = now.getFullYear()
-
-  const monthlyTransactions = transactions.filter((t: any) => {
-    const d = new Date(t.date)
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear
-  })
-
-  const totalIncome = monthlyTransactions
-    .filter((t: any) => t.type === "INCOME")
-    .reduce((sum: number, t: any) => sum + t.amount, 0)
-
-  const totalExpense = monthlyTransactions
-    .filter((t: any) => t.type === "EXPENSE")
-    .reduce((sum: number, t: any) => sum + t.amount, 0)
-
-  const netCashFlow = totalIncome - totalExpense
-
-  const totalActiveSubscriptions = subscriptions.filter(
-    (s: any) => s.status === "ACTIVE"
-  ).length
-
   // Calculations for Garage
   const totalVehicles = (vehiclesData as any)?.data?.length || 0
   const totalActiveReminders =
@@ -267,14 +222,6 @@ export default function HomePortalPage() {
   const totalFavoriteDownloads =
     (fetchHistoryData as any)?.data?.filter((i: any) => i.isFavorite).length ||
     0
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(val)
-  }
 
   if (isLoading || isMeLoading || !user) {
     return (
@@ -370,7 +317,7 @@ export default function HomePortalPage() {
         </div>
 
         {/* Dashboard Grid Picker */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Card 1: Cabinet Bookmark Vault */}
           <div
             onClick={() => router.push("/cabinet")}
@@ -421,62 +368,7 @@ export default function HomePortalPage() {
             </div>
           </div>
 
-          {/* Card 2: Ledger Financial Vault */}
-          <div
-            onClick={() => router.push("/ledger")}
-            className="group flex min-h-60 cursor-pointer flex-col justify-between rounded-none border border-brand-border bg-white p-6 transition-all duration-200 hover:border-brand-charcoal hover:shadow-xs"
-          >
-            <div className="space-y-4">
-              <div className="flex h-10 w-10 items-center justify-center bg-brand-charcoal/5 text-brand-charcoal">
-                <Coins className="h-5 w-5" />
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
-                  Ledger
-                </h3>
-                <p className="text-xs text-brand-muted">
-                  Personal finance, cashflow margins, and active recurring
-                  subscriptions.
-                </p>
-              </div>
-            </div>
-
-            {/* Live Data Summary for Ledger */}
-            <div className="mt-6 flex items-center justify-between border-t border-brand-charcoal/5 pt-4">
-              <div className="flex gap-4 text-[10px] text-brand-muted">
-                <div className="space-y-0.5">
-                  <span className="block text-[9px] tracking-wide text-slate-400 uppercase">
-                    Cash Flow
-                  </span>
-                  <span
-                    className={cn(
-                      "flex items-center gap-0.5 font-semibold",
-                      netCashFlow >= 0 ? "text-[#1e4620]" : "text-[#5f2120]"
-                    )}
-                  >
-                    {netCashFlow >= 0 ? "+" : ""}
-                    {formatCurrency(netCashFlow)}
-                  </span>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="block text-[9px] tracking-wide text-slate-400 uppercase">
-                    Subscriptions
-                  </span>
-                  <span className="flex items-center gap-1 font-semibold text-brand-charcoal">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    {totalActiveSubscriptions} active
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex h-7 w-7 items-center justify-center border border-brand-border text-brand-muted transition-colors group-hover:border-brand-charcoal group-hover:bg-brand-charcoal group-hover:text-white">
-                <ArrowRight className="h-4 w-4" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Garage Vehicle Vault */}
+          {/* Card 2: Garage Vehicle Vault */}
           <div
             onClick={() => router.push("/garage")}
             className="group flex min-h-60 cursor-pointer flex-col justify-between rounded-none border border-brand-border bg-white p-6 transition-all duration-200 hover:border-brand-charcoal hover:shadow-xs"
@@ -526,7 +418,7 @@ export default function HomePortalPage() {
             </div>
           </div>
 
-          {/* Card 4: Fetch Media Downloader */}
+          {/* Card 3: Fetch Media Downloader */}
           <div
             onClick={() => router.push("/fetch")}
             className="group flex min-h-60 cursor-pointer flex-col justify-between rounded-none border border-brand-border bg-white p-6 transition-all duration-200 hover:border-brand-charcoal hover:shadow-xs"
@@ -576,7 +468,7 @@ export default function HomePortalPage() {
             </div>
           </div>
 
-          {/* Card 5: Habit Behavior Tracker */}
+          {/* Card 4: Habit Behavior Tracker */}
           <div
             onClick={() => router.push("/habit")}
             className="group flex min-h-60 cursor-pointer flex-col justify-between rounded-none border border-brand-border bg-white p-6 transition-all duration-200 hover:border-brand-charcoal hover:shadow-xs"

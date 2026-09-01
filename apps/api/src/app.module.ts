@@ -1,14 +1,13 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { CabinetModule } from './modules/cabinet/cabinet.module';
-import { LedgerModule } from './modules/ledger/ledger.module';
-import { GarageModule } from './modules/garage/garage.module';
-import { FetchModule } from './modules/fetch/fetch.module';
-import { HabitModule } from './modules/habit/habit.module';
-import { HealthController } from './health/health.controller';
+import { Module } from "@nestjs/common"
+import { ConfigModule } from "@nestjs/config"
+import { PrismaModule } from "./prisma/prisma.module"
+import { AuthModule } from "./auth/auth.module"
+import { UserModule } from "./user/user.module"
+import { CabinetModule } from "./modules/cabinet/cabinet.module"
+import { GarageModule } from "./modules/garage/garage.module"
+import { FetchModule } from "./modules/fetch/fetch.module"
+import { HabitModule } from "./modules/habit/habit.module"
+import { HealthController } from "./health/health.controller"
 
 @Module({
   imports: [
@@ -19,7 +18,6 @@ import { HealthController } from './health/health.controller';
     AuthModule,
     UserModule,
     CabinetModule,
-    LedgerModule,
     GarageModule,
     FetchModule,
     HabitModule,
