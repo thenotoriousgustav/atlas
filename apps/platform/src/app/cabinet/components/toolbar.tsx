@@ -269,7 +269,7 @@ export function Toolbar({
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl rounded-none sm:w-full">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl sm:max-w-2xl rounded-none sm:w-full">
           <DialogHeader>
             <DialogTitle>
               {bookmarkToEdit ? "Edit Bookmark" : "New Bookmark"}
