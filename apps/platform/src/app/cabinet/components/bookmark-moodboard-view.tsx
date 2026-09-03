@@ -19,6 +19,7 @@ import {
   Copy,
   DotsThreeVertical,
   LinkSimple,
+  ArrowCounterClockwise,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -48,6 +49,10 @@ interface MoodboardCardProps {
   getPastelColor: (str: string) => { bg: string; text: string }
   isSelected: boolean
   onToggleSelect: () => void
+  isTrashView?: boolean
+  onRestoreBookmark?: (id: string) => void
+  onPermanentDeleteBookmark?: (id: string) => void
+  onOpenActionSheet?: (bookmark: any) => void
 }
 
 function getProxiedImageUrl(imageUrl?: string | null): string {
@@ -75,6 +80,10 @@ export function MoodboardCard({
   getPastelColor,
   isSelected,
   onToggleSelect,
+  isTrashView,
+  onRestoreBookmark,
+  onPermanentDeleteBookmark,
+  onOpenActionSheet,
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
   const isReddit =
@@ -280,84 +289,140 @@ export function MoodboardCard({
               })}
             </span>
             <div className="flex items-center gap-1">
-              {/* Star / Favorite Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => onToggleFavorite(bookmark)}
-                    variant="ghost"
-                    size="icon-xs"
-                    className="size-8 sm:size-7"
-                    title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}
-                  >
-                    <Star
-                      className={cn(
-                        "size-4 sm:size-3.5",
-                        bookmark.isFavorite
-                          ? "text-[#956400]"
-                          : "text-brand-muted"
-                      )}
-                      weight={bookmark.isFavorite ? "fill" : "regular"}
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Favorite</TooltipContent>
-              </Tooltip>
+              {isTrashView ? (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onRestoreBookmark?.(bookmark.id)}
+                        variant="ghost"
+                        size="icon-xs"
+                        className="size-8 text-brand-charcoal hover:bg-brand-charcoal/10 sm:size-7"
+                        title="Restore bookmark"
+                      >
+                        <ArrowCounterClockwise className="size-4 sm:size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Restore</TooltipContent>
+                  </Tooltip>
 
-              {/* 3-Dot Dropdown Action Menu (Touch Friendly on Mobile) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onPermanentDeleteBookmark?.(bookmark.id)}
+                        variant="ghost"
+                        size="icon-xs"
+                        className="size-8 text-red-600 hover:bg-red-50 hover:text-red-700 sm:size-7"
+                        title="Delete permanently"
+                      >
+                        <Trash className="size-4 sm:size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete Permanently</TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  {/* Star / Favorite Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onToggleFavorite(bookmark)}
+                        variant="ghost"
+                        size="icon-xs"
+                        className="size-8 sm:size-7"
+                        title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}
+                      >
+                        <Star
+                          className={cn(
+                            "size-4 sm:size-3.5",
+                            bookmark.isFavorite
+                              ? "text-[#956400]"
+                              : "text-brand-muted"
+                          )}
+                          weight={bookmark.isFavorite ? "fill" : "regular"}
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Favorite</TooltipContent>
+                  </Tooltip>
+
+                  {/* Mobile Action Sheet Trigger */}
                   <Button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenActionSheet?.(bookmark)
+                    }}
                     variant="ghost"
                     size="icon-xs"
-                    className="size-8 text-brand-muted hover:text-brand-charcoal sm:size-7"
+                    className="flex size-8 text-brand-muted hover:text-brand-charcoal md:hidden"
                     title="Bookmark actions"
                   >
                     <DotsThreeVertical
-                      className="size-4 sm:size-3.5"
+                      className="size-4"
                       weight="bold"
                     />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 rounded-none">
-                  <DropdownMenuItem
-                    onClick={() => onEditBookmark(bookmark)}
-                    className="flex items-center gap-2 text-xs"
-                  >
-                    <PencilSimple className="size-3.5" />
-                    <span>Edit Details</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleCopyUrl}
-                    className="flex items-center gap-2 text-xs"
-                  >
-                    <LinkSimple className="size-3.5" />
-                    <span>Copy Link</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onDuplicateBookmark(bookmark)}
-                    className="flex items-center gap-2 text-xs"
-                  >
-                    <Copy className="size-3.5" />
-                    <span>Duplicate</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onToggleArchive(bookmark)}
-                    className="flex items-center gap-2 text-xs"
-                  >
-                    <Archive className="size-3.5" />
-                    <span>{bookmark.isArchived ? "Unarchive" : "Archive"}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onDeleteBookmark(bookmark.id)}
-                    className="flex items-center gap-2 text-xs text-red-600 focus:bg-red-50 focus:text-red-700"
-                  >
-                    <Trash className="size-3.5" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+
+                  {/* Desktop 3-Dot Dropdown Action Menu */}
+                  <div className="hidden md:inline-flex">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="size-7 text-brand-muted hover:text-brand-charcoal"
+                          title="Bookmark actions"
+                        >
+                          <DotsThreeVertical
+                            className="size-3.5"
+                            weight="bold"
+                          />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44 rounded-none">
+                        <DropdownMenuItem
+                          onClick={() => onEditBookmark(bookmark)}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <PencilSimple className="size-3.5" />
+                          <span>Edit Details</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={handleCopyUrl}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <LinkSimple className="size-3.5" />
+                          <span>Copy Link</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDuplicateBookmark(bookmark)}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <Copy className="size-3.5" />
+                          <span>Duplicate</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onToggleArchive(bookmark)}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <Archive className="size-3.5" />
+                          <span>{bookmark.isArchived ? "Unarchive" : "Archive"}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onDeleteBookmark(bookmark.id)}
+                          className="flex items-center gap-2 text-xs text-red-600 focus:bg-red-50 focus:text-red-700"
+                        >
+                          <Trash className="size-3.5" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -380,6 +445,10 @@ interface BookmarkMoodboardViewProps {
   getHostname: (url: string) => string
   getPastelColor: (str: string) => { bg: string; text: string }
   onReorder?: (newOrder: any[]) => void
+  isTrashView?: boolean
+  onRestoreBookmark?: (id: string) => void
+  onPermanentDeleteBookmark?: (id: string) => void
+  onOpenActionSheet?: (bookmark: any) => void
 }
 
 export function BookmarkMoodboardView({
@@ -396,6 +465,10 @@ export function BookmarkMoodboardView({
   getHostname,
   getPastelColor,
   onReorder,
+  isTrashView,
+  onRestoreBookmark,
+  onPermanentDeleteBookmark,
+  onOpenActionSheet,
 }: BookmarkMoodboardViewProps) {
   return (
     <Sortable
@@ -424,7 +497,11 @@ export function BookmarkMoodboardView({
             return (
               <div key={colIndex} className="flex flex-col gap-4">
                 {colBookmarks.map((bookmark: any) => (
-                  <SortableItem key={bookmark.id} value={bookmark.id} asHandle>
+                  <SortableItem
+                    key={bookmark.id}
+                    value={bookmark.id}
+                    asHandle={!isTrashView}
+                  >
                     <MoodboardCard
                       bookmark={bookmark}
                       onSelectTag={onSelectTag}
@@ -437,6 +514,10 @@ export function BookmarkMoodboardView({
                       getPastelColor={getPastelColor}
                       isSelected={selectedBookmarkIds.includes(bookmark.id)}
                       onToggleSelect={() => onToggleSelect(bookmark.id)}
+                      isTrashView={isTrashView}
+                      onRestoreBookmark={onRestoreBookmark}
+                      onPermanentDeleteBookmark={onPermanentDeleteBookmark}
+                      onOpenActionSheet={onOpenActionSheet}
                     />
                   </SortableItem>
                 ))}

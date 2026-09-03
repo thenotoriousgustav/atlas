@@ -58,6 +58,7 @@ export class BookmarksController {
   @ApiQuery({ name: 'folderId', required: false })
   @ApiQuery({ name: 'isFavorite', required: false, type: Boolean })
   @ApiQuery({ name: 'isArchived', required: false, type: Boolean })
+  @ApiQuery({ name: 'isTrash', required: false, type: Boolean })
   @ApiQuery({ name: 'tag', required: false })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'cursor', required: false })
@@ -68,6 +69,7 @@ export class BookmarksController {
     @Query('folderId') folderId?: string,
     @Query('isFavorite') isFavorite?: string,
     @Query('isArchived') isArchived?: string,
+    @Query('isTrash') isTrash?: string,
     @Query('tag') tag?: string,
     @Query('search') search?: string,
     @Query('cursor') cursor?: string,
@@ -83,6 +85,7 @@ export class BookmarksController {
       folderId,
       isFavorite: parseBool(isFavorite),
       isArchived: parseBool(isArchived),
+      isTrash: parseBool(isTrash),
       tag,
       search,
       cursor,
@@ -145,6 +148,30 @@ export class BookmarksController {
     return this.bookmarksService.reorder(user.id, reorderDto.ids);
   }
 
+  @Post('bulk/restore')
+  @ApiOperation({ summary: 'Restore multiple soft-deleted bookmarks' })
+  async bulkRestore(
+    @CurrentUser() user: any,
+    @Body() body: { ids: string[] },
+  ) {
+    return this.bookmarksService.bulkRestore(user.id, body.ids || []);
+  }
+
+  @Post('bulk/permanent-delete')
+  @ApiOperation({ summary: 'Permanently delete multiple bookmarks' })
+  async bulkPermanentDelete(
+    @CurrentUser() user: any,
+    @Body() body: { ids: string[] },
+  ) {
+    return this.bookmarksService.bulkPermanentDelete(user.id, body.ids || []);
+  }
+
+  @Delete('trash/empty')
+  @ApiOperation({ summary: 'Permanently delete all bookmarks in trash' })
+  async emptyTrash(@CurrentUser() user: any) {
+    return this.bookmarksService.emptyTrash(user.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get bookmark details by ID' })
   async findOne(@CurrentUser() user: any, @Param('id') id: string) {
@@ -161,10 +188,22 @@ export class BookmarksController {
     return this.bookmarksService.update(user.id, id, updateBookmarkDto);
   }
 
+  @Post(':id/restore')
+  @ApiOperation({ summary: 'Restore a soft-deleted bookmark' })
+  async restore(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.bookmarksService.restore(user.id, id);
+  }
+
   @Post(':id/enrichment/refresh')
   @ApiOperation({ summary: 'Refresh enrichment metadata for a bookmark' })
   async refreshEnrichment(@CurrentUser() user: any, @Param('id') id: string) {
     return this.bookmarksService.refreshEnrichment(user.id, id);
+  }
+
+  @Delete(':id/permanent')
+  @ApiOperation({ summary: 'Permanently delete a bookmark by ID' })
+  async permanentDelete(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.bookmarksService.permanentDelete(user.id, id);
   }
 
   @Delete(':id')

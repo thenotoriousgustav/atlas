@@ -40,6 +40,7 @@ import {
   Warning,
   ArrowClockwise,
   Plus,
+  Trash,
 } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@atlas/api-client"
 import { toast } from "@atlas/ui/components/sonner"
@@ -81,12 +82,15 @@ interface SidebarFiltersProps {
   onSelectBroken: (broken: boolean | undefined) => void
   filterDuplicates?: boolean
   onSelectDuplicates: (dup: boolean | undefined) => void
+  filterTrash?: boolean
+  onSelectTrash?: (trash: boolean | undefined) => void
   healthSummary?: any
   onScan: () => void
   onExport: (format: "html" | "csv" | "txt" | "zip") => void
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void
   resetFolderForm: () => void
   onItemSelect?: () => void
+  viewSection?: "all" | "folders" | "library"
 }
 
 const tagSchema = z.object({
@@ -120,12 +124,15 @@ export function CabinetSidebarFilters({
   onSelectBroken,
   filterDuplicates,
   onSelectDuplicates,
+  filterTrash,
+  onSelectTrash,
   healthSummary,
   onScan,
   onExport,
   onImport,
   resetFolderForm,
   onItemSelect,
+  viewSection = "all",
 }: SidebarFiltersProps) {
   const confirm = useConfirm()
   const queryClient = useQueryClient()
@@ -164,512 +171,552 @@ export function CabinetSidebarFilters({
   return (
     <WorkspaceSidebar>
       {/* Quick Filters / Library Group */}
-      <WorkspaceSidebarGroup title="Library">
-        <WorkspaceSidebarItem
-          icon={<BookmarkSimple className="h-3.5 w-3.5" />}
-          label="All Bookmarks"
-          badge={healthSummary?.total}
-          isActive={
-            selectedFolderId === undefined &&
-            filterFavorite === undefined &&
-            filterArchived === false &&
-            selectedTag === undefined &&
-            filterBroken === undefined &&
-            filterDuplicates === undefined
-          }
-          onClick={() => {
-            onSelectFolder(undefined)
-            onSelectTag(undefined)
-            onSelectFavorite(undefined)
-            onSelectArchived(false)
-            onSelectBroken(undefined)
-            onSelectDuplicates(undefined)
-            onItemSelect?.()
-          }}
-        />
+      {viewSection !== "folders" && (
+        <>
+          <WorkspaceSidebarGroup title="Library">
+            <WorkspaceSidebarItem
+              icon={<BookmarkSimple className="h-3.5 w-3.5" />}
+              label="All Bookmarks"
+              badge={healthSummary?.total}
+              isActive={
+                selectedFolderId === undefined &&
+                filterFavorite === undefined &&
+                filterArchived === false &&
+                selectedTag === undefined &&
+                filterBroken === undefined &&
+                filterDuplicates === undefined &&
+                filterTrash === undefined
+              }
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(false)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onItemSelect?.()
+              }}
+            />
 
-        <WorkspaceSidebarItem
-          icon={<Star className="h-3.5 w-3.5 text-[#956400]" />}
-          label="Favorites"
-          badge={healthSummary?.favorites}
-          isActive={filterFavorite === true}
-          onClick={() => {
-            onSelectFolder(undefined)
-            onSelectTag(undefined)
-            onSelectFavorite(true)
-            onSelectArchived(false)
-            onSelectBroken(undefined)
-            onSelectDuplicates(undefined)
-            onItemSelect?.()
-          }}
-        />
+            <WorkspaceSidebarItem
+              icon={<Star className="h-3.5 w-3.5 text-[#956400]" />}
+              label="Favorites"
+              badge={healthSummary?.favorites}
+              isActive={filterFavorite === true}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(true)
+                onSelectArchived(false)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onItemSelect?.()
+              }}
+            />
 
-        <WorkspaceSidebarItem
-          icon={<Archive className="h-3.5 w-3.5" />}
-          label="Archive"
-          badge={healthSummary?.archived}
-          isActive={filterArchived === true}
-          onClick={() => {
-            onSelectFolder(undefined)
-            onSelectTag(undefined)
-            onSelectFavorite(undefined)
-            onSelectArchived(true)
-            onSelectBroken(undefined)
-            onSelectDuplicates(undefined)
-            onItemSelect?.()
-          }}
-        />
-      </WorkspaceSidebarGroup>
+            <WorkspaceSidebarItem
+              icon={<Archive className="h-3.5 w-3.5" />}
+              label="Archive"
+              badge={healthSummary?.archived}
+              isActive={filterArchived === true}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(true)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onItemSelect?.()
+              }}
+            />
 
-      {/* Health / Maintenance Group */}
-      <WorkspaceSidebarGroup
-        title="Health"
-        action={
-          <button
-            onClick={onScan}
-            title="Scan links status now"
-            className="rounded-none p-1 text-brand-muted transition-colors hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+            <WorkspaceSidebarItem
+              icon={<Trash className="h-3.5 w-3.5" />}
+              label="Trash"
+              badge={healthSummary?.trash}
+              isActive={filterTrash === true}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(undefined)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(true)
+                onItemSelect?.()
+              }}
+            />
+          </WorkspaceSidebarGroup>
+
+          {/* Health / Maintenance Group */}
+          <WorkspaceSidebarGroup
+            title="Health"
+            action={
+              <button
+                onClick={onScan}
+                title="Scan links status now"
+                className="rounded-none p-1 text-brand-muted transition-colors hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+              >
+                <ArrowClockwise className="h-3 w-3" />
+              </button>
+            }
           >
-            <ArrowClockwise className="h-3 w-3" />
-          </button>
-        }
-      >
-        <WorkspaceSidebarItem
-          icon={<Warning className="h-3.5 w-3.5 text-red-500" />}
-          label="Broken Links"
-          badge={healthSummary?.broken}
-          isActive={filterBroken === true}
-          onClick={() => {
-            onSelectFolder(undefined)
-            onSelectTag(undefined)
-            onSelectFavorite(undefined)
-            onSelectArchived(undefined)
-            onSelectBroken(true)
-            onSelectDuplicates(undefined)
-            onItemSelect?.()
-          }}
-        />
+            <WorkspaceSidebarItem
+              icon={<Warning className="h-3.5 w-3.5 text-red-500" />}
+              label="Broken Links"
+              badge={healthSummary?.broken}
+              isActive={filterBroken === true}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(undefined)
+                onSelectBroken(true)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onItemSelect?.()
+              }}
+            />
 
-        <WorkspaceSidebarItem
-          icon={<Copy className="h-3.5 w-3.5" />}
-          label="Duplicates"
-          badge={healthSummary?.duplicates}
-          isActive={filterDuplicates === true}
-          onClick={() => {
-            onSelectFolder(undefined)
-            onSelectTag(undefined)
-            onSelectFavorite(undefined)
-            onSelectArchived(undefined)
-            onSelectBroken(undefined)
-            onSelectDuplicates(true)
-            onItemSelect?.()
-          }}
-        />
-      </WorkspaceSidebarGroup>
+            <WorkspaceSidebarItem
+              icon={<Copy className="h-3.5 w-3.5" />}
+              label="Duplicates"
+              badge={healthSummary?.duplicates}
+              isActive={filterDuplicates === true}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(undefined)
+                onSelectBroken(undefined)
+                onSelectDuplicates(true)
+                onSelectTrash?.(undefined)
+                onItemSelect?.()
+              }}
+            />
+          </WorkspaceSidebarGroup>
+        </>
+      )}
 
       {/* Folders Group */}
-      <WorkspaceSidebarGroup
-        title="Folders"
-        action={
-          <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
-            <DialogTrigger
-              onClick={() => {
-                resetFolderForm()
-                setIsFolderModalOpen(true)
-              }}
-              className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
-              title="Create folder"
-            >
-              <FolderPlus className="h-3.5 w-3.5" />
-            </DialogTrigger>
+      {viewSection !== "library" && (
+        <>
+          <WorkspaceSidebarGroup
+            title="Folders"
+            action={
+              <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
+                <DialogTrigger
+                  onClick={() => {
+                    resetFolderForm()
+                    setIsFolderModalOpen(true)
+                  }}
+                  className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                  title="Create folder"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                </DialogTrigger>
 
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {folderToEdit ? "Edit Folder" : "New Folder"}
-                </DialogTitle>
-                <DialogDescription>
-                  Cabinet collection management
-                </DialogDescription>
-              </DialogHeader>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {folderToEdit ? "Edit Folder" : "New Folder"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Cabinet collection management
+                    </DialogDescription>
+                  </DialogHeader>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  folderForm.handleSubmit()
-                }}
-                className="space-y-4"
-              >
-                <FieldGroup>
-                  <folderForm.Field
-                    name="name"
-                    children={(field: any) => {
-                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>
-                            Folder Name
-                          </FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="e.g. Design Inspiration"
-                          />
-                          {isInvalid && (
-                            <FieldError
-                              errors={field.state.meta.errors.map((err: any) =>
-                                typeof err === "string" ? { message: err } : err
-                              )}
-                            />
-                          )}
-                        </Field>
-                      )
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      folderForm.handleSubmit()
                     }}
-                  />
-
-                  <folderForm.Field
-                    name="description"
-                    children={(field: any) => {
-                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>
-                            Description
-                          </FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="Describe folder contents..."
-                          />
-                          {isInvalid && (
-                            <FieldError
-                              errors={field.state.meta.errors.map((err: any) =>
-                                typeof err === "string" ? { message: err } : err
-                              )}
-                            />
-                          )}
-                        </Field>
-                      )
-                    }}
-                  />
-
-                  <folderForm.Field
-                    name="parentId"
-                    children={(field: any) => {
-                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>
-                            Parent Folder (Optional)
-                          </FieldLabel>
-                          <Select
-                            value={field.state.value}
-                            onValueChange={(val) => field.handleChange(val)}
-                          >
-                            <SelectTrigger
-                              aria-invalid={isInvalid}
-                              className="h-10 w-full rounded-none border border-brand-border bg-white px-3 text-sm font-medium text-brand-charcoal focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none"
-                            >
-                              <SelectValue placeholder="None (Root)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="">None (Root)</SelectItem>
-                              {folders
-                                .filter((f: any) => f.id !== folderToEdit?.id)
-                                .map((f: any) => (
-                                  <SelectItem key={f.id} value={f.id}>
-                                    {f.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                          {isInvalid && (
-                            <FieldError
-                              errors={field.state.meta.errors.map((err: any) =>
-                                typeof err === "string" ? { message: err } : err
-                              )}
-                            />
-                          )}
-                        </Field>
-                      )
-                    }}
-                  />
-                </FieldGroup>
-
-                <div className="flex gap-2.5 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsFolderModalOpen(false)}
-                    className="flex-1 text-xs uppercase"
+                    className="space-y-4"
                   >
-                    Cancel
-                  </Button>
-                  <folderForm.Subscribe
-                    selector={(state: any) => [
-                      state.canSubmit,
-                      state.isSubmitting,
-                    ]}
-                    children={([canSubmit, isSubmitting]: any) => (
+                    <FieldGroup>
+                      <folderForm.Field
+                        name="name"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched && !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                Folder Name
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                                onBlur={field.handleBlur}
+                                aria-invalid={isInvalid}
+                                placeholder="e.g. Design Inspiration"
+                              />
+                              {isInvalid && (
+                                <FieldError
+                                  errors={field.state.meta.errors.map((err: any) =>
+                                    typeof err === "string" ? { message: err } : err
+                                  )}
+                                />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+
+                      <folderForm.Field
+                        name="description"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched && !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                Description (optional)
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                                onBlur={field.handleBlur}
+                                aria-invalid={isInvalid}
+                                placeholder="Short notes about this collection..."
+                              />
+                              {isInvalid && (
+                                <FieldError
+                                  errors={field.state.meta.errors.map((err: any) =>
+                                    typeof err === "string" ? { message: err } : err
+                                  )}
+                                />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+
+                      <folderForm.Field
+                        name="parentId"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched && !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                Parent Folder (optional)
+                              </FieldLabel>
+                              <Select
+                                value={field.state.value || ""}
+                                onValueChange={(val) =>
+                                  field.handleChange(val === "" ? null : val)
+                                }
+                              >
+                                <SelectTrigger
+                                  id={field.name}
+                                  className="rounded-none border-brand-border"
+                                >
+                                  <SelectValue placeholder="Root (No parent folder)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">
+                                    Root (No parent folder)
+                                  </SelectItem>
+                                  {folders
+                                    .filter((f) =>
+                                      folderToEdit ? f.id !== folderToEdit.id : true
+                                    )
+                                    .map((f) => (
+                                      <SelectItem key={f.id} value={f.id}>
+                                        {f.name}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              {isInvalid && (
+                                <FieldError
+                                  errors={field.state.meta.errors.map((err: any) =>
+                                    typeof err === "string" ? { message: err } : err
+                                  )}
+                                />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+                    </FieldGroup>
+
+                    <div className="flex gap-2.5 pt-2">
                       <Button
-                        type="submit"
-                        disabled={!canSubmit || isSubmitting}
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsFolderModalOpen(false)}
                         className="flex-1 text-xs uppercase"
                       >
-                        {isSubmitting ? (
-                          <Spinner className="h-3.5 w-3.5 animate-spin" />
-                        ) : folderToEdit ? (
-                          "Save Changes"
-                        ) : (
-                          "Save Folder"
-                        )}
+                        Cancel
                       </Button>
-                    )}
-                  />
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        }
-      >
-        <FolderTree
-          folders={folders}
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={(id) => {
-            onSelectFolder(id)
-            onSelectTag(undefined)
-            onSelectFavorite(undefined)
-            onSelectArchived(undefined)
-            onSelectBroken(undefined)
-            onSelectDuplicates(undefined)
-            onItemSelect?.()
-          }}
-          onEditFolder={onEditFolder}
-          onDeleteFolder={onDeleteFolder}
-          onCreateSubfolder={onCreateSubfolder}
-        />
-      </WorkspaceSidebarGroup>
-
-      {/* Tags Group */}
-      <WorkspaceSidebarGroup
-        title="Tags"
-        action={
-          <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
-            <DialogTrigger
-              onClick={() => {
-                tagForm.reset()
-                setIsTagModalOpen(true)
+                      <folderForm.Subscribe
+                        selector={(state: any) => [
+                          state.canSubmit,
+                          state.isSubmitting,
+                        ]}
+                        children={([canSubmit, isSubmitting]: any) => (
+                          <Button
+                            type="submit"
+                            disabled={!canSubmit || isSubmitting}
+                            className="flex-1 text-xs uppercase"
+                          >
+                            {isSubmitting ? (
+                              <Spinner className="h-3.5 w-3.5 animate-spin" />
+                            ) : folderToEdit ? (
+                              "Save Changes"
+                            ) : (
+                              "Save Folder"
+                            )}
+                          </Button>
+                        )}
+                      />
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            }
+          >
+            <FolderTree
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={(id) => {
+                onSelectFolder(id)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(undefined)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onItemSelect?.()
               }}
-              className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
-              title="Create tag"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </DialogTrigger>
+              onEditFolder={onEditFolder}
+              onDeleteFolder={onDeleteFolder}
+              onCreateSubfolder={onCreateSubfolder}
+            />
+          </WorkspaceSidebarGroup>
 
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>New Tag</DialogTitle>
-                <DialogDescription>
-                  Add a new tag for bookmark organization
-                </DialogDescription>
-              </DialogHeader>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  tagForm.handleSubmit()
-                }}
-                className="space-y-4"
-              >
-                <FieldGroup>
-                  <tagForm.Field
-                    name="name"
-                    children={(field: any) => {
-                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="e.g. design, reading, article"
-                            autoFocus
-                          />
-                          {isInvalid && (
-                            <FieldError
-                              errors={field.state.meta.errors.map((err: any) =>
-                                typeof err === "string" ? { message: err } : err
-                              )}
-                            />
-                          )}
-                        </Field>
-                      )
-                    }}
-                  />
-                </FieldGroup>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsTagModalOpen(false)}
-                    className="rounded-none font-mono text-xs uppercase"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isCreatingTag}
-                    className="rounded-none font-mono text-xs uppercase"
-                  >
-                    {isCreatingTag ? (
-                      <Spinner className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      "Create Tag"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        }
-      >
-        <div className="flex flex-wrap gap-1 px-2 pt-1">
-          {tags.length === 0 ? (
-            <p className="font-mono text-[10px] text-brand-muted italic">
-              No tags created
-            </p>
-          ) : (
-            tags.map((tag: any) => {
-              const isSelected = selectedTag === tag.name
-              return (
-                <div
-                  key={tag.id}
-                  className={cn(
-                    "inline-flex h-6 items-center rounded-none font-mono text-[10px] transition-colors",
-                    isSelected
-                      ? "bg-brand-charcoal font-semibold text-white"
-                      : "border border-brand-border bg-brand-canvas text-brand-muted hover:bg-brand-charcoal/10 hover:text-brand-charcoal"
-                  )}
+          {/* Tags Group */}
+          <WorkspaceSidebarGroup
+            title="Tags"
+            action={
+              <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
+                <DialogTrigger
+                  onClick={() => {
+                    tagForm.reset()
+                    setIsTagModalOpen(true)
+                  }}
+                  className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                  title="Create tag"
                 >
-                  <button
-                    onClick={() => {
-                      onSelectTag(isSelected ? undefined : tag.name)
-                      onSelectFolder(undefined)
-                      onSelectFavorite(undefined)
-                      onSelectArchived(undefined)
-                      onSelectBroken(undefined)
-                      onSelectDuplicates(undefined)
-                      onItemSelect?.()
+                  <Plus className="h-3.5 w-3.5" />
+                </DialogTrigger>
+
+                <DialogContent className="sm:max-w-xs">
+                  <DialogHeader>
+                    <DialogTitle>New Tag</DialogTitle>
+                    <DialogDescription>
+                      Create a tag label to organize your bookmarks
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      tagForm.handleSubmit()
                     }}
-                    className="flex h-full items-center gap-1.5 px-2 py-0.5"
+                    className="space-y-4"
                   >
-                    <TagIcon className="size-3" />
-                    <span>{tag.name}</span>
-                    <span
+                    <tagForm.Field
+                      name="name"
+                      children={(field: any) => {
+                        const isInvalid =
+                          field.state.meta.isTouched && !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              onBlur={field.handleBlur}
+                              aria-invalid={isInvalid}
+                              placeholder="e.g. design, ai, reading"
+                              autoFocus
+                            />
+                            {isInvalid && (
+                              <FieldError
+                                errors={field.state.meta.errors.map((err: any) =>
+                                  typeof err === "string" ? { message: err } : err
+                                )}
+                              />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsTagModalOpen(false)}
+                        className="flex-1 text-xs uppercase"
+                      >
+                        Cancel
+                      </Button>
+                      <tagForm.Subscribe
+                        selector={(state: any) => [
+                          state.canSubmit,
+                          state.isSubmitting,
+                        ]}
+                        children={([canSubmit, isSubmitting]: any) => (
+                          <Button
+                            type="submit"
+                            disabled={!canSubmit || isSubmitting || isCreatingTag}
+                            className="flex-1 text-xs uppercase"
+                          >
+                            {isCreatingTag ? (
+                              <Spinner className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              "Create"
+                            )}
+                          </Button>
+                        )}
+                      />
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            }
+          >
+            <div className="flex flex-wrap gap-1 px-2 pt-1">
+              {tags.length === 0 ? (
+                <span className="font-mono text-[10px] text-brand-muted italic">
+                  No tags yet
+                </span>
+              ) : (
+                tags.map((tag: any) => {
+                  const isSelected = selectedTag === tag.name
+                  return (
+                    <div
+                      key={tag.id}
                       className={cn(
-                        "text-[9px]",
-                        isSelected ? "text-white/70" : "text-brand-muted"
+                        "group inline-flex items-center rounded-none border font-mono text-[10px] transition-colors",
+                        isSelected
+                          ? "border-brand-charcoal bg-brand-charcoal text-white"
+                          : "border-brand-border bg-white text-brand-muted hover:border-brand-charcoal/40 hover:text-brand-charcoal"
                       )}
                     >
-                      ({tag.bookmarkCount})
-                    </span>
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation()
-                      const isConfirmed = await confirm({
-                        title: "Delete Tag",
-                        description: `Are you sure you want to delete tag "${tag.name}"? This will untag all associated bookmarks.`,
-                        actionLabel: "Delete",
-                        variant: "destructive",
-                      })
-                      if (isConfirmed) {
-                        onDeleteTag(tag.id)
-                      }
-                    }}
-                    className={cn(
-                      "flex h-full items-center justify-center border-l px-1.5 transition-colors",
-                      isSelected
-                        ? "border-white/20 hover:bg-white/10 hover:text-white"
-                        : "border-brand-border hover:bg-red-50 hover:text-red-600"
-                    )}
-                    title="Delete tag"
-                  >
-                    <X className="size-2.5" />
-                  </button>
-                </div>
-              )
-            })
-          )}
-        </div>
-      </WorkspaceSidebarGroup>
+                      <button
+                        onClick={() => {
+                          const newTag = isSelected ? undefined : tag.name
+                          onSelectTag(newTag)
+                          onSelectFolder(undefined)
+                          onSelectFavorite(undefined)
+                          onSelectArchived(undefined)
+                          onSelectBroken(undefined)
+                          onSelectDuplicates(undefined)
+                          onSelectTrash?.(undefined)
+                          onItemSelect?.()
+                        }}
+                        className="flex items-center gap-1 px-2 py-1"
+                      >
+                        <TagIcon className="size-2.5 opacity-60" />
+                        <span>{tag.name}</span>
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const isConfirmed = await confirm({
+                            title: "Delete Tag",
+                            description: `Are you sure you want to delete tag "${tag.name}"? This will untag all associated bookmarks.`,
+                            actionLabel: "Delete",
+                            variant: "destructive",
+                          })
+                          if (isConfirmed) {
+                            onDeleteTag(tag.id)
+                          }
+                        }}
+                        className={cn(
+                          "flex h-full items-center justify-center border-l px-1.5 transition-colors",
+                          isSelected
+                            ? "border-white/20 hover:bg-white/10 hover:text-white"
+                            : "border-brand-border hover:bg-red-50 hover:text-red-600"
+                        )}
+                        title="Delete tag"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </WorkspaceSidebarGroup>
+        </>
+      )}
 
       {/* Sync Group */}
-      <WorkspaceSidebarGroup title="Sync">
-        <div className="flex flex-col gap-2 px-2 pt-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex h-8 w-full items-center justify-center gap-1.5 font-mono text-[10px] uppercase"
+      {viewSection !== "folders" && (
+        <WorkspaceSidebarGroup title="Sync">
+          <div className="flex flex-col gap-2 px-2 pt-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex h-8 w-full items-center justify-center gap-1.5 font-mono text-[10px] uppercase"
+                >
+                  <DownloadSimple className="size-3.5" />
+                  Export Bookmarks
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="min-w-none w-[var(--radix-dropdown-menu-trigger-width)]"
               >
-                <DownloadSimple className="size-3.5" />
-                Export Bookmarks
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="min-w-none w-[var(--radix-dropdown-menu-trigger-width)]"
-            >
-              <DropdownMenuItem onClick={() => onExport("html")}>
-                Export as HTML (.html)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExport("csv")}>
-                Export as CSV (.csv)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExport("txt")}>
-                Export as TXT (.txt)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExport("zip")}>
-                Export as ZIP Archive (.zip)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem onClick={() => onExport("html")}>
+                  Export as HTML (.html)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onExport("csv")}>
+                  Export as CSV (.csv)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onExport("txt")}>
+                  Export as TXT (.txt)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onExport("zip")}>
+                  Export as ZIP Archive (.zip)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <label className="w-full">
-            <span className="flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-none border border-brand-border bg-white px-3 font-mono text-xs text-[10px] font-semibold text-brand-charcoal uppercase shadow-none transition-colors hover:bg-brand-canvas">
-              <UploadSimple className="size-3.5" />
-              Import HTML
-            </span>
-            <input
-              type="file"
-              accept=".html"
-              onChange={onImport}
-              className="hidden"
-            />
-          </label>
-        </div>
-      </WorkspaceSidebarGroup>
+            <label className="w-full">
+              <span className="flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-none border border-brand-border bg-white px-3 font-mono text-xs text-[10px] font-semibold text-brand-charcoal uppercase shadow-none transition-colors hover:bg-brand-canvas">
+                <UploadSimple className="size-3.5" />
+                Import HTML
+              </span>
+              <input
+                type="file"
+                accept=".html"
+                onChange={onImport}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </WorkspaceSidebarGroup>
+      )}
     </WorkspaceSidebar>
   )
 }

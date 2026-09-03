@@ -62,7 +62,7 @@ export function WorkspaceHeader({
   const initial = moduleInitial || moduleName.charAt(0).toUpperCase()
 
   return (
-    <header className="flex flex-col justify-between gap-4 border-b border-brand-border pb-5 md:flex-row md:items-center">
+    <header className="flex items-center justify-between gap-3 border-b border-brand-border pb-3 md:pb-5">
       {/* Brand & Module Title */}
       <div className="flex items-center gap-3">
         <Link

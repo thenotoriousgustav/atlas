@@ -156,40 +156,40 @@ export function Toolbar({
   }
 
   return (
-    <div className="flex flex-col justify-between gap-3 rounded-none bg-white py-1 shadow-none sm:flex-row sm:items-center">
-      <div className="flex w-full flex-col gap-2.5 sm:flex-1 sm:flex-row sm:items-center sm:gap-3">
-        {/* Mobile Filter Button (visible only on < md) */}
-        <div className="flex items-center gap-2 md:hidden">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onOpenMobileFilters}
-            className="flex h-9 flex-1 items-center justify-between gap-2 rounded-none border border-brand-border bg-white px-3 font-mono text-xs font-semibold text-brand-charcoal hover:bg-brand-canvas"
-          >
-            <span className="flex items-center gap-1.5">
-              <Faders className="size-4 text-brand-muted" />
-              <span>Filters & Folders</span>
-            </span>
-            {activeFilterLabel && (
-              <span className="max-w-[120px] truncate rounded-none bg-brand-charcoal px-1.5 py-0.5 text-[9px] font-bold text-white uppercase">
-                {activeFilterLabel}
-              </span>
-            )}
-          </Button>
-
-          <Button
-            onClick={() => {
-              resetBookmarkForm()
-              setIsBookmarkModalOpen(true)
-            }}
-            className="flex h-9 shrink-0 items-center gap-1 rounded-none bg-brand-charcoal px-3 text-xs font-semibold text-white uppercase hover:bg-brand-charcoal/90"
-          >
-            <Plus className="size-4" />
-            Add
-          </Button>
+    <div className="flex flex-col justify-between gap-2.5 rounded-none bg-white py-1 shadow-none sm:flex-row sm:items-center">
+      {/* Mobile Top Bar (visible on < md): Active Filter Label + View Mode Toggles */}
+      <div className="flex items-center justify-between gap-2 md:hidden">
+        <div className="flex items-center gap-2">
+          <span className="font-serif text-base font-medium text-brand-charcoal">
+            {activeFilterLabel || "All Bookmarks"}
+          </span>
         </div>
 
+        <div className="flex items-center gap-1.5">
+          <ButtonGroup className="shrink-0 border border-brand-border bg-brand-charcoal/5 p-0.5">
+            <Button
+              onClick={() => onViewModeChange("moodboard")}
+              variant={viewMode === "moodboard" ? "default" : "ghost"}
+              size="icon-xs"
+              className="size-7"
+              title="Moodboard View"
+            >
+              <SquaresFour className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              onClick={() => onViewModeChange("list")}
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="icon-xs"
+              className="size-7"
+              title="List View"
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
+          </ButtonGroup>
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col gap-2.5 sm:flex-1 sm:flex-row sm:items-center sm:gap-3">
         {/* Search Input */}
         <InputGroup className="h-9 w-full sm:max-w-md">
           <InputGroupInput
@@ -204,8 +204,8 @@ export function Toolbar({
           </InputGroupAddon>
         </InputGroup>
 
-        {/* View Mode & Column Toggles */}
-        <div className="flex items-center justify-between gap-2 sm:justify-start">
+        {/* View Mode & Column Toggles for Desktop */}
+        <div className="hidden items-center justify-between gap-2 md:flex sm:justify-start">
           <ButtonGroup className="shrink-0 border border-brand-border bg-brand-charcoal/5 p-0.5">
             <Tooltip>
               <TooltipTrigger asChild>

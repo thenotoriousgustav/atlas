@@ -9,9 +9,10 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@atlas/ui/components/empty';
-import { BookmarkSimple } from '@phosphor-icons/react';
+import { BookmarkSimple, Trash } from '@phosphor-icons/react';
 import { BookmarkListView } from './bookmark-list-view';
 import { BookmarkMoodboardView, MoodboardCard } from './bookmark-moodboard-view';
+import { BookmarkActionSheet } from './bookmark-action-sheet';
 
 interface BookmarkListProps {
   bookmarks: any[];
@@ -36,6 +37,10 @@ interface BookmarkListProps {
   totalBookmarks?: number;
   columnCount?: number;
   onReorder?: (newOrder: any[]) => void;
+  isTrashView?: boolean;
+  onRestoreBookmark?: (id: string) => void;
+  onPermanentDeleteBookmark?: (id: string) => void;
+  onEmptyTrash?: () => void;
 }
 
 export function BookmarkList({
@@ -61,8 +66,13 @@ export function BookmarkList({
   totalBookmarks,
   columnCount = 3,
   onReorder,
+  isTrashView,
+  onRestoreBookmark,
+  onPermanentDeleteBookmark,
+  onEmptyTrash,
 }: BookmarkListProps) {
   const [windowWidth, setWindowWidth] = React.useState<number | null>(null);
+  const [actionSheetBookmark, setActionSheetBookmark] = React.useState<any | null>(null);
 
   React.useEffect(() => {
     setWindowWidth(window.innerWidth);
@@ -81,6 +91,9 @@ export function BookmarkList({
   }, [columnCount, windowWidth]);
 
   const getHeaderTitle = () => {
+    if (isTrashView) {
+      return 'Trash';
+    }
     if (selectedFolderId) {
       const folderName = folders.find((f: any) => f.id === selectedFolderId)?.name;
       return `Folder: ${folderName || 'Loading...'}`;
@@ -127,12 +140,28 @@ export function BookmarkList({
       {/* List Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xs font-mono text-brand-muted uppercase tracking-wider flex items-center gap-2">
-          <BookmarkSimple className="w-4 h-4 text-brand-charcoal" />
+          {isTrashView ? (
+            <Trash className="w-4 h-4 text-brand-charcoal" />
+          ) : (
+            <BookmarkSimple className="w-4 h-4 text-brand-charcoal" />
+          )}
           {isDuplicatesView ? 'Duplicate Bookmark Groups' : getHeaderTitle()}
         </h2>
-        <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
-          {isDuplicatesView ? `${duplicateGroups?.length || 0} Groups` : `${totalBookmarks !== undefined ? totalBookmarks : bookmarks.length} Items`}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {isTrashView && bookmarks.length > 0 && onEmptyTrash && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEmptyTrash}
+              className="h-7 rounded-none border-brand-border px-2.5 font-mono text-[10px] uppercase text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+            >
+              Empty Trash
+            </Button>
+          )}
+          <Badge variant="outline" className="font-mono text-[9px] px-2 py-0.5">
+            {isDuplicatesView ? `${duplicateGroups?.length || 0} Groups` : `${totalBookmarks !== undefined ? totalBookmarks : bookmarks.length} Items`}
+          </Badge>
+        </div>
       </div>
 
       {isBookmarksLoading ? (
@@ -143,8 +172,10 @@ export function BookmarkList({
       ) : bookmarks.length === 0 ? (
         <Empty className="bg-white border border-brand-border rounded-none p-10">
           <EmptyHeader>
-            <EmptyTitle>No bookmarks found</EmptyTitle>
-            <EmptyDescription>No bookmarks found matching the filters.</EmptyDescription>
+            <EmptyTitle>{isTrashView ? 'Trash is empty' : 'No bookmarks found'}</EmptyTitle>
+            <EmptyDescription>
+              {isTrashView ? 'No bookmarks in the trash.' : 'No bookmarks found matching the filters.'}
+            </EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : isDuplicatesView ? (
@@ -224,6 +255,10 @@ export function BookmarkList({
               onDuplicateBookmark={onDuplicateBookmark}
               getHostname={getHostname}
               onReorder={onReorder}
+              isTrashView={isTrashView}
+              onRestoreBookmark={onRestoreBookmark}
+              onPermanentDeleteBookmark={onPermanentDeleteBookmark}
+              onOpenActionSheet={setActionSheetBookmark}
             />
           ) : (
             <BookmarkMoodboardView
@@ -240,10 +275,28 @@ export function BookmarkList({
               getHostname={getHostname}
               getPastelColor={getPastelColor}
               onReorder={onReorder}
+              isTrashView={isTrashView}
+              onRestoreBookmark={onRestoreBookmark}
+              onPermanentDeleteBookmark={onPermanentDeleteBookmark}
+              onOpenActionSheet={setActionSheetBookmark}
             />
           )}
         </div>
       )}
+
+      {/* Mobile Native Bottom Action Sheet for Bookmark Actions */}
+      <BookmarkActionSheet
+        open={!!actionSheetBookmark}
+        onOpenChange={(open) => !open && setActionSheetBookmark(null)}
+        bookmark={actionSheetBookmark}
+        onEditBookmark={onEditBookmark}
+        onDuplicateBookmark={onDuplicateBookmark}
+        onToggleArchive={onToggleArchive}
+        onDeleteBookmark={onDeleteBookmark}
+        isTrashView={isTrashView}
+        onRestoreBookmark={onRestoreBookmark}
+        onPermanentDeleteBookmark={onPermanentDeleteBookmark}
+      />
     </div>
   );
 }

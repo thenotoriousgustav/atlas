@@ -142,6 +142,7 @@ export class BookmarksService {
       folderId?: string
       isFavorite?: boolean
       isArchived?: boolean
+      isTrash?: boolean
       tag?: string
       search?: string
       cursor?: string
@@ -149,9 +150,10 @@ export class BookmarksService {
       status?: string
     }
   ) {
+    // ponytail: single where condition handles both active items and trash
     const where: any = {
       userId,
-      deletedAt: null,
+      deletedAt: filters.isTrash ? { not: null } : null,
     }
 
     if (filters.folderId) {
@@ -306,6 +308,91 @@ export class BookmarksService {
     })
   }
 
+  // ponytail: restore soft-deleted bookmark; detach orphaned folder if folder was deleted
+  async restore(userId: string, id: string) {
+    const bookmark = await this.prisma.bookmark.findFirst({
+      where: { id, userId, deletedAt: { not: null } },
+    })
+
+    if (!bookmark) {
+      throw new NotFoundException("Bookmark not found in trash")
+    }
+
+    let folderId = bookmark.folderId
+    if (folderId) {
+      const folder = await this.prisma.folder.findFirst({
+        where: { id: folderId, userId, deletedAt: null },
+      })
+      if (!folder) {
+        folderId = null
+      }
+    }
+
+    return this.prisma.bookmark.update({
+      where: { id },
+      data: {
+        deletedAt: null,
+        folderId,
+      },
+      include: {
+        tags: true,
+        folder: true,
+      },
+    })
+  }
+
+  // ponytail: bulk restore via updateMany
+  async bulkRestore(userId: string, ids: string[]) {
+    const result = await this.prisma.bookmark.updateMany({
+      where: {
+        id: { in: ids },
+        userId,
+        deletedAt: { not: null },
+      },
+      data: {
+        deletedAt: null,
+      },
+    })
+    return { restored: result.count }
+  }
+
+  // ponytail: hard delete single bookmark from database
+  async permanentDelete(userId: string, id: string) {
+    const bookmark = await this.prisma.bookmark.findFirst({
+      where: { id, userId },
+    })
+
+    if (!bookmark) {
+      throw new NotFoundException("Bookmark not found")
+    }
+
+    return this.prisma.bookmark.delete({
+      where: { id },
+    })
+  }
+
+  // ponytail: bulk permanent delete via deleteMany
+  async bulkPermanentDelete(userId: string, ids: string[]) {
+    const result = await this.prisma.bookmark.deleteMany({
+      where: {
+        id: { in: ids },
+        userId,
+      },
+    })
+    return { deleted: result.count }
+  }
+
+  // ponytail: empty all items in trash via deleteMany
+  async emptyTrash(userId: string) {
+    const result = await this.prisma.bookmark.deleteMany({
+      where: {
+        userId,
+        deletedAt: { not: null },
+      },
+    })
+    return { deleted: result.count }
+  }
+
   async exportBookmarks(userId: string): Promise<string> {
     const folders = await this.prisma.folder.findMany({
       where: { userId, deletedAt: null },
@@ -435,6 +522,9 @@ export class BookmarksService {
     const archived = await this.prisma.bookmark.count({
       where: { userId, isArchived: true, deletedAt: null },
     })
+    const trash = await this.prisma.bookmark.count({
+      where: { userId, deletedAt: { not: null } },
+    })
 
     const duplicatesGrouped = await this.prisma.bookmark.groupBy({
       by: ["url"],
@@ -450,7 +540,7 @@ export class BookmarksService {
     })
     const duplicates = duplicatesGrouped.length
 
-    return { total, broken, redirected, favorites, archived, duplicates }
+    return { total, broken, redirected, favorites, archived, duplicates, trash }
   }
 
   async getDuplicates(userId: string) {

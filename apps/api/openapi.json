@@ -322,6 +322,14 @@
             }
           },
           {
+            "name": "isTrash",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "tag",
             "required": false,
             "in": "query",
@@ -538,6 +546,66 @@
         ]
       }
     },
+    "/v1/bookmarks/bulk/restore": {
+      "post": {
+        "operationId": "BookmarksController_bulkRestore",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore multiple soft-deleted bookmarks",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/bulk/permanent-delete": {
+      "post": {
+        "operationId": "BookmarksController_bulkPermanentDelete",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Permanently delete multiple bookmarks",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/trash/empty": {
+      "delete": {
+        "operationId": "BookmarksController_emptyTrash",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Permanently delete all bookmarks in trash",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/{id}": {
       "get": {
         "operationId": "BookmarksController_findOne",
@@ -631,6 +699,35 @@
         ]
       }
     },
+    "/v1/bookmarks/{id}/restore": {
+      "post": {
+        "operationId": "BookmarksController_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a soft-deleted bookmark",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/{id}/enrichment/refresh": {
       "post": {
         "operationId": "BookmarksController_refreshEnrichment",
@@ -655,6 +752,35 @@
           }
         ],
         "summary": "Refresh enrichment metadata for a bookmark",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/{id}/permanent": {
+      "delete": {
+        "operationId": "BookmarksController_permanentDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Permanently delete a bookmark by ID",
         "tags": [
           "bookmarks"
         ]

@@ -34,7 +34,7 @@ import { ModuleContainer } from "@/components/module-container"
 import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
 import { Toolbar } from "./components/toolbar"
 import { BookmarkList } from "./components/bookmark-list"
-import { Archive, Trash } from "@phosphor-icons/react"
+import { Archive, Trash, ArrowCounterClockwise } from "@phosphor-icons/react"
 import { Button } from "@atlas/ui/components/button"
 import { Spinner } from "@atlas/ui/components/spinner"
 import {
@@ -58,6 +58,15 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@atlas/ui/components/sheet"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@atlas/ui/components/drawer"
+import { MobileBottomNav, type MobileTab } from "./components/mobile-bottom-nav"
+import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer"
 
 const folderSchema = z.object({
   name: z
@@ -107,8 +116,52 @@ export function CabinetDashboard() {
   const [filterDuplicates, setFilterDuplicates] = useState<boolean | undefined>(
     undefined
   )
+  const [filterTrash, setFilterTrash] = useState<boolean | undefined>(undefined)
   const [columnCount, setColumnCount] = useState<number>(3)
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
+  const [mobileDrawerMode, setMobileDrawerMode] = useState<"folders" | "library" | null>(null)
+  const [isMobileAddOpen, setIsMobileAddOpen] = useState(false)
+
+  const activeMobileTab = React.useMemo<MobileTab>(() => {
+    if (filterFavorite) return "favorites"
+    if (selectedFolderId) return "folders"
+    if (filterTrash || filterBroken || filterDuplicates || filterArchived)
+      return "library"
+    return "all"
+  }, [
+    filterFavorite,
+    selectedFolderId,
+    filterTrash,
+    filterBroken,
+    filterDuplicates,
+    filterArchived,
+  ])
+
+  const handleSelectMobileTab = (tab: MobileTab) => {
+    if (tab === "all") {
+      setSelectedFolderId(undefined)
+      setSelectedTag(undefined)
+      setFilterFavorite(undefined)
+      setFilterArchived(false)
+      setFilterBroken(undefined)
+      setFilterDuplicates(undefined)
+      setFilterTrash(undefined)
+    } else if (tab === "favorites") {
+      setSelectedFolderId(undefined)
+      setSelectedTag(undefined)
+      setFilterFavorite(true)
+      setFilterArchived(undefined)
+      setFilterBroken(undefined)
+      setFilterDuplicates(undefined)
+      setFilterTrash(undefined)
+    } else if (tab === "folders") {
+      setMobileDrawerMode("folders")
+    } else if (tab === "library") {
+      setMobileDrawerMode("library")
+    } else if (tab === "add") {
+      resetBookmarkForm()
+      setIsMobileAddOpen(true)
+    }
+  }
 
   // Load viewMode and columnCount from localStorage on mount
   useEffect(() => {
@@ -271,6 +324,7 @@ export function CabinetDashboard() {
   const tags = (tagsData as any)?.data || []
 
   const activeFilterLabel = React.useMemo(() => {
+    if (filterTrash) return "Trash"
     if (selectedFolderId) {
       const folder = folders.find((f: any) => f.id === selectedFolderId)
       return folder ? folder.name : "Folder"
@@ -282,6 +336,7 @@ export function CabinetDashboard() {
     if (filterDuplicates) return "Duplicates"
     return undefined
   }, [
+    filterTrash,
     selectedFolderId,
     selectedTag,
     filterFavorite,
@@ -299,14 +354,15 @@ export function CabinetDashboard() {
     isFetchingNextPage,
   } = useBookmarksControllerFindAllInfinite(
     {
-      folderId: selectedFolderId,
-      isFavorite: filterFavorite,
-      isArchived: filterArchived,
-      tag: selectedTag,
+      folderId: filterTrash ? undefined : selectedFolderId,
+      isFavorite: filterTrash ? undefined : filterFavorite,
+      isArchived: filterTrash ? undefined : filterArchived,
+      isTrash: filterTrash,
+      tag: filterTrash ? undefined : selectedTag,
       search: searchDebounced || undefined,
       limit: 20,
       status: filterBroken ? "BROKEN" : undefined,
-    },
+    } as any,
     {
       query: {
         initialPageParam: undefined,
@@ -592,18 +648,103 @@ export function CabinetDashboard() {
 
   const handleDeleteBookmark = async (id: string) => {
     const isConfirmed = await confirm({
-      title: "Delete Bookmark",
-      description: "Are you sure you want to delete this bookmark?",
-      actionLabel: "Delete",
+      title: "Move to Trash",
+      description:
+        "Are you sure you want to move this bookmark to Trash? You can restore it anytime.",
+      actionLabel: "Move to Trash",
       variant: "destructive",
     })
     if (isConfirmed) {
       try {
         await removeBookmarkMutation.mutateAsync({ id })
         invalidateAllQueries()
+        toast.success("Bookmark moved to Trash")
       } catch {
-        toast.error("Failed to delete bookmark")
+        toast.error("Failed to move bookmark to Trash")
       }
+    }
+  }
+
+  // Trash handlers
+  const handleRestoreBookmark = async (id: string) => {
+    try {
+      await AXIOS_INSTANCE.post(`/v1/bookmarks/${id}/restore`)
+      invalidateAllQueries()
+      toast.success("Bookmark restored")
+    } catch {
+      toast.error("Failed to restore bookmark")
+    }
+  }
+
+  const handlePermanentDeleteBookmark = async (id: string) => {
+    const isConfirmed = await confirm({
+      title: "Permanently Delete Bookmark",
+      description:
+        "This will permanently delete this bookmark. This action cannot be undone.",
+      actionLabel: "Delete Permanently",
+      variant: "destructive",
+    })
+    if (!isConfirmed) return
+    try {
+      await AXIOS_INSTANCE.delete(`/v1/bookmarks/${id}/permanent`)
+      invalidateAllQueries()
+      toast.success("Bookmark permanently deleted")
+    } catch {
+      toast.error("Failed to permanently delete bookmark")
+    }
+  }
+
+  const handleEmptyTrash = async () => {
+    const isConfirmed = await confirm({
+      title: "Empty Trash?",
+      description:
+        "Are you sure you want to permanently delete all bookmarks in Trash? This action cannot be undone.",
+      actionLabel: "Empty Trash",
+      variant: "destructive",
+    })
+    if (!isConfirmed) return
+    try {
+      await AXIOS_INSTANCE.delete("/v1/bookmarks/trash/empty")
+      invalidateAllQueries()
+      setSelectedBookmarkIds([])
+      toast.success("Trash emptied")
+    } catch {
+      toast.error("Failed to empty trash")
+    }
+  }
+
+  const handleBulkRestore = async () => {
+    if (selectedBookmarkIds.length === 0) return
+    try {
+      await AXIOS_INSTANCE.post("/v1/bookmarks/bulk/restore", {
+        ids: selectedBookmarkIds,
+      })
+      invalidateAllQueries()
+      setSelectedBookmarkIds([])
+      toast.success("Selected bookmarks restored")
+    } catch {
+      toast.error("Failed to restore some bookmarks")
+    }
+  }
+
+  const handleBulkPermanentDelete = async () => {
+    if (selectedBookmarkIds.length === 0) return
+    const isConfirmed = await confirm({
+      title: "Permanently Delete Selected Bookmarks",
+      description: `Are you sure you want to permanently delete ${selectedBookmarkIds.length} selected bookmarks? This action cannot be undone.`,
+      actionLabel: "Delete Permanently",
+      variant: "destructive",
+    })
+    if (!isConfirmed) return
+    try {
+      await AXIOS_INSTANCE.post("/v1/bookmarks/bulk/permanent-delete", {
+        ids: selectedBookmarkIds,
+      })
+      invalidateAllQueries()
+      setSelectedBookmarkIds([])
+      toast.success("Selected bookmarks permanently deleted")
+    } catch {
+      toast.error("Failed to delete some bookmarks")
     }
   }
 
@@ -721,9 +862,9 @@ export function CabinetDashboard() {
 
   const handleBulkDelete = async () => {
     const isConfirmed = await confirm({
-      title: "Delete Selected Bookmarks",
-      description: `Are you sure you want to delete ${selectedBookmarkIds.length} selected bookmarks?`,
-      actionLabel: "Delete",
+      title: "Move Selected Bookmarks to Trash",
+      description: `Are you sure you want to move ${selectedBookmarkIds.length} selected bookmarks to Trash?`,
+      actionLabel: "Move to Trash",
       variant: "destructive",
     })
     if (!isConfirmed) return
@@ -735,6 +876,7 @@ export function CabinetDashboard() {
       )
       invalidateAllQueries()
       setSelectedBookmarkIds([])
+      toast.success("Selected bookmarks moved to Trash")
     } catch {
       toast.error("Failed to delete some bookmarks")
     }
@@ -961,6 +1103,7 @@ export function CabinetDashboard() {
                     setFilterFavorite(undefined)
                     setFilterArchived(undefined)
                     setFilterDuplicates(undefined)
+                    setFilterTrash(undefined)
                   }
                 }}
                 filterDuplicates={filterDuplicates}
@@ -972,6 +1115,19 @@ export function CabinetDashboard() {
                     setFilterFavorite(undefined)
                     setFilterArchived(undefined)
                     setFilterBroken(undefined)
+                    setFilterTrash(undefined)
+                  }
+                }}
+                filterTrash={filterTrash}
+                onSelectTrash={(val) => {
+                  setFilterTrash(val)
+                  if (val) {
+                    setSelectedFolderId(undefined)
+                    setSelectedTag(undefined)
+                    setFilterFavorite(undefined)
+                    setFilterArchived(undefined)
+                    setFilterBroken(undefined)
+                    setFilterDuplicates(undefined)
                   }
                 }}
                 healthSummary={healthSummary}
@@ -982,25 +1138,27 @@ export function CabinetDashboard() {
               />
             </aside>
 
-            {/* Mobile Slide-over Drawer / Sheet for Sidebar Filters */}
-            <Sheet
-              open={isMobileFiltersOpen}
-              onOpenChange={setIsMobileFiltersOpen}
+            {/* Mobile Bottom Drawer for Collections & Filters */}
+            <Drawer
+              open={mobileDrawerMode !== null}
+              onOpenChange={(open) => !open && setMobileDrawerMode(null)}
             >
-              <SheetContent
-                side="left"
-                className="w-[85vw] max-w-sm overflow-y-auto rounded-none border-r border-brand-border bg-brand-canvas p-4"
-              >
-                <SheetHeader className="border-b border-brand-border pb-3 text-left">
-                  <SheetTitle className="font-serif text-lg font-medium text-brand-charcoal">
-                    Collections & Filters
-                  </SheetTitle>
-                  <SheetDescription className="font-mono text-[10px] text-brand-muted uppercase">
-                    Cabinet Workspace Navigation
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="py-2">
+              <DrawerContent className="max-h-[85dvh] rounded-none border-t border-brand-border bg-brand-canvas px-0 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+                <DrawerHeader className="border-b border-brand-border px-5 py-3 text-left">
+                  <DrawerTitle className="font-serif text-lg font-medium text-brand-charcoal">
+                    {mobileDrawerMode === "folders"
+                      ? "Folders & Tags"
+                      : "Library & Tools"}
+                  </DrawerTitle>
+                  <DrawerDescription className="font-mono text-[10px] text-brand-muted uppercase">
+                    {mobileDrawerMode === "folders"
+                      ? "Browse and organize by folder hierarchy and tag"
+                      : "System filters, trash, and backup utilities"}
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="overflow-y-auto px-4 py-2">
                   <CabinetSidebarFilters
+                    viewSection={mobileDrawerMode || "all"}
                     selectedFolderId={selectedFolderId}
                     onSelectFolder={setSelectedFolderId}
                     selectedTag={selectedTag}
@@ -1028,6 +1186,7 @@ export function CabinetDashboard() {
                         setFilterFavorite(undefined)
                         setFilterArchived(undefined)
                         setFilterDuplicates(undefined)
+                        setFilterTrash(undefined)
                       }
                     }}
                     filterDuplicates={filterDuplicates}
@@ -1039,6 +1198,19 @@ export function CabinetDashboard() {
                         setFilterFavorite(undefined)
                         setFilterArchived(undefined)
                         setFilterBroken(undefined)
+                        setFilterTrash(undefined)
+                      }
+                    }}
+                    filterTrash={filterTrash}
+                    onSelectTrash={(val) => {
+                      setFilterTrash(val)
+                      if (val) {
+                        setSelectedFolderId(undefined)
+                        setSelectedTag(undefined)
+                        setFilterFavorite(undefined)
+                        setFilterArchived(undefined)
+                        setFilterBroken(undefined)
+                        setFilterDuplicates(undefined)
                       }
                     }}
                     healthSummary={healthSummary}
@@ -1046,14 +1218,14 @@ export function CabinetDashboard() {
                     onExport={handleExport}
                     onImport={handleImport}
                     resetFolderForm={resetFolderForm}
-                    onItemSelect={() => setIsMobileFiltersOpen(false)}
+                    onItemSelect={() => setMobileDrawerMode(null)}
                   />
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DrawerContent>
+            </Drawer>
 
             {/* Main Independent Scrollable Content Area (3 cols desktop, full width mobile) */}
-            <section className="col-span-1 h-full space-y-4 overflow-y-auto pr-0 sm:space-y-6 sm:pr-2 md:col-span-3">
+            <section className="col-span-1 h-full space-y-4 overflow-y-auto pr-0 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:space-y-6 sm:pr-2 md:col-span-3 md:pb-8">
               {/* Toolbar (Search & Add) */}
               <Toolbar
                 searchQuery={searchQuery}
@@ -1069,7 +1241,7 @@ export function CabinetDashboard() {
                 onViewModeChange={handleViewModeChange}
                 columnCount={columnCount}
                 onColumnCountChange={handleColumnCountChange}
-                onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
+                onOpenMobileFilters={() => setMobileDrawerMode("folders")}
                 activeFilterLabel={activeFilterLabel}
               />
 
@@ -1096,6 +1268,7 @@ export function CabinetDashboard() {
                   setFilterFavorite(undefined)
                   setFilterBroken(undefined)
                   setFilterDuplicates(undefined)
+                  setFilterTrash(undefined)
                 }}
                 onToggleFavorite={toggleFavorite}
                 onToggleArchive={toggleArchive}
@@ -1106,6 +1279,10 @@ export function CabinetDashboard() {
                 duplicateGroups={duplicateGroups}
                 onCleanDuplicates={handleCleanDuplicates}
                 onReorder={handleReorder}
+                isTrashView={filterTrash}
+                onRestoreBookmark={handleRestoreBookmark}
+                onPermanentDeleteBookmark={handlePermanentDeleteBookmark}
+                onEmptyTrash={handleEmptyTrash}
               />
 
               {/* Load More Button */}
@@ -1136,7 +1313,7 @@ export function CabinetDashboard() {
       <ActionBar
         open={selectedBookmarkIds.length > 0}
         align="center"
-        className="max-w-[calc(100vw-1.5rem)] gap-1.5 overflow-x-auto rounded-none border border-brand-border bg-white p-1.5 shadow-md"
+        className="bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] md:bottom-6 max-w-[calc(100vw-1.5rem)] gap-1.5 overflow-x-auto rounded-none border border-brand-border bg-white p-1.5 shadow-md"
       >
         <ActionBarSelection className="border-none bg-transparent px-2 py-0 font-mono text-[10px] tracking-wider text-brand-muted uppercase">
           {selectedBookmarkIds.length} Selected
@@ -1156,37 +1333,59 @@ export function CabinetDashboard() {
               : "Select All"}
           </ActionBarItem>
 
-          <Select
-            onValueChange={(folderId) => handleBulkMove(folderId || null)}
-          >
-            <SelectTrigger className="h-8 w-auto gap-1 rounded-none border-brand-border bg-white font-mono text-[10px] font-bold text-brand-charcoal uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
-              <SelectValue placeholder="Move to folder..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Root (No Folder)</SelectItem>
-              {folders.map((f: any) => (
-                <SelectItem key={f.id} value={f.id}>
-                  {f.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {filterTrash ? (
+            <>
+              <ActionBarItem
+                onClick={handleBulkRestore}
+                className="h-8 rounded-none border border-brand-border bg-white px-3 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase hover:bg-brand-canvas"
+              >
+                <ArrowCounterClockwise className="mr-1 h-3.5 w-3.5" />
+                Restore
+              </ActionBarItem>
 
-          <ActionBarItem
-            onClick={handleBulkArchive}
-            className="h-8 rounded-none border border-brand-border bg-white px-3 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase hover:bg-brand-canvas"
-          >
-            <Archive className="mr-1 h-3.5 w-3.5" />
-            Archive
-          </ActionBarItem>
+              <ActionBarItem
+                onClick={handleBulkPermanentDelete}
+                className="bg-brand-red-bg text-brand-red-text border-brand-red-text/20 h-8 rounded-none border px-3 text-[10px] font-bold tracking-wider uppercase hover:bg-[#fff0f2]"
+              >
+                <Trash className="mr-1 h-3.5 w-3.5" />
+                Delete Permanently
+              </ActionBarItem>
+            </>
+          ) : (
+            <>
+              <Select
+                onValueChange={(folderId) => handleBulkMove(folderId || null)}
+              >
+                <SelectTrigger className="h-8 w-auto gap-1 rounded-none border-brand-border bg-white font-mono text-[10px] font-bold text-brand-charcoal uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
+                  <SelectValue placeholder="Move to folder..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Root (No Folder)</SelectItem>
+                  {folders.map((f: any) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <ActionBarItem
-            onClick={handleBulkDelete}
-            className="bg-brand-red-bg text-brand-red-text border-brand-red-text/20 h-8 rounded-none border px-3 text-[10px] font-bold tracking-wider uppercase hover:bg-[#fff0f2]"
-          >
-            <Trash className="mr-1 h-3.5 w-3.5" />
-            Delete
-          </ActionBarItem>
+              <ActionBarItem
+                onClick={handleBulkArchive}
+                className="h-8 rounded-none border border-brand-border bg-white px-3 text-[10px] font-bold tracking-wider text-brand-charcoal uppercase hover:bg-brand-canvas"
+              >
+                <Archive className="mr-1 h-3.5 w-3.5" />
+                Archive
+              </ActionBarItem>
+
+              <ActionBarItem
+                onClick={handleBulkDelete}
+                className="bg-brand-red-bg text-brand-red-text border-brand-red-text/20 h-8 rounded-none border px-3 text-[10px] font-bold tracking-wider uppercase hover:bg-[#fff0f2]"
+              >
+                <Trash className="mr-1 h-3.5 w-3.5" />
+                Move to Trash
+              </ActionBarItem>
+            </>
+          )}
 
           <ActionBarSeparator />
 
@@ -1200,6 +1399,30 @@ export function CabinetDashboard() {
           </Button>
         </ActionBarGroup>
       </ActionBar>
+
+      {/* Mobile Add Bookmark Drawer */}
+      <MobileAddBookmarkDrawer
+        open={isMobileAddOpen}
+        onOpenChange={setIsMobileAddOpen}
+        bookmarkForm={bookmarkForm}
+        bookmarkToEdit={bookmarkToEdit}
+        folders={folders}
+        tags={tags}
+        resetBookmarkForm={resetBookmarkForm}
+      />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        activeTab={activeMobileTab}
+        onSelectTab={handleSelectMobileTab}
+        onOpenAdd={() => {
+          resetBookmarkForm()
+          setIsMobileAddOpen(true)
+        }}
+        onOpenCollections={() => setMobileDrawerMode("folders")}
+        onOpenLibrary={() => setMobileDrawerMode("library")}
+        trashCount={healthSummary?.trash || 0}
+      />
     </div>
   )
 }
