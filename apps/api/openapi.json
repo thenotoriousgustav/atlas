@@ -516,6 +516,26 @@
         ]
       }
     },
+    "/v1/bookmarks/enrich-missing": {
+      "post": {
+        "operationId": "BookmarksController_enrichMissing",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Queue background enrichment for bookmarks with missing images/metadata",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/reorder": {
       "patch": {
         "operationId": "BookmarksController_reorder",
@@ -2207,6 +2227,519 @@
           "habits"
         ]
       }
+    },
+    "/v1/queue/overview": {
+      "get": {
+        "operationId": "QueueController_getOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get queue badge counts for Inbox, Today, Upcoming, and Overdue",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/tasks": {
+      "get": {
+        "operationId": "QueueController_findAllTasks",
+        "parameters": [
+          {
+            "name": "view",
+            "required": false,
+            "in": "query",
+            "description": "Filter view mode",
+            "schema": {
+              "default": "today",
+              "type": "string",
+              "enum": [
+                "inbox",
+                "today",
+                "upcoming",
+                "completed",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Project UUID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "areaId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Area UUID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "label",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Label name or ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priority",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Priority level",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "P1",
+                "P2",
+                "P3",
+                "P4"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term across title and description",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List tasks filtered by view, project, area, label, or search",
+        "tags": [
+          "queue"
+        ]
+      },
+      "post": {
+        "operationId": "QueueController_createTask",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new task",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/tasks/{id}": {
+      "get": {
+        "operationId": "QueueController_findOneTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get task detail by ID",
+        "tags": [
+          "queue"
+        ]
+      },
+      "patch": {
+        "operationId": "QueueController_updateTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update task properties",
+        "tags": [
+          "queue"
+        ]
+      },
+      "delete": {
+        "operationId": "QueueController_deleteTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a task",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/tasks/{id}/toggle": {
+      "post": {
+        "operationId": "QueueController_toggleTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "1-click toggle task completion status",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/tasks/{id}/subtasks": {
+      "post": {
+        "operationId": "QueueController_createSubtask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubtaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a subtask to a task",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/subtasks/{subtaskId}/toggle": {
+      "patch": {
+        "operationId": "QueueController_toggleSubtask",
+        "parameters": [
+          {
+            "name": "subtaskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Toggle subtask completion",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/subtasks/{subtaskId}": {
+      "delete": {
+        "operationId": "QueueController_deleteSubtask",
+        "parameters": [
+          {
+            "name": "subtaskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a subtask",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/areas": {
+      "get": {
+        "operationId": "QueueController_getAreasWithProjects",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List areas with nested projects and task counts",
+        "tags": [
+          "queue"
+        ]
+      },
+      "post": {
+        "operationId": "QueueController_createArea",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAreaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new area",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/projects": {
+      "post": {
+        "operationId": "QueueController_createProject",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new project",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/projects/{id}": {
+      "delete": {
+        "operationId": "QueueController_deleteProject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a project",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/labels": {
+      "get": {
+        "operationId": "QueueController_getLabels",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all user labels",
+        "tags": [
+          "queue"
+        ]
+      }
+    },
+    "/v1/queue/ai/decompose": {
+      "post": {
+        "operationId": "QueueController_decomposeGoal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiDecomposeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "AI Task Decomposition from natural language goal",
+        "tags": [
+          "queue"
+        ]
+      }
     }
   },
   "info": {
@@ -3062,6 +3595,211 @@
         "required": [
           "date",
           "value"
+        ]
+      },
+      "CreateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Task title",
+            "example": "Fix login bug"
+          },
+          "description": {
+            "type": "string",
+            "description": "Task detailed description or markdown notes"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "Target Project UUID"
+          },
+          "priority": {
+            "type": "string",
+            "description": "Priority level",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "NONE"
+            ],
+            "default": "NONE"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date in ISO format (YYYY-MM-DD or full timestamp)"
+          },
+          "dueTime": {
+            "type": "string",
+            "description": "Due time in HH:mm format",
+            "example": "10:00"
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Recurrence rule",
+            "enum": [
+              "DAILY",
+              "WEEKLY",
+              "MONTHLY"
+            ]
+          },
+          "labels": {
+            "description": "Array of label names or IDs",
+            "example": [
+              "urgent",
+              "coding"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "UpdateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Task title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Task detailed description or markdown notes"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of task",
+            "enum": [
+              "TODO",
+              "DONE"
+            ]
+          },
+          "projectId": {
+            "type": "string",
+            "description": "Target Project UUID or null"
+          },
+          "priority": {
+            "type": "string",
+            "description": "Priority level",
+            "enum": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "NONE"
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date in ISO format or null"
+          },
+          "dueTime": {
+            "type": "string",
+            "description": "Due time in HH:mm format or null"
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Recurrence rule"
+          },
+          "position": {
+            "type": "number",
+            "description": "Ordering position"
+          },
+          "labels": {
+            "description": "Array of label names or IDs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateSubtaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Subtask title",
+            "example": "Review API requirements"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "CreateAreaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Area name",
+            "example": "Work"
+          },
+          "color": {
+            "type": "string",
+            "description": "Color theme or token"
+          },
+          "position": {
+            "type": "number",
+            "description": "Display ordering"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name",
+            "example": "Inovasi"
+          },
+          "areaId": {
+            "type": "string",
+            "description": "Parent Area UUID"
+          },
+          "description": {
+            "type": "string",
+            "description": "Project description"
+          },
+          "color": {
+            "type": "string",
+            "description": "Color theme or token"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon identifier"
+          },
+          "position": {
+            "type": "number",
+            "description": "Display ordering"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AiDecomposeDto": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "High level goal or prompt to decompose",
+            "example": "Buatkan task untuk menyelesaikan fitur login minggu ini"
+          },
+          "projectContext": {
+            "type": "string",
+            "description": "Optional project name or UUID context"
+          }
+        },
+        "required": [
+          "prompt"
         ]
       }
     }

@@ -7,6 +7,7 @@ import { CabinetModule } from "./modules/cabinet/cabinet.module"
 import { GarageModule } from "./modules/garage/garage.module"
 import { FetchModule } from "./modules/fetch/fetch.module"
 import { HabitModule } from "./modules/habit/habit.module"
+import { QueueModule } from "./modules/queue/queue.module"
 import { HealthController } from "./health/health.controller"
 
 @Module({
@@ -21,6 +22,7 @@ import { HealthController } from "./health/health.controller"
     GarageModule,
     FetchModule,
     HabitModule,
+    QueueModule,
   ],
   controllers: [HealthController],
 })

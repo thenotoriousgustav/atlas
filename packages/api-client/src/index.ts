@@ -31,4 +31,19 @@ export type {
   CategoryDistributionItem,
   WeeklyTrendItem,
 } from "./habit"
+export { queueApi } from "./queue"
+export type {
+  TaskPriority,
+  TaskStatus,
+  QueueSubtask,
+  QueueLabel,
+  QueueProject,
+  QueueArea,
+  QueueTask,
+  QueueOverview,
+  CreateTaskPayload,
+  UpdateTaskPayload,
+  QueryTasksParams,
+  DecomposeGoalResponse,
+} from "./queue"
 export * from "./custom-instance"

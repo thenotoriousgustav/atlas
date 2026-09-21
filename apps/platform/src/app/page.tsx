@@ -41,8 +41,11 @@ import {
   Heart,
   Fingerprint,
   CalendarCheck,
+  Queue,
 } from "@phosphor-icons/react"
 import { startRegistration } from "@simplewebauthn/browser"
+import { queueApi } from "@atlas/api-client"
+import { useQuery } from "@tanstack/react-query"
 
 export const dynamic = "force-dynamic"
 
@@ -111,6 +114,14 @@ export default function HomePortalPage() {
   const { data: fetchHistoryData } = useFetchControllerGetHistory(undefined, {
     query: { enabled: !!user },
   })
+
+  // Fetch Queue Stats
+  const { data: queueOverviewData } = useQuery({
+    queryKey: ["queue-overview"],
+    queryFn: () => queueApi.getOverview(),
+    enabled: !!user,
+  })
+  const queueOverview = queueOverviewData?.data
 
   const queryClient = useQueryClient()
   const logoutMutation = useAuthControllerLogout()
@@ -507,6 +518,71 @@ export default function HomePortalPage() {
                   </span>
                   <span className="flex items-center gap-1 font-semibold text-brand-charcoal">
                     ⌘K Enabled
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex h-7 w-7 items-center justify-center border border-brand-border text-brand-muted transition-colors group-hover:border-brand-charcoal group-hover:bg-brand-charcoal group-hover:text-white">
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Queue Execution Stream */}
+          <div
+            onClick={() => router.push("/queue")}
+            className="group flex min-h-60 cursor-pointer flex-col justify-between rounded-none border border-brand-border bg-white p-6 transition-all duration-200 hover:border-brand-charcoal hover:shadow-xs md:col-span-2 dark:bg-card"
+          >
+            <div className="space-y-4">
+              <div className="flex h-10 w-10 items-center justify-center bg-brand-charcoal/5 text-brand-charcoal">
+                <Queue className="h-5 w-5" />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif text-2xl font-semibold tracking-tight text-brand-charcoal">
+                    Queue
+                  </h3>
+                  <Badge
+                    variant="outline"
+                    className="rounded-none border-brand-border px-1.5 py-0.5 font-mono text-[9px] tracking-wider text-brand-muted uppercase"
+                  >
+                    TASKFLOW · 05
+                  </Badge>
+                </div>
+                <p className="text-xs text-brand-muted">
+                  Personal high-velocity task execution queue, real-time natural language capture,
+                  Areas &amp; Projects hierarchy, subtask checklists, and AI goal breakdown.
+                </p>
+              </div>
+            </div>
+
+            {/* Live Data Summary for Queue */}
+            <div className="mt-6 flex items-center justify-between border-t border-brand-charcoal/5 pt-4">
+              <div className="flex flex-wrap gap-6 text-[10px] text-brand-muted">
+                <div className="space-y-0.5">
+                  <span className="block text-[9px] tracking-wide text-slate-400 uppercase">
+                    Due Today
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold text-brand-charcoal">
+                    <CalendarCheck className="h-3.5 w-3.5" />
+                    {queueOverview?.today || 0} tasks
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="block text-[9px] tracking-wide text-slate-400 uppercase">
+                    Inbox
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold text-brand-charcoal">
+                    {queueOverview?.inbox || 0} unassigned
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="block text-[9px] tracking-wide text-slate-400 uppercase">
+                    Total Active
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold text-brand-charcoal">
+                    {queueOverview?.all || 0} active
                   </span>
                 </div>
               </div>

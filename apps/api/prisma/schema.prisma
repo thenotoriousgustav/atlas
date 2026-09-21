@@ -24,6 +24,10 @@ model User {
   credentials   UserCredential[]
   habitTrackers   HabitTracker[]
   habitCategories HabitCategory[]
+  queueAreas      QueueArea[]
+  queueProjects   QueueProject[]
+  queueTasks      QueueTask[]
+  queueLabels     QueueLabel[]
 
   @@map("users")
 }
@@ -366,6 +370,97 @@ model HabitCategory {
 
   @@unique([userId, name])
   @@map("habit_categories")
+}
+
+// ─── QUEUE MODULE ────────────────────────────────────────────────────────────
+
+model QueueArea {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String         // e.g. "Work", "Personal", "Side Projects"
+  color     String?        @default("neutral")
+  position  Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  projects  QueueProject[]
+
+  @@unique([userId, name])
+  @@map("queue_areas")
+}
+
+model QueueProject {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  areaId      String?     @db.Uuid
+  area        QueueArea?  @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  name        String      // e.g. "Inovasi", "Website", "Finance"
+  description String?
+  color       String?     @default("neutral")
+  icon        String?     // Phosphor icon name
+  position    Int         @default(0)
+  archived    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  tasks       QueueTask[]
+
+  @@unique([userId, name])
+  @@map("queue_projects")
+}
+
+model QueueTask {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @db.Uuid
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId      String?        @db.Uuid
+  project        QueueProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?        @db.Text
+  status         String         @default("TODO") // "TODO", "DONE"
+  priority       String         @default("NONE") // "P1", "P2", "P3", "P4", "NONE"
+  dueDate        DateTime?
+  dueTime        String?        // e.g. "10:00"
+  completedAt    DateTime?
+  recurrenceRule String?        // "DAILY", "WEEKLY", "MONTHLY"
+  position       Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+  subtasks       QueueSubtask[]
+  labels         QueueLabel[]   @relation("QueueTaskToLabel")
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([userId, projectId])
+  @@map("queue_tasks")
+}
+
+model QueueSubtask {
+  id        String    @id @default(uuid()) @db.Uuid
+  taskId    String    @db.Uuid
+  task      QueueTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  completed Boolean   @default(false)
+  position  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("queue_subtasks")
+}
+
+model QueueLabel {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @db.Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String      // "urgent", "coding", "design"
+  color     String      @default("neutral")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tasks     QueueTask[] @relation("QueueTaskToLabel")
+
+  @@unique([userId, name])
+  @@map("queue_labels")
 }
 
 
