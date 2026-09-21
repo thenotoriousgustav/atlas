@@ -5,6 +5,7 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RedditProvider } from '../providers/reddit.provider';
 import { BookmarkEnrichmentProvider } from '../providers/enrichment-provider.interface';
+import { MetadataService } from '../services/metadata.service';
 
 export interface EnrichmentJobData {
   bookmarkId: string;
@@ -19,6 +20,7 @@ export class EnrichmentProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redditProvider: RedditProvider,
+    private readonly metadataService: MetadataService,
   ) {
     super();
     // ponytail: register providers array cleanly for extensible provider matching
@@ -48,14 +50,23 @@ export class EnrichmentProcessor extends WorkerHost {
       const provider = this.providers.find((p) => p.supports(parsedUrl));
 
       if (!provider) {
-        this.logger.log(`No specialized provider for ${url}. Marking generic enrichment completed.`);
+        this.logger.log(`Extracting generic OpenGraph metadata for ${url} via MetadataService`);
+        const extracted = await this.metadataService.extract(url);
+
         await this.prisma.bookmark.update({
           where: { id: bookmarkId },
           data: {
+            title: extracted.title || bookmark.title,
+            description: extracted.description || bookmark.description,
+            imageUrl: extracted.imageUrl || bookmark.imageUrl,
+            faviconUrl: extracted.faviconUrl || bookmark.faviconUrl,
+            siteName: extracted.siteName || bookmark.siteName,
             metadataStatus: MetadataStatus.COMPLETED,
+            metadataError: null,
             lastEnrichedAt: new Date(),
           },
         });
+        this.logger.log(`Successfully enriched bookmark ${bookmarkId} via MetadataService`);
         return;
       }
 

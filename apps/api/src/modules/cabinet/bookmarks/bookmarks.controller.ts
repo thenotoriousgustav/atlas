@@ -139,6 +139,12 @@ export class BookmarksController {
     return this.bookmarksService.triggerHealthCheck(user.id);
   }
 
+  @Post('enrich-missing')
+  @ApiOperation({ summary: 'Queue background enrichment for bookmarks with missing images/metadata' })
+  async enrichMissing(@CurrentUser() user: any) {
+    return this.bookmarksService.enrichMissingMetadata(user.id);
+  }
+
   @Patch('reorder')
   @ApiOperation({ summary: 'Reorder bookmarks position' })
   async reorder(

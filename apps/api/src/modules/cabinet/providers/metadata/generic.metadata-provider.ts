@@ -9,6 +9,12 @@ import {
 export class GenericMetadataProvider implements MetadataProvider {
   private readonly logger = new Logger(GenericMetadataProvider.name)
 
+  // ponytail: prioritized user agents — social preview crawler first (whitelisted by e-commerce/SPA sites like Shopee), standard browser fallback
+  private readonly userAgents = [
+    "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  ]
+
   supports(_url: URL): boolean {
     // ponytail: fallback generic provider supports all URLs
     return true
@@ -16,20 +22,8 @@ export class GenericMetadataProvider implements MetadataProvider {
 
   async extract(url: string, _urlObj?: URL): Promise<ExtractedMetadata | null> {
     try {
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (compatible; Googlebot/2.1)",
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
-        },
-        signal: AbortSignal.timeout(7000),
-        redirect: "follow",
-      })
-
-      const html = await response.text()
-      if (typeof html !== "string" || !html) {
+      const html = await this.fetchHtml(url)
+      if (!html) {
         return { title: this.getDomain(url) }
       }
 
@@ -78,10 +72,36 @@ export class GenericMetadataProvider implements MetadataProvider {
         }
       }
 
+      // Site name: og:site_name -> name=application-name -> apple-mobile-web-app-title
+      const rawSiteName =
+        this.getMetaContent(html, "property", "og:site_name") ||
+        this.getMetaContent(html, "name", "og:site_name") ||
+        this.getMetaContent(html, "name", "application-name") ||
+        this.getMetaContent(html, "name", "apple-mobile-web-app-title")
+      const siteName = rawSiteName ? decodeHtmlEntities(rawSiteName.trim()) : undefined
+
+      // Favicon URL: link[rel=icon] -> link[rel="shortcut icon"] -> link[rel=apple-touch-icon]
+      const rawFavicon =
+        html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
+        html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut )?icon["']/i)?.[1] ||
+        html.match(/<link[^>]+rel=["']apple-touch-icon(?:-precomposed)?["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
+        html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']apple-touch-icon(?:-precomposed)?["']/i)?.[1]
+
+      let faviconUrl = rawFavicon ? decodeHtmlEntities(rawFavicon.trim()) : undefined
+      if (faviconUrl) {
+        try {
+          faviconUrl = new URL(faviconUrl, url).href
+        } catch {
+          // Ignore invalid URL resolution
+        }
+      }
+
       return {
         title,
         description,
         imageUrl,
+        siteName,
+        faviconUrl,
       }
     } catch (error) {
       this.logger.warn(
@@ -89,6 +109,45 @@ export class GenericMetadataProvider implements MetadataProvider {
       )
       return { title: this.getDomain(url) }
     }
+  }
+
+  private async fetchHtml(url: string): Promise<string | null> {
+    for (const userAgent of this.userAgents) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": userAgent,
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+          },
+          signal: AbortSignal.timeout(7000),
+          redirect: "follow",
+        })
+
+        if (!response.ok) {
+          continue
+        }
+
+        const html = await response.text()
+        if (typeof html === "string" && html.length > 0) {
+          if (
+            html.includes("og:") ||
+            html.includes("<title") ||
+            html.includes("twitter:")
+          ) {
+            return html
+          }
+          if (userAgent === this.userAgents[this.userAgents.length - 1]) {
+            return html
+          }
+        }
+      } catch {
+        // try next user agent
+      }
+    }
+
+    return null
   }
 
   private getMetaContent(

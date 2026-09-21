@@ -2,6 +2,8 @@ export interface ExtractedMetadata {
   title: string
   description?: string
   imageUrl?: string
+  faviconUrl?: string
+  siteName?: string
 }
 
 export interface MetadataProvider {

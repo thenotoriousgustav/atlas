@@ -227,4 +227,58 @@ describe('BookmarksService - Trash Functionality', () => {
       expect(summary.trash).toBe(4);
     });
   });
+
+  describe('importBookmarks', () => {
+    it('should create bookmarks and enqueue enrichment jobs', async () => {
+      prisma.bookmark.create.mockResolvedValue({
+        id: 'imported-bm-1',
+        url: 'https://ui.shadcn.com',
+        title: 'shadcn/ui',
+      });
+
+      const htmlContent = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://ui.shadcn.com">shadcn/ui</A>
+</DL><p>`;
+
+      const result = await service.importBookmarks('user-1', htmlContent);
+
+      expect(result.imported).toBe(1);
+      expect(prisma.bookmark.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            url: 'https://ui.shadcn.com',
+            userId: 'user-1',
+          }),
+        }),
+      );
+      const queue = (service as any).enrichmentQueue;
+      expect(queue.add).toHaveBeenCalledWith('enrich', {
+        bookmarkId: 'imported-bm-1',
+        url: 'https://ui.shadcn.com',
+      });
+    });
+  });
+
+  describe('enrichMissingMetadata', () => {
+    it('should find bookmarks with missing image/description and enqueue them', async () => {
+      prisma.bookmark.findMany.mockResolvedValue([
+        { id: 'bm-1', url: 'https://example.com' },
+        { id: 'bm-2', url: 'https://test.com' },
+      ]);
+
+      const result = await service.enrichMissingMetadata('user-1');
+
+      expect(result.queued).toBe(2);
+      const queue = (service as any).enrichmentQueue;
+      expect(queue.add).toHaveBeenCalledWith('enrich', {
+        bookmarkId: 'bm-1',
+        url: 'https://example.com',
+      });
+      expect(queue.add).toHaveBeenCalledWith('enrich', {
+        bookmarkId: 'bm-2',
+        url: 'https://test.com',
+      });
+    });
+  });
 });

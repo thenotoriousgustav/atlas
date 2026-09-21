@@ -4,6 +4,7 @@ import {
   Inject,
   forwardRef,
   Logger,
+  OnModuleInit,
 } from "@nestjs/common"
 import { InjectQueue } from "@nestjs/bullmq"
 import { Queue } from "bullmq"
@@ -18,7 +19,7 @@ import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
 
 @Injectable()
-export class BookmarksService {
+export class BookmarksService implements OnModuleInit {
   private readonly logger = new Logger(BookmarksService.name)
 
   constructor(
@@ -30,6 +31,15 @@ export class BookmarksService {
     @InjectQueue("bookmark-enrichment")
     private enrichmentQueue: Queue
   ) {}
+
+  onModuleInit() {
+    // Automatically queue background enrichment for missing metadata after startup
+    setTimeout(() => {
+      this.enrichMissingMetadata().catch((err) => {
+        this.logger.error("Startup missing metadata enrichment failed", err)
+      })
+    }, 15000)
+  }
 
   async create(userId: string, createBookmarkDto: CreateBookmarkDto) {
     // 1. Extract basic metadata if needed for fast response
@@ -481,12 +491,13 @@ export class BookmarksService {
               .filter((t) => t.length > 0)
           : []
 
-        await this.prisma.bookmark.create({
+        const newBookmark = await this.prisma.bookmark.create({
           data: {
             url,
             title,
             userId,
             folderId: currentFolderId,
+            metadataStatus: MetadataStatus.PENDING,
             tags: {
               connectOrCreate: tags.map((name) => ({
                 where: { name: name.toLowerCase() },
@@ -496,6 +507,18 @@ export class BookmarksService {
           },
         })
         importCount++
+
+        // Enqueue background enrichment job to fetch OpenGraph image, title, and description
+        try {
+          await this.enrichmentQueue.add("enrich", {
+            bookmarkId: newBookmark.id,
+            url: newBookmark.url,
+          })
+        } catch (err: any) {
+          this.logger.error(
+            `Failed to queue enrichment job for imported bookmark ${newBookmark.id}: ${err.message}`
+          )
+        }
       }
     }
 
@@ -618,12 +641,58 @@ export class BookmarksService {
     return { deleted: idsToDelete.length }
   }
 
+  async enrichMissingMetadata(userId?: string) {
+    const where: any = {
+      deletedAt: null,
+      OR: [
+        { imageUrl: null },
+        { description: null },
+        { metadataStatus: MetadataStatus.PENDING },
+      ],
+    }
+    if (userId) {
+      where.userId = userId
+    }
+
+    const bookmarks = await this.prisma.bookmark.findMany({
+      where,
+      take: 100,
+      orderBy: { createdAt: "desc" },
+    })
+
+    let queuedCount = 0
+    for (const b of bookmarks) {
+      try {
+        await this.enrichmentQueue.add("enrich", {
+          bookmarkId: b.id,
+          url: b.url,
+        })
+        queuedCount++
+      } catch (err: any) {
+        this.logger.error(
+          `Failed to queue missing metadata enrichment for ${b.id}: ${err.message}`
+        )
+      }
+    }
+
+    this.logger.log(
+      `Queued ${queuedCount} bookmarks for missing metadata enrichment (found ${bookmarks.length})`
+    )
+    return { queued: queuedCount, totalFound: bookmarks.length }
+  }
+
   async triggerHealthCheck(userId: string) {
-    // ponytail: trigger runScan asynchronously to prevent blocking the HTTP response
+    // ponytail: trigger runScan and enrichMissingMetadata asynchronously to prevent blocking the HTTP response
     this.linkCheckerService.runScan().catch((err) => {
       console.error("Triggered health scan failed", err)
     })
-    return { success: true, message: "Scan started in background" }
+    this.enrichMissingMetadata(userId).catch((err) => {
+      console.error("Triggered missing metadata enrichment failed", err)
+    })
+    return {
+      success: true,
+      message: "Health scan and missing metadata enrichment started in background",
+    }
   }
 
   async reorder(userId: string, ids: string[]) {
