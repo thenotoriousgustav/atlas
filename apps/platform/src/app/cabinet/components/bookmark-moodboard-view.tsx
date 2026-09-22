@@ -261,42 +261,44 @@ export function MoodboardCard({
             )}
 
             {/* Folder & Reader Badges */}
-            <div className="absolute top-3 right-3 flex items-center gap-1.5 shrink-0">
-              {isVideo && (
-                <Badge
-                  variant="outline"
-                  className="rounded-none border border-purple-200 bg-purple-50 px-1.5 py-0.5 font-mono text-[9px] font-medium text-purple-700 uppercase"
-                >
-                  <VideoCamera className="mr-1 inline-block size-3" />
-                  Video
-                </Badge>
-              )}
+            {!isReddit && (
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 shrink-0">
+                {isVideo && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-none border border-purple-200 bg-purple-50 px-1.5 py-0.5 font-mono text-[9px] font-medium text-purple-700 uppercase"
+                  >
+                    <VideoCamera className="mr-1 inline-block size-3" />
+                    Video
+                  </Badge>
+                )}
 
-              {bookmark.article?.readingTimeMinutes ? (
-                <Badge
-                  variant="outline"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onOpenReader?.(bookmark)
-                  }}
-                  className="cursor-pointer rounded-none border border-brand-border/80 bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm hover:border-brand-charcoal"
-                  title="Open Reader Mode"
-                >
-                  <BookOpen className="mr-1 inline-block size-3 text-brand-muted" />
-                  {bookmark.article.readingTimeMinutes}m
-                </Badge>
-              ) : null}
+                {bookmark.article?.readingTimeMinutes ? (
+                  <Badge
+                    variant="outline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onOpenReader?.(bookmark)
+                    }}
+                    className="cursor-pointer rounded-none border border-brand-border/80 bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm hover:border-brand-charcoal"
+                    title="Open Reader Mode"
+                  >
+                    <BookOpen className="mr-1 inline-block size-3 text-brand-muted" />
+                    {bookmark.article.readingTimeMinutes}m
+                  </Badge>
+                ) : null}
 
-              {bookmark.folder && (
-                <Badge
-                  variant="outline"
-                  className="shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
-                >
-                  {bookmark.folder.name}
-                </Badge>
-              )}
-            </div>
+                {bookmark.folder && (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
+                  >
+                    {bookmark.folder.name}
+                  </Badge>
+                )}
+              </div>
+            )}
           </a>
         )}
       </div>

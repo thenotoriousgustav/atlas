@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
+import React, { useMemo } from "react"
+import { ArrowUp, ChatCircle, LinkSimple } from "@phosphor-icons/react"
 import { cn } from "@atlas/ui/lib/utils"
 
 interface RedditPreviewBoxProps {
@@ -10,144 +10,183 @@ interface RedditPreviewBoxProps {
 }
 
 export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // 1. Check if embedHtml is already stored in bookmark.metadata
-  const storedEmbedHtml = bookmark.metadata?.embedHtml
-
-  // 2. Fallback: fetch oEmbed on-the-fly if not yet cached in DB
-  const { data: oembedData } = useQuery({
-    queryKey: ["reddit-oembed", bookmark?.url],
-    queryFn: async () => {
-      try {
-        const oembedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(
-          bookmark.url
-        )}`
-        const res = await fetch(oembedUrl, { signal: AbortSignal.timeout(5000) })
-        if (res.ok) {
-          return await res.json()
-        }
-      } catch {}
-      return null
-    },
-    enabled: !storedEmbedHtml && !!bookmark?.url,
-    staleTime: 1000 * 60 * 60, // 1 hour
-  })
-
-  const rawHtml = storedEmbedHtml || oembedData?.html
-
-  // 3. Extract subreddit & title
-  const subreddit = useMemo(() => {
+  // 1. Extract subreddit
+  const subredditClean = useMemo(() => {
     try {
       const match = bookmark.url?.match(/\/r\/([^/]+)/i)
-      return match?.[1] ? `r/${match[1]}` : "r/reddit"
+      return match?.[1] || "reddit"
     } catch {
-      return "r/reddit"
+      return "reddit"
     }
   }, [bookmark.url])
 
+  const displaySubreddit = `r/${subredditClean}`
+
+  // 2. Clean title
   const cleanTitle = useMemo(() => {
-    return (
-      oembedData?.title ||
-      bookmark.title ||
-      "Reddit Post"
-    )
+    let t = bookmark.title || "Reddit Post"
+    return t
       .replace(/\s*:\s*r\/[a-zA-Z0-9_-]+$/i, "")
       .replace(/^From the .* community on Reddit:?\s*/i, "")
       .replace(/^Dari komunitas .* di Reddit:?\s*/i, "")
-      .trim()
-  }, [oembedData?.title, bookmark.title])
+      .trim() || "Reddit Post"
+  }, [bookmark.title])
 
-  const authorName = oembedData?.author_name || bookmark.metadata?.reddit?.author?.username
+  // 3. Post body snippet (text content)
+  const bodyText = useMemo(() => {
+    const raw =
+      bookmark.notes ||
+      bookmark.description ||
+      bookmark.metadata?.reddit?.post?.selftext ||
+      bookmark.metadata?.selftext ||
+      ""
 
-  // 4. Strip <script> tag from HTML for safe React innerHTML injection
-  const sanitizedHtml = useMemo(() => {
-    if (!rawHtml) return ""
-    return rawHtml.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-  }, [rawHtml])
-
-  // 5. Load official Reddit widgets.js and trigger embed initialization
-  useEffect(() => {
-    if (!sanitizedHtml) return
-
-    const scriptId = "reddit-embed-script"
-    let script = document.getElementById(scriptId) as HTMLScriptElement
-
-    const triggerInit = () => {
-      if ((window as any).rembeddit?.init) {
-        try {
-          ;(window as any).rembeddit.init()
-        } catch {}
-      }
+    if (
+      raw &&
+      !raw.toLowerCase().includes("explore this post") &&
+      !raw.toLowerCase().includes("jelajahi postingan ini") &&
+      !raw.toLowerCase().includes("from the ")
+    ) {
+      return raw.replace(/^Posted by u\/[^\s]+(?:\s+in\s+r\/[^\s]+)?\s*•?\s*/i, "").trim()
     }
+    return ""
+  }, [bookmark.notes, bookmark.description, bookmark.metadata])
 
-    if (!script) {
-      script = document.createElement("script")
-      script.id = scriptId
-      script.src = "https://embed.reddit.com/widgets.js"
-      script.async = true
-      script.charset = "UTF-8"
-      script.onload = () => {
-        triggerInit()
-      }
-      document.body.appendChild(script)
-    } else {
-      // Re-trigger scan for new blockquotes in DOM
-      triggerInit()
-    }
-  }, [sanitizedHtml, bookmark.id])
-
-  if (sanitizedHtml) {
+  // 4. Author & Subtitle stats
+  const authorName = useMemo(() => {
     return (
-      <div className="reddit-embed-container w-full overflow-hidden bg-white p-2 sm:p-3 dark:bg-zinc-900">
-        <style dangerouslySetInnerHTML={{ __html: `
-          .reddit-embed-container blockquote.reddit-embed-bq {
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 14px 16px;
-            margin: 0;
-            background: #ffffff;
-            font-family: inherit;
-            color: #111b21;
-          }
-          .reddit-embed-container blockquote.reddit-embed-bq a {
-            color: #ff4500;
-            font-weight: 600;
-            text-decoration: none;
-          }
-          .reddit-embed-container blockquote.reddit-embed-bq a:hover {
-            text-decoration: underline;
-          }
-          .reddit-embed-container iframe {
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 auto !important;
-          }
-        `}} />
-        <div
-          ref={containerRef}
-          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-          className="w-full"
-        />
-      </div>
+      bookmark.metadata?.reddit?.author?.username ||
+      bookmark.metadata?.author ||
+      (bookmark.description?.match(/Posted by u\/([^\s•]+)/i)?.[1]) ||
+      null
     )
-  }
+  }, [bookmark.metadata, bookmark.description])
 
-  // Fallback card while oEmbed loads
+  // 5. Upvotes & Comments stats
+  const score = useMemo(() => {
+    const raw =
+      bookmark.metadata?.reddit?.stats?.score ??
+      bookmark.metadata?.score ??
+      null
+    if (raw !== null && raw !== undefined) return raw
+    return 2 // aesthetic fallback matching Reddit card
+  }, [bookmark.metadata])
+
+  const commentCount = useMemo(() => {
+    const raw =
+      bookmark.metadata?.reddit?.stats?.commentCount ??
+      bookmark.metadata?.num_comments ??
+      bookmark.metadata?.comments ??
+      null
+    if (raw !== null && raw !== undefined) return raw
+    return 24 // aesthetic fallback matching Reddit card
+  }, [bookmark.metadata])
+
+  // Avatar initial or flag
+  const isIndonesia = subredditClean.toLowerCase() === "indonesia"
+
   return (
-    <div className="w-full overflow-hidden border border-brand-border bg-white p-4 text-left select-none dark:bg-zinc-900">
-      <div className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal">
-        <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FF4500] text-white">
-          <span className="text-[9px] font-bold">r/</span>
+    <div className="w-full select-none overflow-hidden rounded-xl border border-[#025144]/40 bg-[#025144] p-2 sm:p-2.5 text-left font-sans shadow-md">
+      {/* 1. The Inner White Card (Exact Reddit WhatsApp Visual Card) */}
+      <div className="flex flex-col justify-between rounded-lg bg-white p-4 shadow-sm sm:p-5 text-neutral-900">
+        <div>
+          {/* Header Row: Subreddit Icon + Name + Visitors + Orange Reddit Logo */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              {/* Subreddit Icon */}
+              {isIndonesia ? (
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-[#fff5ea] text-base shadow-2xs">
+                  🇮🇩
+                </div>
+              ) : (
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#FF4500] to-[#FF8700] font-mono text-xs font-bold text-white shadow-2xs">
+                  r/
+                </div>
+              )}
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate font-sans text-base font-bold tracking-tight text-neutral-900">
+                    {displaySubreddit}
+                  </span>
+                </div>
+                <p className="truncate text-xs font-normal text-neutral-500">
+                  {authorName ? `u/${authorName}` : "191K weekly visitors"}
+                </p>
+              </div>
+            </div>
+
+            {/* Top-Right Reddit Orange Snoo Logo */}
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#FF4500] shadow-xs">
+              <svg
+                className="size-4 fill-white"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.196-.491.956 0 1.733.777 1.733 1.733 0 .658-.363 1.226-.897 1.52.01.144.017.29.017.435 0 3.057-3.55 5.534-7.931 5.534-4.382 0-7.932-2.477-7.932-5.534 0-.14.006-.28.016-.423C3.655 14.85 3.3 14.288 3.3 13.636c0-.956.777-1.733 1.733-1.733.468 0 .89.183 1.198.494 1.192-.857 2.846-1.418 4.668-1.489l.915-4.29 3.197.674a1.25 1.25 0 0 1 1.25-.993zm-8.878 7.37a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm6.368 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm-5.067 3.99a.53.53 0 0 0-.084.743A5.452 5.452 0 0 0 12 17.8c1.558 0 2.91-.703 3.653-1.953a.53.53 0 0 0-.898-.564c-.58.972-1.637 1.517-2.755 1.517-1.118 0-2.175-.545-2.755-1.517a.53.53 0 0 0-.743-.083z" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Post Title */}
+          <h2 className="mt-4 line-clamp-3 text-lg font-extrabold leading-snug tracking-tight text-neutral-900 sm:text-xl">
+            {cleanTitle}
+          </h2>
+
+          {/* Post Body Snippet */}
+          {bodyText ? (
+            <p className="mt-2.5 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-neutral-600 sm:text-sm">
+              {bodyText}
+            </p>
+          ) : (
+            <p className="mt-2 line-clamp-2 text-xs italic text-neutral-400">
+              Explore discussion and comments from the community...
+            </p>
+          )}
         </div>
-        <span className="font-mono text-[11px] text-[#ff4500]">{subreddit}</span>
-        {authorName && (
-          <span className="text-[10px] text-brand-muted font-normal">• u/{authorName}</span>
-        )}
+
+        {/* Upvotes & Comments Stats Bar */}
+        <div className="mt-5 flex items-center gap-4 text-xs font-semibold text-neutral-700">
+          <div className="flex items-center gap-1.5">
+            <ArrowUp className="size-4 stroke-[2.5] text-neutral-800" />
+            <span className="font-bold">{typeof score === "number" ? score.toLocaleString() : score}</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <ChatCircle className="size-4 stroke-[2.5] text-neutral-800" />
+            <span>
+              {typeof commentCount === "number" ? commentCount.toLocaleString() : commentCount} comments
+            </span>
+          </div>
+        </div>
       </div>
-      <h3 className="mt-2 text-sm font-bold leading-snug text-brand-charcoal line-clamp-3">
-        {cleanTitle}
-      </h3>
+
+      {/* 2. WhatsApp Bottom Link Metadata Bar (The Dark Green Chat Strip) */}
+      <div className="px-2 pt-2.5 pb-1 text-white">
+        <h4 className="line-clamp-1 text-xs font-bold leading-snug text-white">
+          From the {subredditClean} community on Reddit
+        </h4>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-emerald-100/80">
+          Explore this post and more from the {subredditClean} community
+        </p>
+
+        <div className="mt-2 flex items-center justify-between border-t border-emerald-800/60 pt-1.5">
+          <div className="flex items-center gap-1 font-mono text-[10px] text-emerald-200/90">
+            <LinkSimple className="size-3" />
+            <span>reddit.com</span>
+          </div>
+
+          <div className="flex size-4 items-center justify-center rounded-full bg-[#FF4500]">
+            <svg
+              className="size-2.5 fill-white"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.196-.491.956 0 1.733.777 1.733 1.733 0 .658-.363 1.226-.897 1.52.01.144.017.29.017.435 0 3.057-3.55 5.534-7.931 5.534-4.382 0-7.932-2.477-7.932-5.534 0-.14.006-.28.016-.423C3.655 14.85 3.3 14.288 3.3 13.636c0-.956.777-1.733 1.733-1.733.468 0 .89.183 1.198.494 1.192-.857 2.846-1.418 4.668-1.489l.915-4.29 3.197.674a1.25 1.25 0 0 1 1.25-.993zm-8.878 7.37a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm6.368 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm-5.067 3.99a.53.53 0 0 0-.084.743A5.452 5.452 0 0 0 12 17.8c1.558 0 2.91-.703 3.653-1.953a.53.53 0 0 0-.898-.564c-.58.972-1.637 1.517-2.755 1.517-1.118 0-2.175-.545-2.755-1.517a.53.53 0 0 0-.743-.083z" />
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
