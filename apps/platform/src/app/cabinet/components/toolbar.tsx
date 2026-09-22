@@ -1,4 +1,5 @@
 import React from "react"
+import { cn } from "@atlas/ui/lib/utils"
 import {
   Dialog,
   DialogTrigger,
@@ -38,7 +39,10 @@ import {
   CaretDown,
   Faders,
   ClipboardText,
+  BookmarkSimple,
+  FileText,
 } from "@phosphor-icons/react"
+import { Textarea } from "@atlas/ui/components/textarea"
 import { AXIOS_INSTANCE } from "@atlas/api-client"
 import { Spinner } from "@atlas/ui/components/spinner"
 import { Item } from "@atlas/ui/components/item"
@@ -289,65 +293,107 @@ export function Toolbar({
           >
             <FieldGroup>
               <bookmarkForm.Field
-                name="url"
-                children={(field: any) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>URL</FieldLabel>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          placeholder="https://example.com"
-                          type="url"
-                          className="flex-1"
-                        />
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handlePasteFromClipboard}
-                            className="flex h-9 flex-1 items-center justify-center gap-1 rounded-none border border-brand-border px-2.5 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas sm:flex-initial"
-                            title="Paste from clipboard and auto-fill"
-                          >
-                            <ClipboardText className="size-3.5" />
-                            Paste
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            disabled={!field.state.value || isScraping}
-                            onClick={() => handleScrape(field.state.value)}
-                            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-none border border-brand-border px-3 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas sm:flex-initial"
-                          >
-                            {isScraping ? (
-                              <>
-                                <Spinner className="size-3.5" />
-                                Scraping...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkle className="size-3.5" />
-                                Auto Fill
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                      {isInvalid && (
-                        <FieldError
-                          errors={field.state.meta.errors.map((err: any) =>
-                            typeof err === "string" ? { message: err } : err
-                          )}
-                        />
+                name="type"
+                children={(field: any) => (
+                  <div className="grid grid-cols-2 gap-2 border border-brand-border bg-brand-charcoal/5 p-1">
+                    <button
+                      type="button"
+                      onClick={() => field.handleChange("BOOKMARK")}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-1.5 font-mono text-xs font-semibold uppercase transition-all",
+                        field.state.value !== "NOTE"
+                          ? "bg-white text-brand-charcoal shadow-xs dark:bg-zinc-800 dark:text-white"
+                          : "text-brand-muted hover:text-brand-charcoal"
                       )}
-                    </Field>
+                    >
+                      <BookmarkSimple className="size-3.5" />
+                      <span>Bookmark Link</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => field.handleChange("NOTE")}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-1.5 font-mono text-xs font-semibold uppercase transition-all",
+                        field.state.value === "NOTE"
+                          ? "bg-white text-brand-charcoal shadow-xs dark:bg-zinc-800 dark:text-white"
+                          : "text-brand-muted hover:text-brand-charcoal"
+                      )}
+                    >
+                      <FileText className="size-3.5" />
+                      <span>Personal Note</span>
+                    </button>
+                  </div>
+                )}
+              />
+
+              <bookmarkForm.Subscribe
+                selector={(state: any) => state.values.type}
+                children={(currentType: string) => {
+                  if (currentType === "NOTE") return null
+                  return (
+                    <bookmarkForm.Field
+                      name="url"
+                      children={(field: any) => {
+                        const isInvalid =
+                          field.state.meta.isTouched && !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>URL</FieldLabel>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <Input
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                                aria-invalid={isInvalid}
+                                placeholder="https://example.com"
+                                type="url"
+                                className="flex-1"
+                              />
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={handlePasteFromClipboard}
+                                  className="flex h-9 flex-1 items-center justify-center gap-1 rounded-none border border-brand-border px-2.5 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas sm:flex-initial"
+                                  title="Paste from clipboard and auto-fill"
+                                >
+                                  <ClipboardText className="size-3.5" />
+                                  Paste
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  disabled={!field.state.value || isScraping}
+                                  onClick={() => handleScrape(field.state.value)}
+                                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-none border border-brand-border px-3 font-mono text-[10px] font-semibold uppercase hover:bg-brand-canvas sm:flex-initial"
+                                >
+                                  {isScraping ? (
+                                    <>
+                                      <Spinner className="size-3.5" />
+                                      Scraping...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkle className="size-3.5" />
+                                      Auto Fill
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                            {isInvalid && (
+                              <FieldError
+                                errors={field.state.meta.errors.map((err: any) =>
+                                  typeof err === "string" ? { message: err } : err
+                                )}
+                              />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
                   )
                 }}
               />
@@ -412,6 +458,27 @@ export function Toolbar({
                     </Field>
                   )
                 }}
+              />
+
+              <bookmarkForm.Field
+                name="notes"
+                children={(field: any) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>
+                      Personal Notes / Markdown Content
+                    </FieldLabel>
+                    <Textarea
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value || ""}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Write your personal thoughts, key takeaways, or Markdown notes here..."
+                      rows={4}
+                      className="font-sans text-xs leading-relaxed"
+                    />
+                  </Field>
+                )}
               />
 
               <div className="grid grid-cols-2 gap-4">

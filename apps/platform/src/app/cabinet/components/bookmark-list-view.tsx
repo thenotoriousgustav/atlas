@@ -19,6 +19,9 @@ import {
   ArrowCounterClockwise,
   BookOpen,
   Globe,
+  FileText,
+  DownloadSimple,
+  VideoCamera,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -52,6 +55,7 @@ interface BookmarkListViewProps {
   onPermanentDeleteBookmark?: (id: string) => void
   onOpenActionSheet?: (bookmark: any) => void
   onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void
+  onOpenDownload?: (bookmark: any) => void
 }
 
 export function BookmarkListView({
@@ -71,6 +75,7 @@ export function BookmarkListView({
   onPermanentDeleteBookmark,
   onOpenActionSheet,
   onOpenReader,
+  onOpenDownload,
 }: BookmarkListViewProps) {
   const handleCopyUrl = (url: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -89,6 +94,17 @@ export function BookmarkListView({
         {bookmarks.map((bookmark: any) => {
           const hostname = getHostname(bookmark.url)
           const isSelected = selectedBookmarkIds.includes(bookmark.id)
+          const isNote = bookmark.type === "NOTE" || !bookmark.url
+          const isVideo =
+            bookmark.contentType === "VIDEO" ||
+            (bookmark.url &&
+              (bookmark.url.includes("youtube.com") ||
+                bookmark.url.includes("youtu.be") ||
+                bookmark.url.includes("tiktok.com") ||
+                bookmark.url.includes("instagram.com") ||
+                bookmark.url.includes("vimeo.com") ||
+                bookmark.url.includes("twitter.com") ||
+                bookmark.url.includes("x.com")))
           return (
             <SortableItem
               key={bookmark.id}
@@ -115,26 +131,59 @@ export function BookmarkListView({
                   />
                 </div>
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                  <img
-                    src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
-                    alt=""
-                    className="size-4 shrink-0 rounded-none border border-brand-border/60 bg-white object-contain"
-                    onError={(e) => {
-                      ;(e.currentTarget as HTMLElement).style.display = "none"
-                    }}
-                  />
-                  <a
-                    href={bookmark.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="truncate font-semibold text-brand-charcoal hover:underline"
-                  >
-                    {bookmark.title || bookmark.url}
-                  </a>
-                  <span className="hidden truncate font-mono text-[10px] text-brand-muted/70 md:inline">
-                    ({hostname})
-                  </span>
+                  {isNote ? (
+                    <div className="flex size-4 shrink-0 items-center justify-center bg-[#fbf0d9] text-[#8a5d3b]">
+                      <FileText className="size-3" />
+                    </div>
+                  ) : (
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                      alt=""
+                      className="size-4 shrink-0 rounded-none border border-brand-border/60 bg-white object-contain"
+                      onError={(e) => {
+                        ;(e.currentTarget as HTMLElement).style.display = "none"
+                      }}
+                    />
+                  )}
+                  {isNote ? (
+                    <span
+                      onClick={() => onEditBookmark(bookmark)}
+                      className="cursor-pointer truncate font-serif font-medium text-brand-charcoal hover:underline"
+                    >
+                      {bookmark.title || "Untitled Note"}
+                    </span>
+                  ) : (
+                    <a
+                      href={bookmark.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="truncate font-medium text-brand-charcoal hover:underline"
+                    >
+                      {bookmark.title || bookmark.url}
+                    </a>
+                  )}
+                  {!isNote && (
+                    <span className="hidden truncate font-mono text-[10px] text-brand-muted/70 md:inline">
+                      ({hostname})
+                    </span>
+                  )}
                 </span>
+                {isNote && (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 rounded-none border-[#ebd8b7] bg-[#fbf0d9] px-1.5 py-0 font-mono text-[9px] text-[#8a5d3b] uppercase"
+                  >
+                    Note
+                  </Badge>
+                )}
+                {isVideo && (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 rounded-none border-purple-200 bg-purple-50 px-1.5 py-0 font-mono text-[9px] text-purple-700 uppercase"
+                  >
+                    Video
+                  </Badge>
+                )}
                 {bookmark.folder && (
                   <Badge
                     variant="outline"
@@ -245,57 +294,82 @@ export function BookmarkListView({
                         <TooltipContent>Favorite</TooltipContent>
                       </Tooltip>
 
+                      {/* Download Video Media Button */}
+                      {isVideo && onOpenDownload && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onOpenDownload(bookmark)
+                              }}
+                              variant="ghost"
+                              size="icon-xs"
+                              className="size-8 sm:size-7 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                              title="Download video/audio with yt-dlp"
+                            >
+                              <DownloadSimple className="size-4 sm:size-3.5" weight="bold" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Download Media</TooltipContent>
+                        </Tooltip>
+                      )}
+
                       {/* Live Web View Button */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onOpenReader?.(bookmark, "webview")
-                            }}
-                            variant="ghost"
-                            size="icon-xs"
-                            className="size-8 sm:size-7 text-brand-muted hover:text-brand-charcoal"
-                            title="Live Web View"
-                          >
-                            <Globe className="size-4 sm:size-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Live Web View</TooltipContent>
-                      </Tooltip>
+                      {!isNote && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onOpenReader?.(bookmark, "webview")
+                              }}
+                              variant="ghost"
+                              size="icon-xs"
+                              className="size-8 sm:size-7 text-brand-muted hover:text-brand-charcoal"
+                              title="Live Web View"
+                            >
+                              <Globe className="size-4 sm:size-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Live Web View</TooltipContent>
+                        </Tooltip>
+                      )}
 
                       {/* Reader Mode Button */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onOpenReader?.(bookmark, "reader")
-                            }}
-                            variant="ghost"
-                            size="icon-xs"
-                            className={cn(
-                              "size-8 sm:size-7",
-                              bookmark.article?.isRead
-                                ? "text-emerald-700 hover:bg-emerald-50"
-                                : bookmark.article
-                                  ? "text-brand-charcoal hover:bg-brand-charcoal/10"
-                                  : "text-brand-muted hover:text-brand-charcoal"
-                            )}
-                            title="Reader Mode & Archive"
-                          >
-                            <BookOpen
-                              className="size-4 sm:size-3.5"
-                              weight={bookmark.article?.isRead ? "fill" : "regular"}
-                            />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {bookmark.article?.readingTimeMinutes
-                            ? `Reader Mode (${bookmark.article.readingTimeMinutes} min)`
-                            : "Reader Mode & Archive"}
-                        </TooltipContent>
-                      </Tooltip>
+                      {!isNote && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onOpenReader?.(bookmark, "reader")
+                              }}
+                              variant="ghost"
+                              size="icon-xs"
+                              className={cn(
+                                "size-8 sm:size-7",
+                                bookmark.article?.isRead
+                                  ? "text-emerald-700 hover:bg-emerald-50"
+                                  : bookmark.article
+                                    ? "text-brand-charcoal hover:bg-brand-charcoal/10"
+                                    : "text-brand-muted hover:text-brand-charcoal"
+                              )}
+                              title="Reader Mode & Archive"
+                            >
+                              <BookOpen
+                                className="size-4 sm:size-3.5"
+                                weight={bookmark.article?.isRead ? "fill" : "regular"}
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {bookmark.article?.readingTimeMinutes
+                              ? `Reader Mode (${bookmark.article.readingTimeMinutes} min)`
+                              : "Reader Mode & Archive"}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
 
                       {/* Mobile Action Sheet Trigger */}
                       <Button
@@ -329,20 +403,33 @@ export function BookmarkListView({
                             align="end"
                             className="w-48 rounded-none"
                           >
-                            <DropdownMenuItem
-                              onClick={() => onOpenReader?.(bookmark, "webview")}
-                              className="flex items-center gap-2 text-xs cursor-pointer"
-                            >
-                              <Globe className="size-3.5 text-brand-muted" />
-                              <span>Live Web View</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onOpenReader?.(bookmark, "reader")}
-                              className="flex items-center gap-2 text-xs cursor-pointer"
-                            >
-                              <BookOpen className="size-3.5 text-brand-muted" />
-                              <span>Reader Mode &amp; Archive</span>
-                            </DropdownMenuItem>
+                            {isVideo && onOpenDownload && (
+                              <DropdownMenuItem
+                                onClick={() => onOpenDownload(bookmark)}
+                                className="flex items-center gap-2 text-xs cursor-pointer font-medium text-purple-600"
+                              >
+                                <DownloadSimple className="size-3.5" />
+                                <span>Download Media</span>
+                              </DropdownMenuItem>
+                            )}
+                            {!isNote && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => onOpenReader?.(bookmark, "webview")}
+                                  className="flex items-center gap-2 text-xs cursor-pointer"
+                                >
+                                  <Globe className="size-3.5 text-brand-muted" />
+                                  <span>Live Web View</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => onOpenReader?.(bookmark, "reader")}
+                                  className="flex items-center gap-2 text-xs cursor-pointer"
+                                >
+                                  <BookOpen className="size-3.5 text-brand-muted" />
+                                  <span>Reader Mode &amp; Archive</span>
+                                </DropdownMenuItem>
+                              </>
+                            )}
                             <DropdownMenuItem
                               onClick={() => onEditBookmark(bookmark)}
                               className="flex items-center gap-2 text-xs"

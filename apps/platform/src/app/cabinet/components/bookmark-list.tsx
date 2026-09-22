@@ -42,6 +42,7 @@ interface BookmarkListProps {
   onPermanentDeleteBookmark?: (id: string) => void;
   onEmptyTrash?: () => void;
   onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void;
+  onOpenDownload?: (bookmark: any) => void;
 }
 
 export function BookmarkList({
@@ -72,6 +73,7 @@ export function BookmarkList({
   onPermanentDeleteBookmark,
   onEmptyTrash,
   onOpenReader,
+  onOpenDownload,
 }: BookmarkListProps) {
   const [windowWidth, setWindowWidth] = React.useState<number | null>(null);
   const [actionSheetBookmark, setActionSheetBookmark] = React.useState<any | null>(null);
@@ -262,6 +264,7 @@ export function BookmarkList({
               onPermanentDeleteBookmark={onPermanentDeleteBookmark}
               onOpenActionSheet={setActionSheetBookmark}
               onOpenReader={onOpenReader}
+              onOpenDownload={onOpenDownload}
             />
           ) : (
             <BookmarkMoodboardView
@@ -283,6 +286,7 @@ export function BookmarkList({
               onPermanentDeleteBookmark={onPermanentDeleteBookmark}
               onOpenActionSheet={setActionSheetBookmark}
               onOpenReader={onOpenReader}
+              onOpenDownload={onOpenDownload}
             />
           )}
         </div>
@@ -301,6 +305,7 @@ export function BookmarkList({
         onRestoreBookmark={onRestoreBookmark}
         onPermanentDeleteBookmark={onPermanentDeleteBookmark}
         onOpenReader={onOpenReader}
+        onOpenDownload={onOpenDownload}
       />
     </div>
   );

@@ -18,6 +18,8 @@ import {
   ArrowCounterClockwise,
   BookOpen,
   Globe,
+  DownloadSimple,
+  FileText,
 } from "@phosphor-icons/react"
 
 interface BookmarkActionSheetProps {
@@ -32,6 +34,7 @@ interface BookmarkActionSheetProps {
   onRestoreBookmark?: (id: string) => void
   onPermanentDeleteBookmark?: (id: string) => void
   onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void
+  onOpenDownload?: (bookmark: any) => void
 }
 
 export function BookmarkActionSheet({
@@ -46,8 +49,21 @@ export function BookmarkActionSheet({
   onRestoreBookmark,
   onPermanentDeleteBookmark,
   onOpenReader,
+  onOpenDownload,
 }: BookmarkActionSheetProps) {
   if (!bookmark) return null
+
+  const isNote = bookmark.type === "NOTE" || !bookmark.url
+  const isVideo =
+    bookmark.contentType === "VIDEO" ||
+    (bookmark.url &&
+      (bookmark.url.includes("youtube.com") ||
+        bookmark.url.includes("youtu.be") ||
+        bookmark.url.includes("tiktok.com") ||
+        bookmark.url.includes("instagram.com") ||
+        bookmark.url.includes("vimeo.com") ||
+        bookmark.url.includes("twitter.com") ||
+        bookmark.url.includes("x.com")))
 
   const getHostname = (url: string) => {
     try {
@@ -92,43 +108,64 @@ export function BookmarkActionSheet({
 
         {/* Action List */}
         <div className="flex flex-col py-1">
+          {/* Download Media (Video/Audio) */}
+          {isVideo && onOpenDownload && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChange(false)
+                onOpenDownload(bookmark)
+              }}
+              className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-purple-700 transition-colors hover:bg-purple-50 active:bg-purple-100"
+            >
+              <DownloadSimple className="size-4 text-purple-600" />
+              <span>Download Media (MP4/MP3)</span>
+            </button>
+          )}
+
           {/* Open Link */}
-          <a
-            href={bookmark.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onOpenChange(false)}
-            className="flex h-12 items-center gap-3 px-5 text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
-          >
-            <ArrowSquareOut className="size-4 text-brand-muted" />
-            <span>Open Link in New Tab</span>
-          </a>
+          {!isNote && (
+            <a
+              href={bookmark.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onOpenChange(false)}
+              className="flex h-12 items-center gap-3 px-5 text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
+            >
+              <ArrowSquareOut className="size-4 text-brand-muted" />
+              <span>Open Link in New Tab</span>
+            </a>
+          )}
 
           {/* Live Web View */}
-          <button
-            type="button"
-            onClick={() => {
-              onOpenChange(false)
-              onOpenReader?.(bookmark, "webview")
-            }}
-            className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
-          >
-            <Globe className="size-4 text-brand-muted" />
-            <span>Live Web View</span>
-          </button>
+          {!isNote && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChange(false)
+                onOpenReader?.(bookmark, "webview")
+              }}
+              className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
+            >
+              <Globe className="size-4 text-brand-muted" />
+              <span>Live Web View</span>
+            </button>
+          )}
 
           {/* Reader Mode & Archive */}
-          <button
-            type="button"
-            onClick={() => {
-              onOpenChange(false)
-              onOpenReader?.(bookmark, "reader")
-            }}
-            className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
-          >
-            <BookOpen className="size-4 text-brand-muted" />
-            <span>Reader Mode &amp; Archive</span>
-          </button>
+          {!isNote && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChange(false)
+                onOpenReader?.(bookmark, "reader")
+              }}
+              className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
+            >
+              <BookOpen className="size-4 text-brand-muted" />
+              <span>Reader Mode &amp; Archive</span>
+            </button>
+          )}
 
           {/* Copy Link */}
           <button

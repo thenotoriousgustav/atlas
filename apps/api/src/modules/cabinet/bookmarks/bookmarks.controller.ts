@@ -19,8 +19,9 @@ import { BookmarksService } from './bookmarks.service';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
 import { ImportBookmarksDto } from './dto/import-bookmarks.dto';
-
 import { ReorderBookmarksDto } from './dto/reorder-bookmarks.dto';
+import { DownloadMediaDto } from '../dto/download-media.dto';
+import { BookmarkType, BookmarkContentType } from '@prisma/client';
 
 @ApiTags('bookmarks')
 @ApiBearerAuth()
@@ -44,6 +45,23 @@ export class BookmarksController {
     return this.bookmarksService.scrapeUrl(url);
   }
 
+  @Get('media/extract')
+  @ApiOperation({ summary: 'Extract downloadable video/audio formats using yt-dlp' })
+  @ApiQuery({ name: 'url', required: true })
+  async extractMedia(@Query('url') url: string) {
+    return this.bookmarksService.extractMedia(url);
+  }
+
+  @Post('media/download')
+  @ApiOperation({ summary: 'Stream download video or audio file via yt-dlp' })
+  async downloadMedia(
+    @CurrentUser() user: any,
+    @Body() dto: DownloadMediaDto,
+    @Res() res: Response,
+  ) {
+    return this.bookmarksService.downloadMedia(dto, res);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new bookmark (extracts title/metadata if omitted)' })
   async create(
@@ -56,6 +74,8 @@ export class BookmarksController {
   @Get()
   @ApiOperation({ summary: 'Get bookmarks with optional filtering' })
   @ApiQuery({ name: 'folderId', required: false })
+  @ApiQuery({ name: 'type', required: false, enum: BookmarkType })
+  @ApiQuery({ name: 'contentType', required: false })
   @ApiQuery({ name: 'isFavorite', required: false, type: Boolean })
   @ApiQuery({ name: 'isArchived', required: false, type: Boolean })
   @ApiQuery({ name: 'isTrash', required: false, type: Boolean })
@@ -67,6 +87,8 @@ export class BookmarksController {
   async findAll(
     @CurrentUser() user: any,
     @Query('folderId') folderId?: string,
+    @Query('type') type?: BookmarkType,
+    @Query('contentType') contentType?: BookmarkContentType,
     @Query('isFavorite') isFavorite?: string,
     @Query('isArchived') isArchived?: string,
     @Query('isTrash') isTrash?: string,
@@ -83,6 +105,8 @@ export class BookmarksController {
     };
     return this.bookmarksService.findAll(user.id, {
       folderId,
+      type,
+      contentType,
       isFavorite: parseBool(isFavorite),
       isArchived: parseBool(isArchived),
       isTrash: parseBool(isTrash),

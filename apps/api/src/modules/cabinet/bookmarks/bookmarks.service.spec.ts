@@ -4,6 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { MetadataService } from '../services/metadata.service';
 import { LinkCheckerService } from '../services/link-checker.service';
 import { ReaderService } from '../services/reader.service';
+import { CabinetMediaService } from '../services/cabinet-media.service';
 import { RedditProvider } from '../providers/reddit.provider';
 import { getQueueToken } from '@nestjs/bullmq';
 
@@ -35,6 +36,14 @@ describe('BookmarksService - Trash Functionality', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MetadataService, useValue: { extract: jest.fn() } },
         { provide: ReaderService, useValue: { extractArticle: jest.fn() } },
+        {
+          provide: CabinetMediaService,
+          useValue: {
+            isVideoUrl: jest.fn().mockReturnValue(false),
+            extract: jest.fn(),
+            download: jest.fn(),
+          },
+        },
         { provide: LinkCheckerService, useValue: { runScan: jest.fn() } },
         { provide: RedditProvider, useValue: { supports: jest.fn() } },
         { provide: getQueueToken('bookmark-enrichment'), useValue: { add: jest.fn() } },

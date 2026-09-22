@@ -10,6 +10,7 @@ import { GenericMetadataProvider } from "../providers/metadata/generic.metadata-
 import { RedditMetadataProvider } from "../providers/metadata/reddit.metadata-provider"
 import { TwitterMetadataProvider } from "../providers/metadata/twitter.metadata-provider"
 import { ReaderService } from "../services/reader.service"
+import { CabinetMediaService } from "../services/cabinet-media.service"
 
 @Module({
   imports: [
@@ -25,11 +26,12 @@ import { ReaderService } from "../services/reader.service"
     RedditProvider,
     EnrichmentProcessor,
     ReaderService,
+    CabinetMediaService,
     // Metadata extraction providers
     GenericMetadataProvider,
     RedditMetadataProvider,
     TwitterMetadataProvider,
   ],
-  exports: [BookmarksService, MetadataService, ReaderService],
+  exports: [BookmarksService, MetadataService, ReaderService, CabinetMediaService],
 })
 export class BookmarksModule {}

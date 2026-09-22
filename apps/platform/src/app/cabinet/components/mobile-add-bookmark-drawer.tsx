@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { cn } from "@atlas/ui/lib/utils"
 import {
   Drawer,
   DrawerContent,
@@ -27,7 +28,10 @@ import {
   ClipboardText,
   Sparkle,
   X,
+  BookmarkSimple,
+  FileText,
 } from "@phosphor-icons/react"
+import { Textarea } from "@atlas/ui/components/textarea"
 import { Spinner } from "@atlas/ui/components/spinner"
 import { AXIOS_INSTANCE } from "@atlas/api-client"
 import {
@@ -150,58 +154,101 @@ export function MobileAddBookmarkDrawer({
             className="flex flex-col gap-4"
           >
             <FieldGroup>
-              {/* URL */}
+              {/* Type Switcher */}
               <bookmarkForm.Field
-                name="url"
-                children={(field: any) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <div className="flex items-center justify-between">
-                        <FieldLabel htmlFor="mobile-url" className="text-xs font-mono uppercase text-brand-muted">
-                          URL
-                        </FieldLabel>
-                        {field.state.value && (
-                          <button
-                            type="button"
-                            disabled={isScraping}
-                            onClick={() => handleScrape(field.state.value)}
-                            className="flex items-center gap-1 font-mono text-[10px] font-semibold text-brand-charcoal hover:underline"
-                          >
-                            {isScraping ? (
-                              <>
-                                <Spinner className="size-3" />
-                                <span>Scraping...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Sparkle className="size-3" />
-                                <span>Fetch Info</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      <Input
-                        id="mobile-url"
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="https://example.com"
-                        type="url"
-                        className="h-10 text-sm"
-                      />
-                      {isInvalid && (
-                        <FieldError
-                          errors={field.state.meta.errors.map((err: any) =>
-                            typeof err === "string" ? { message: err } : err
-                          )}
-                        />
+                name="type"
+                children={(field: any) => (
+                  <div className="grid grid-cols-2 gap-2 border border-brand-border bg-brand-charcoal/5 p-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => field.handleChange("BOOKMARK")}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-1.5 font-mono text-xs font-semibold uppercase transition-all",
+                        field.state.value !== "NOTE"
+                          ? "bg-white text-brand-charcoal shadow-xs dark:bg-zinc-800 dark:text-white"
+                          : "text-brand-muted hover:text-brand-charcoal"
                       )}
-                    </Field>
+                    >
+                      <BookmarkSimple className="size-3.5" />
+                      <span>Bookmark</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => field.handleChange("NOTE")}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 py-1.5 font-mono text-xs font-semibold uppercase transition-all",
+                        field.state.value === "NOTE"
+                          ? "bg-white text-brand-charcoal shadow-xs dark:bg-zinc-800 dark:text-white"
+                          : "text-brand-muted hover:text-brand-charcoal"
+                      )}
+                    >
+                      <FileText className="size-3.5" />
+                      <span>Note</span>
+                    </button>
+                  </div>
+                )}
+              />
+
+              {/* URL */}
+              <bookmarkForm.Subscribe
+                selector={(state: any) => state.values.type}
+                children={(currentType: string) => {
+                  if (currentType === "NOTE") return null
+                  return (
+                    <bookmarkForm.Field
+                      name="url"
+                      children={(field: any) => {
+                        const isInvalid =
+                          field.state.meta.isTouched && !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <div className="flex items-center justify-between">
+                              <FieldLabel htmlFor="mobile-url" className="text-xs font-mono uppercase text-brand-muted">
+                                URL
+                              </FieldLabel>
+                              {field.state.value && (
+                                <button
+                                  type="button"
+                                  disabled={isScraping}
+                                  onClick={() => handleScrape(field.state.value)}
+                                  className="flex items-center gap-1 font-mono text-[10px] font-semibold text-brand-charcoal hover:underline"
+                                >
+                                  {isScraping ? (
+                                    <>
+                                      <Spinner className="size-3" />
+                                      <span>Scraping...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkle className="size-3" />
+                                      <span>Fetch Info</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            <Input
+                              id="mobile-url"
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              aria-invalid={isInvalid}
+                              placeholder="https://example.com"
+                              type="url"
+                              className="h-10 text-sm"
+                            />
+                            {isInvalid && (
+                              <FieldError
+                                errors={field.state.meta.errors.map((err: any) =>
+                                  typeof err === "string" ? { message: err } : err
+                                )}
+                              />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
                   )
                 }}
               />
@@ -270,6 +317,28 @@ export function MobileAddBookmarkDrawer({
                     </Field>
                   )
                 }}
+              />
+
+              {/* Personal Notes */}
+              <bookmarkForm.Field
+                name="notes"
+                children={(field: any) => (
+                  <Field>
+                    <FieldLabel htmlFor="mobile-notes" className="text-xs font-mono uppercase text-brand-muted">
+                      Personal Notes / Content
+                    </FieldLabel>
+                    <Textarea
+                      id="mobile-notes"
+                      name={field.name}
+                      value={field.state.value || ""}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Write your personal thoughts or Markdown notes..."
+                      rows={3}
+                      className="text-sm leading-relaxed"
+                    />
+                  </Field>
+                )}
               />
 
               {/* Folder Selection */}

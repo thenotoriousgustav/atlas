@@ -1,29 +1,63 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString, IsUrl, IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from "@nestjs/swagger"
+import { IsArray, IsEnum, IsOptional, IsString, IsUUID } from "class-validator"
+import { BookmarkType } from "@prisma/client"
 
 export class CreateBookmarkDto {
-  @ApiProperty({ example: 'https://nextjs.org', description: 'Bookmark URL' })
-  @IsUrl()
-  url: string;
-
-  @ApiPropertyOptional({ example: 'Next.js App Router', description: 'Bookmark title (auto-extracted if omitted)' })
+  @ApiPropertyOptional({
+    example: "https://nextjs.org",
+    description: "URL (optional for standalone notes)",
+  })
   @IsString()
   @IsOptional()
-  title?: string;
+  url?: string
 
-  @ApiPropertyOptional({ example: 'Next.js developer reference manual', description: 'Bookmark description' })
+  @ApiPropertyOptional({
+    enum: BookmarkType,
+    default: BookmarkType.BOOKMARK,
+    description: "Item type: BOOKMARK or NOTE",
+  })
+  @IsEnum(BookmarkType)
+  @IsOptional()
+  type?: BookmarkType
+
+  @ApiPropertyOptional({
+    example: "My Note / Bookmark Title",
+    description: "Title (auto-extracted if omitted for URLs)",
+  })
   @IsString()
   @IsOptional()
-  description?: string;
+  title?: string
 
-  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'Folder ID' })
+  @ApiPropertyOptional({
+    example: "Quick summary or excerpt",
+    description: "Short description",
+  })
+  @IsString()
+  @IsOptional()
+  description?: string
+
+  @ApiPropertyOptional({
+    example: "Personal markdown notes and thoughts",
+    description: "Markdown notes and annotations",
+  })
+  @IsString()
+  @IsOptional()
+  notes?: string
+
+  @ApiPropertyOptional({
+    example: "123e4567-e89b-12d3-a456-426614174000",
+    description: "Folder ID",
+  })
   @IsUUID()
   @IsOptional()
-  folderId?: string;
+  folderId?: string
 
-  @ApiPropertyOptional({ example: ['Next.js', 'React'], description: 'List of tags' })
+  @ApiPropertyOptional({
+    example: ["React", "Architecture"],
+    description: "List of tags",
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  tags?: string[];
+  tags?: string[]
 }

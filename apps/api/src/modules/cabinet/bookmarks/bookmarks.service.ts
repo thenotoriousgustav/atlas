@@ -8,7 +8,12 @@ import {
 } from "@nestjs/common"
 import { InjectQueue } from "@nestjs/bullmq"
 import { Queue } from "bullmq"
-import { BookmarkProvider, MetadataStatus } from "@prisma/client"
+import {
+  BookmarkProvider,
+  BookmarkType,
+  BookmarkContentType,
+  MetadataStatus,
+} from "@prisma/client"
 import { Response } from "express"
 import axios from "axios"
 import { PrismaService } from "../../../prisma/prisma.service"
@@ -16,8 +21,10 @@ import { MetadataService } from "../services/metadata.service"
 import { LinkCheckerService } from "../services/link-checker.service"
 import { RedditProvider } from "../providers/reddit.provider"
 import { ReaderService } from "../services/reader.service"
+import { CabinetMediaService } from "../services/cabinet-media.service"
 import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
+import { DownloadMediaDto } from "../dto/download-media.dto"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -30,6 +37,7 @@ export class BookmarksService implements OnModuleInit {
     private linkCheckerService: LinkCheckerService,
     private redditProvider: RedditProvider,
     private readerService: ReaderService,
+    private cabinetMediaService: CabinetMediaService,
     @InjectQueue("bookmark-enrichment")
     private enrichmentQueue: Queue
   ) {}
@@ -44,8 +52,29 @@ export class BookmarksService implements OnModuleInit {
   }
 
   async create(userId: string, createBookmarkDto: CreateBookmarkDto) {
-    // 1. Extract basic metadata if needed for fast response
-    const extracted = await this.metadataService.extract(createBookmarkDto.url)
+    const isNote =
+      createBookmarkDto.type === BookmarkType.NOTE || !createBookmarkDto.url
+    const itemType = isNote ? BookmarkType.NOTE : BookmarkType.BOOKMARK
+
+    let extracted: any = {}
+    let detectedProvider: BookmarkProvider | null = null
+    let contentType: BookmarkContentType | null = null
+
+    if (!isNote && createBookmarkDto.url) {
+      extracted = await this.metadataService.extract(createBookmarkDto.url)
+      try {
+        const urlObj = new URL(createBookmarkDto.url)
+        if (this.redditProvider.supports(urlObj)) {
+          detectedProvider = BookmarkProvider.REDDIT
+        }
+      } catch {
+        // Ignore invalid URL parsing errors here, handled downstream
+      }
+
+      if (this.cabinetMediaService.isVideoUrl(createBookmarkDto.url)) {
+        contentType = BookmarkContentType.VIDEO
+      }
+    }
 
     // 2. Prep tags
     const tagConnectOrCreate =
@@ -67,27 +96,25 @@ export class BookmarksService implements OnModuleInit {
       }
     }
 
-    // 4. Detect provider
-    let detectedProvider: BookmarkProvider | null = null
-    try {
-      const urlObj = new URL(createBookmarkDto.url)
-      if (this.redditProvider.supports(urlObj)) {
-        detectedProvider = BookmarkProvider.REDDIT
-      }
-    } catch {
-      // Ignore invalid URL parsing errors here, handled downstream
-    }
-
     const bookmark = await this.prisma.bookmark.create({
       data: {
-        url: createBookmarkDto.url,
-        title: createBookmarkDto.title || extracted.title,
-        description: createBookmarkDto.description || extracted.description,
-        imageUrl: extracted.imageUrl,
+        type: itemType,
+        url: createBookmarkDto.url || null,
+        title:
+          createBookmarkDto.title ||
+          extracted.title ||
+          (isNote ? "Untitled Note" : "Untitled"),
+        description:
+          createBookmarkDto.description || extracted.description || null,
+        notes: createBookmarkDto.notes || null,
+        imageUrl: extracted.imageUrl || null,
+        faviconUrl: extracted.faviconUrl || null,
+        siteName: extracted.siteName || null,
         folderId: createBookmarkDto.folderId || null,
         userId,
         provider: detectedProvider,
-        metadataStatus: MetadataStatus.PENDING,
+        contentType: contentType || (isNote ? null : undefined),
+        metadataStatus: isNote ? MetadataStatus.COMPLETED : MetadataStatus.PENDING,
         tags: {
           connectOrCreate: tagConnectOrCreate,
         },
@@ -95,19 +122,33 @@ export class BookmarksService implements OnModuleInit {
       include: {
         tags: true,
         folder: true,
+        article: {
+          select: {
+            id: true,
+            author: true,
+            publishedAt: true,
+            readingTimeMinutes: true,
+            wordCount: true,
+            waybackUrl: true,
+            isRead: true,
+            scrollProgress: true,
+          },
+        },
       },
     })
 
-    // 5. Enqueue enrichment job
-    try {
-      await this.enrichmentQueue.add("enrich", {
-        bookmarkId: bookmark.id,
-        url: bookmark.url,
-      })
-    } catch (err: any) {
-      this.logger.error(
-        `Failed to queue enrichment job for ${bookmark.id}: ${err.message}`
-      )
+    // 5. Enqueue enrichment job only for web bookmarks with URL
+    if (!isNote && bookmark.url) {
+      try {
+        await this.enrichmentQueue.add("enrich", {
+          bookmarkId: bookmark.id,
+          url: bookmark.url,
+        })
+      } catch (err: any) {
+        this.logger.error(
+          `Failed to queue enrichment job for ${bookmark.id}: ${err.message}`
+        )
+      }
     }
 
     return bookmark
@@ -160,12 +201,22 @@ export class BookmarksService implements OnModuleInit {
       cursor?: string
       limit?: number
       status?: string
+      type?: BookmarkType
+      contentType?: BookmarkContentType
     }
   ) {
     // ponytail: single where condition handles both active items and trash
     const where: any = {
       userId,
       deletedAt: filters.isTrash ? { not: null } : null,
+    }
+
+    if (filters.type) {
+      where.type = filters.type
+    }
+
+    if (filters.contentType) {
+      where.contentType = filters.contentType
     }
 
     if (filters.folderId) {
@@ -196,6 +247,7 @@ export class BookmarksService implements OnModuleInit {
       where.OR = [
         { title: { contains: filters.search, mode: "insensitive" } },
         { description: { contains: filters.search, mode: "insensitive" } },
+        { notes: { contains: filters.search, mode: "insensitive" } },
         { url: { contains: filters.search, mode: "insensitive" } },
       ]
     }
@@ -310,9 +362,11 @@ export class BookmarksService implements OnModuleInit {
     return this.prisma.bookmark.update({
       where: { id },
       data: {
+        type: updateBookmarkDto.type,
         url: updateBookmarkDto.url,
         title: updateBookmarkDto.title,
         description: updateBookmarkDto.description,
+        notes: updateBookmarkDto.notes,
         isFavorite: updateBookmarkDto.isFavorite,
         isArchived: updateBookmarkDto.isArchived,
         folderId:
@@ -854,5 +908,13 @@ export class BookmarksService implements OnModuleInit {
       where: { bookmarkId: id },
       data,
     })
+  }
+
+  async extractMedia(url: string) {
+    return this.cabinetMediaService.extract(url)
+  }
+
+  async downloadMedia(dto: DownloadMediaDto, res: Response) {
+    return this.cabinetMediaService.download(dto, res)
   }
 }

@@ -7,27 +7,18 @@ generator client {
 }
 
 model User {
-  id           String         @id @default(uuid()) @db.Uuid
-  email        String         @unique
-  password     String
-  name         String
-  avatar       String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id            String           @id @default(uuid()) @db.Uuid
+  email         String           @unique
+  password      String
+  name          String
+  avatar        String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   deletedAt     DateTime?
   refreshTokens RefreshToken[]
   folders       Folder[]
   bookmarks     Bookmark[]
-  vehicles      Vehicle[]
-  fetchHistories FetchHistory[]
-  fetchCollections FetchCollection[]
   credentials   UserCredential[]
-  habitTrackers   HabitTracker[]
-  habitCategories HabitCategory[]
-  queueAreas      QueueArea[]
-  queueProjects   QueueProject[]
-  queueTasks      QueueTask[]
-  queueLabels     QueueLabel[]
 
   @@map("users")
 }
@@ -41,6 +32,19 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model UserCredential {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String   @unique
+  publicKey    Bytes
+  counter      BigInt
+  transports   String[]
+  createdAt    DateTime @default(now())
+
+  @@map("user_credentials")
 }
 
 model Folder {
@@ -63,10 +67,12 @@ model Folder {
 
 model Bookmark {
   id             String               @id @default(uuid()) @db.Uuid
-  url            String
+  type           BookmarkType         @default(BOOKMARK)
+  url            String?
   canonicalUrl   String?
   title          String
   description    String?
+  notes          String?              @db.Text
   imageUrl       String?
   faviconUrl     String?
   siteName       String?
@@ -95,7 +101,13 @@ model Bookmark {
 
   @@index([provider])
   @@index([metadataStatus])
+  @@index([type])
   @@map("bookmarks")
+}
+
+enum BookmarkType {
+  BOOKMARK
+  NOTE
 }
 
 enum BookmarkProvider {
@@ -148,340 +160,3 @@ model BookmarkArticle {
 
   @@map("bookmark_articles")
 }
-
-model Vehicle {
-  id            String            @id @default(uuid()) @db.Uuid
-  userId        String            @db.Uuid
-  brand         String
-  model         String
-  variant       String?
-  year          Int
-  plateNumber   String
-  vin           String?
-  engineNumber  String?
-  chassisNumber String?
-  purchasePrice Float?
-  purchaseDate  DateTime?
-  odometer      Int               @default(0)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  deletedAt     DateTime?
-
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  maintenances Maintenance[]
-  parts        Part[]
-  fuelLogs     FuelLog[]
-  expenses     Expense[]
-  reminders    Reminder[]
-  documents    VehicleDocument[]
-
-  @@map("vehicles")
-}
-
-model Maintenance {
-  id         String            @id @default(uuid()) @db.Uuid
-  vehicleId  String            @db.Uuid
-  date       DateTime          @default(now())
-  odometer   Int
-  workshop   String?
-  notes      String?
-  totalCost  Float
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  deletedAt  DateTime?
-
-  vehicle   Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  items     MaintenanceItem[]
-  parts     Part[]
-
-  @@map("maintenances")
-}
-
-model MaintenanceItem {
-  id            String      @id @default(uuid()) @db.Uuid
-  maintenanceId String      @db.Uuid
-  type          String
-  cost          Float
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  maintenance   Maintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
-
-  @@map("maintenance_items")
-}
-
-model Part {
-  id               String       @id @default(uuid()) @db.Uuid
-  vehicleId        String       @db.Uuid
-  maintenanceId    String?      @db.Uuid
-  name             String
-  brand            String?
-  installedAt      DateTime?
-  installedMileage Int?
-  expectedLife     Int?         // expected mileage lifetime
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  deletedAt        DateTime?
-
-  vehicle     Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  maintenance Maintenance? @relation(fields: [maintenanceId], references: [id], onDelete: SetNull)
-
-  @@map("parts")
-}
-
-model FuelLog {
-  id        String    @id @default(uuid()) @db.Uuid
-  vehicleId String    @db.Uuid
-  liters    Float
-  price     Float     // price per liter
-  odometer  Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@map("fuel_logs")
-}
-
-model Expense {
-  id        String    @id @default(uuid()) @db.Uuid
-  vehicleId String    @db.Uuid
-  category  String
-  amount    Float
-  date      DateTime  @default(now())
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@map("expenses")
-}
-
-model Reminder {
-  id         String    @id @default(uuid()) @db.Uuid
-  vehicleId  String    @db.Uuid
-  type       String
-  dueDate    DateTime?
-  dueMileage Int?
-  status     String    @default("ACTIVE") // "ACTIVE", "COMPLETED", "OVERDUE"
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
-
-  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@map("reminders")
-}
-
-model VehicleDocument {
-  id             String    @id @default(uuid()) @db.Uuid
-  vehicleId      String    @db.Uuid
-  documentType   String    // "STNK", "Insurance", "Warranty", "Other"
-  documentNumber String
-  expirationDate DateTime?
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-
-  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@map("vehicle_documents")
-}
-
-model FetchHistory {
-  id           String           @id @default(uuid()) @db.Uuid
-  userId       String           @db.Uuid
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  url          String
-  title        String
-  author       String?
-  platform     String
-  mediaType    String           // "VIDEO", "AUDIO", "IMAGE"
-  fileSize     Float?           // in bytes
-  resolution   String?
-  thumbnail    String?
-  notes        String?
-  isFavorite   Boolean          @default(false)
-  collectionId String?          @db.Uuid
-  collection   FetchCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  deletedAt    DateTime?
-
-  @@map("fetch_histories")
-}
-
-model FetchCollection {
-  id        String         @id @default(uuid()) @db.Uuid
-  userId    String         @db.Uuid
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  histories FetchHistory[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  deletedAt DateTime?
-
-  @@map("fetch_collections")
-}
-
-model UserCredential {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentialId String   @unique
-  publicKey    Bytes
-  counter      BigInt
-  transports   String[]
-  createdAt    DateTime @default(now())
-
-  @@map("user_credentials")
-}
-
-model HabitTracker {
-  id            String       @id @default(uuid()) @db.Uuid
-  userId        String       @db.Uuid
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  icon          String?
-  category      String       @default("General")
-  type          String       @default("BOOLEAN") // BOOLEAN, COUNT, DURATION, NUMERIC, AMOUNT
-  goalValue     Float        @default(1)
-  goalUnit      String?
-  goalFrequency String       @default("DAILY") // DAILY, WEEKLY
-  goalDirection String       @default("INCREASING") // INCREASING, DECREASING
-  color         String       @default("emerald")
-  reminderTime  String?      // e.g. "21:00"
-  quickSteppers Int[]        @default([1, 5]) // e.g. [1, 5] for quick +1, +5 buttons
-  archived      Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  deletedAt     DateTime?
-  entries       HabitEntry[]
-
-  @@map("habit_trackers")
-}
-
-model HabitEntry {
-  id              String       @id @default(uuid()) @db.Uuid
-  trackerId       String       @db.Uuid
-  tracker         HabitTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
-  date            String       // Format YYYY-MM-DD
-  value           Float        @default(1)
-  durationSeconds Int?
-  note            String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  @@unique([trackerId, date])
-  @@map("habit_entries")
-}
-
-model HabitCategory {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  color     String?  @default("emerald")
-  icon      String?  @default("FolderSimple")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, name])
-  @@map("habit_categories")
-}
-
-// ─── QUEUE MODULE ────────────────────────────────────────────────────────────
-
-model QueueArea {
-  id        String         @id @default(uuid()) @db.Uuid
-  userId    String         @db.Uuid
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String         // e.g. "Work", "Personal", "Side Projects"
-  color     String?        @default("neutral")
-  position  Int            @default(0)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  projects  QueueProject[]
-
-  @@unique([userId, name])
-  @@map("queue_areas")
-}
-
-model QueueProject {
-  id          String      @id @default(uuid()) @db.Uuid
-  userId      String      @db.Uuid
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  areaId      String?     @db.Uuid
-  area        QueueArea?  @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  name        String      // e.g. "Inovasi", "Website", "Finance"
-  description String?
-  color       String?     @default("neutral")
-  icon        String?     // Phosphor icon name
-  position    Int         @default(0)
-  archived    Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  tasks       QueueTask[]
-
-  @@unique([userId, name])
-  @@map("queue_projects")
-}
-
-model QueueTask {
-  id             String         @id @default(uuid()) @db.Uuid
-  userId         String         @db.Uuid
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId      String?        @db.Uuid
-  project        QueueProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  title          String
-  description    String?        @db.Text
-  status         String         @default("TODO") // "TODO", "DONE"
-  priority       String         @default("NONE") // "P1", "P2", "P3", "P4", "NONE"
-  dueDate        DateTime?
-  dueTime        String?        // e.g. "10:00"
-  completedAt    DateTime?
-  recurrenceRule String?        // "DAILY", "WEEKLY", "MONTHLY"
-  position       Float          @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  deletedAt      DateTime?
-  subtasks       QueueSubtask[]
-  labels         QueueLabel[]   @relation("QueueTaskToLabel")
-
-  @@index([userId, status])
-  @@index([userId, dueDate])
-  @@index([userId, projectId])
-  @@map("queue_tasks")
-}
-
-model QueueSubtask {
-  id        String    @id @default(uuid()) @db.Uuid
-  taskId    String    @db.Uuid
-  task      QueueTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  title     String
-  completed Boolean   @default(false)
-  position  Int       @default(0)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@map("queue_subtasks")
-}
-
-model QueueLabel {
-  id        String      @id @default(uuid()) @db.Uuid
-  userId    String      @db.Uuid
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String      // "urgent", "coding", "design"
-  color     String      @default("neutral")
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  tasks     QueueTask[] @relation("QueueTaskToLabel")
-
-  @@unique([userId, name])
-  @@map("queue_labels")
-}
-
-

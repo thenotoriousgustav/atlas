@@ -68,6 +68,7 @@ import {
 import { MobileBottomNav, type MobileTab } from "./components/mobile-bottom-nav"
 import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer"
 import { ReaderDialog } from "./components/reader-dialog"
+import { DownloadMediaDialog } from "./components/download-media-dialog"
 
 const folderSchema = z.object({
   name: z
@@ -79,9 +80,11 @@ const folderSchema = z.object({
 })
 
 const bookmarkSchema = z.object({
-  url: z.string().min(1, "URL is required"),
+  type: z.enum(["BOOKMARK", "NOTE"]),
+  url: z.string(),
   title: z.string(),
   description: z.string(),
+  notes: z.string(),
   folderId: z.string(),
   tags: z.array(z.string()),
 })
@@ -125,6 +128,13 @@ export function CabinetDashboard() {
     bookmark: any
     initialTab?: "reader" | "webview"
   } | null>(null)
+  const [downloadBookmark, setDownloadBookmark] = useState<any | null>(null)
+  const [filterType, setFilterType] = useState<"BOOKMARK" | "NOTE" | undefined>(
+    undefined
+  )
+  const [filterContentType, setFilterContentType] = useState<string | undefined>(
+    undefined
+  )
 
   const handleOpenReader = (
     bookmark: any,
@@ -257,9 +267,11 @@ export function CabinetDashboard() {
 
   const bookmarkForm = useForm({
     defaultValues: {
+      type: "BOOKMARK" as "BOOKMARK" | "NOTE",
       url: "",
       title: "",
       description: "",
+      notes: "",
       folderId: "",
       tags: [] as string[],
     },
@@ -267,48 +279,56 @@ export function CabinetDashboard() {
       onSubmit: bookmarkSchema,
     },
     onSubmit: async ({ value }) => {
+      const isNote = value.type === "NOTE" || !value.url?.trim()
       const tagsArray = (value.tags || [])
         .map((t) => t.replace(/^#/, "").trim())
         .filter((t) => t.length > 0)
 
-      let targetUrl = value.url.trim()
-      if (!/^https?:\/\//i.test(targetUrl)) {
-        targetUrl = "https://" + targetUrl
+      let targetUrl: string | undefined = undefined
+      if (!isNote && value.url?.trim()) {
+        targetUrl = value.url.trim()
+        if (!/^https?:\/\//i.test(targetUrl)) {
+          targetUrl = "https://" + targetUrl
+        }
       }
 
       const toastId = toast.loading(
-        bookmarkToEdit ? "Updating bookmark..." : "Saving bookmark..."
+        bookmarkToEdit ? "Updating item..." : isNote ? "Saving note..." : "Saving bookmark..."
       )
       try {
         if (bookmarkToEdit) {
           await updateBookmarkMutation.mutateAsync({
             id: bookmarkToEdit.id,
             data: {
+              type: isNote ? ("NOTE" as any) : ("BOOKMARK" as any),
               url: targetUrl,
-              title: value.title || undefined,
+              title: value.title || (isNote ? "Untitled Note" : undefined),
               description: value.description || undefined,
+              notes: value.notes || undefined,
               folderId: value.folderId || undefined,
               tags: tagsArray,
             },
           })
-          toast.success("Bookmark updated", { id: toastId })
+          toast.success(isNote ? "Note updated" : "Bookmark updated", { id: toastId })
         } else {
           await createBookmarkMutation.mutateAsync({
             data: {
+              type: isNote ? ("NOTE" as any) : ("BOOKMARK" as any),
               url: targetUrl,
-              title: value.title || undefined,
+              title: value.title || (isNote ? "Untitled Note" : undefined),
               description: value.description || undefined,
+              notes: value.notes || undefined,
               folderId: value.folderId || undefined,
               tags: tagsArray,
             },
           })
-          toast.success("Bookmark saved", { id: toastId })
+          toast.success(isNote ? "Note saved" : "Bookmark saved", { id: toastId })
         }
         invalidateAllQueries()
         setIsBookmarkModalOpen(false)
         resetBookmarkForm()
       } catch {
-        toast.error("Failed to save bookmark", { id: toastId })
+        toast.error("Failed to save item", { id: toastId })
       }
     },
   })
@@ -337,6 +357,9 @@ export function CabinetDashboard() {
 
   const activeFilterLabel = React.useMemo(() => {
     if (filterTrash) return "Trash"
+    if (filterType === "NOTE") return "Notes"
+    if (filterType === "BOOKMARK") return "Bookmarks"
+    if (filterContentType === "VIDEO") return "Videos & Media"
     if (selectedFolderId) {
       const folder = folders.find((f: any) => f.id === selectedFolderId)
       return folder ? folder.name : "Folder"
@@ -371,6 +394,8 @@ export function CabinetDashboard() {
       isArchived: filterTrash ? undefined : filterArchived,
       isTrash: filterTrash,
       tag: filterTrash ? undefined : selectedTag,
+      type: filterTrash ? undefined : filterType,
+      contentType: filterTrash ? undefined : (filterContentType as any),
       search: searchDebounced || undefined,
       limit: 20,
       status: filterBroken ? "BROKEN" : undefined,
@@ -647,9 +672,15 @@ export function CabinetDashboard() {
 
   const handleEditBookmark = (bookmark: any) => {
     setBookmarkToEdit(bookmark)
-    bookmarkForm.setFieldValue("url", bookmark.url)
+    bookmarkForm.setFieldValue(
+      "type",
+      (bookmark.type as "BOOKMARK" | "NOTE") ||
+        (bookmark.url ? "BOOKMARK" : "NOTE")
+    )
+    bookmarkForm.setFieldValue("url", bookmark.url || "")
     bookmarkForm.setFieldValue("title", bookmark.title || "")
     bookmarkForm.setFieldValue("description", bookmark.description || "")
+    bookmarkForm.setFieldValue("notes", bookmark.notes || "")
     bookmarkForm.setFieldValue("folderId", bookmark.folderId || "")
     bookmarkForm.setFieldValue(
       "tags",
@@ -821,6 +852,13 @@ export function CabinetDashboard() {
   const resetBookmarkForm = () => {
     setBookmarkToEdit(null)
     bookmarkForm.reset()
+    bookmarkForm.setFieldValue("type", "BOOKMARK")
+    bookmarkForm.setFieldValue("url", "")
+    bookmarkForm.setFieldValue("title", "")
+    bookmarkForm.setFieldValue("description", "")
+    bookmarkForm.setFieldValue("notes", "")
+    bookmarkForm.setFieldValue("folderId", selectedFolderId || "")
+    bookmarkForm.setFieldValue("tags", [])
   }
 
   const handleToggleSelectBookmark = (id: string) => {
@@ -1140,6 +1178,36 @@ export function CabinetDashboard() {
                     setFilterArchived(undefined)
                     setFilterBroken(undefined)
                     setFilterDuplicates(undefined)
+                    setFilterType(undefined)
+                    setFilterContentType(undefined)
+                  }
+                }}
+                filterType={filterType}
+                onSelectType={(val) => {
+                  setFilterType(val)
+                  if (val) {
+                    setSelectedFolderId(undefined)
+                    setSelectedTag(undefined)
+                    setFilterFavorite(undefined)
+                    setFilterArchived(undefined)
+                    setFilterBroken(undefined)
+                    setFilterDuplicates(undefined)
+                    setFilterTrash(undefined)
+                    setFilterContentType(undefined)
+                  }
+                }}
+                filterContentType={filterContentType}
+                onSelectContentType={(val) => {
+                  setFilterContentType(val)
+                  if (val) {
+                    setSelectedFolderId(undefined)
+                    setSelectedTag(undefined)
+                    setFilterFavorite(undefined)
+                    setFilterArchived(undefined)
+                    setFilterBroken(undefined)
+                    setFilterDuplicates(undefined)
+                    setFilterTrash(undefined)
+                    setFilterType(undefined)
                   }
                 }}
                 healthSummary={healthSummary}
@@ -1223,6 +1291,36 @@ export function CabinetDashboard() {
                         setFilterArchived(undefined)
                         setFilterBroken(undefined)
                         setFilterDuplicates(undefined)
+                        setFilterType(undefined)
+                        setFilterContentType(undefined)
+                      }
+                    }}
+                    filterType={filterType}
+                    onSelectType={(val) => {
+                      setFilterType(val)
+                      if (val) {
+                        setSelectedFolderId(undefined)
+                        setSelectedTag(undefined)
+                        setFilterFavorite(undefined)
+                        setFilterArchived(undefined)
+                        setFilterBroken(undefined)
+                        setFilterDuplicates(undefined)
+                        setFilterTrash(undefined)
+                        setFilterContentType(undefined)
+                      }
+                    }}
+                    filterContentType={filterContentType}
+                    onSelectContentType={(val) => {
+                      setFilterContentType(val)
+                      if (val) {
+                        setSelectedFolderId(undefined)
+                        setSelectedTag(undefined)
+                        setFilterFavorite(undefined)
+                        setFilterArchived(undefined)
+                        setFilterBroken(undefined)
+                        setFilterDuplicates(undefined)
+                        setFilterTrash(undefined)
+                        setFilterType(undefined)
                       }
                     }}
                     healthSummary={healthSummary}
@@ -1296,6 +1394,7 @@ export function CabinetDashboard() {
                 onPermanentDeleteBookmark={handlePermanentDeleteBookmark}
                 onEmptyTrash={handleEmptyTrash}
                 onOpenReader={handleOpenReader}
+                onOpenDownload={setDownloadBookmark}
               />
 
               {/* Load More Button */}
@@ -1443,6 +1542,13 @@ export function CabinetDashboard() {
         isOpen={!!readerState}
         initialTab={readerState?.initialTab || "reader"}
         onClose={() => setReaderState(null)}
+      />
+
+      {/* Download Media (Video / Audio) Dialog */}
+      <DownloadMediaDialog
+        bookmark={downloadBookmark}
+        isOpen={!!downloadBookmark}
+        onClose={() => setDownloadBookmark(null)}
       />
     </div>
   )

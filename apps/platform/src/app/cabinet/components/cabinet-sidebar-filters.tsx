@@ -41,6 +41,9 @@ import {
   ArrowClockwise,
   Plus,
   Trash,
+  FileText,
+  LinkSimple,
+  VideoCamera,
 } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@atlas/api-client"
 import { toast } from "@atlas/ui/components/sonner"
@@ -84,6 +87,10 @@ interface SidebarFiltersProps {
   onSelectDuplicates: (dup: boolean | undefined) => void
   filterTrash?: boolean
   onSelectTrash?: (trash: boolean | undefined) => void
+  filterType?: "BOOKMARK" | "NOTE" | undefined
+  onSelectType?: (type: "BOOKMARK" | "NOTE" | undefined) => void
+  filterContentType?: string | undefined
+  onSelectContentType?: (type: string | undefined) => void
   healthSummary?: any
   onScan: () => void
   onExport: (format: "html" | "csv" | "txt" | "zip") => void
@@ -126,6 +133,10 @@ export function CabinetSidebarFilters({
   onSelectDuplicates,
   filterTrash,
   onSelectTrash,
+  filterType,
+  onSelectType,
+  filterContentType,
+  onSelectContentType,
   healthSummary,
   onScan,
   onExport,
@@ -176,7 +187,7 @@ export function CabinetSidebarFilters({
           <WorkspaceSidebarGroup title="Library">
             <WorkspaceSidebarItem
               icon={<BookmarkSimple className="h-3.5 w-3.5" />}
-              label="All Bookmarks"
+              label="All Items"
               badge={healthSummary?.total}
               isActive={
                 selectedFolderId === undefined &&
@@ -185,7 +196,9 @@ export function CabinetSidebarFilters({
                 selectedTag === undefined &&
                 filterBroken === undefined &&
                 filterDuplicates === undefined &&
-                filterTrash === undefined
+                filterTrash === undefined &&
+                filterType === undefined &&
+                filterContentType === undefined
               }
               onClick={() => {
                 onSelectFolder(undefined)
@@ -195,6 +208,62 @@ export function CabinetSidebarFilters({
                 onSelectBroken(undefined)
                 onSelectDuplicates(undefined)
                 onSelectTrash?.(undefined)
+                onSelectType?.(undefined)
+                onSelectContentType?.(undefined)
+                onItemSelect?.()
+              }}
+            />
+
+            <WorkspaceSidebarItem
+              icon={<LinkSimple className="h-3.5 w-3.5" />}
+              label="Bookmarks"
+              isActive={filterType === "BOOKMARK"}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(false)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onSelectType?.("BOOKMARK")
+                onSelectContentType?.(undefined)
+                onItemSelect?.()
+              }}
+            />
+
+            <WorkspaceSidebarItem
+              icon={<FileText className="h-3.5 w-3.5 text-amber-600" />}
+              label="Notes"
+              isActive={filterType === "NOTE"}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(false)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onSelectType?.("NOTE")
+                onSelectContentType?.(undefined)
+                onItemSelect?.()
+              }}
+            />
+
+            <WorkspaceSidebarItem
+              icon={<VideoCamera className="h-3.5 w-3.5 text-purple-600" />}
+              label="Media & Videos"
+              isActive={filterContentType === "VIDEO"}
+              onClick={() => {
+                onSelectFolder(undefined)
+                onSelectTag(undefined)
+                onSelectFavorite(undefined)
+                onSelectArchived(false)
+                onSelectBroken(undefined)
+                onSelectDuplicates(undefined)
+                onSelectTrash?.(undefined)
+                onSelectType?.(undefined)
+                onSelectContentType?.("VIDEO")
                 onItemSelect?.()
               }}
             />
@@ -212,6 +281,8 @@ export function CabinetSidebarFilters({
                 onSelectBroken(undefined)
                 onSelectDuplicates(undefined)
                 onSelectTrash?.(undefined)
+                onSelectType?.(undefined)
+                onSelectContentType?.(undefined)
                 onItemSelect?.()
               }}
             />
@@ -229,6 +300,8 @@ export function CabinetSidebarFilters({
                 onSelectBroken(undefined)
                 onSelectDuplicates(undefined)
                 onSelectTrash?.(undefined)
+                onSelectType?.(undefined)
+                onSelectContentType?.(undefined)
                 onItemSelect?.()
               }}
             />
@@ -246,6 +319,8 @@ export function CabinetSidebarFilters({
                 onSelectBroken(undefined)
                 onSelectDuplicates(undefined)
                 onSelectTrash?.(true)
+                onSelectType?.(undefined)
+                onSelectContentType?.(undefined)
                 onItemSelect?.()
               }}
             />
