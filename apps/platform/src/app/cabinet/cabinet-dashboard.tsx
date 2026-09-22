@@ -67,6 +67,7 @@ import {
 } from "@atlas/ui/components/drawer"
 import { MobileBottomNav, type MobileTab } from "./components/mobile-bottom-nav"
 import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer"
+import { ReaderDialog } from "./components/reader-dialog"
 
 const folderSchema = z.object({
   name: z
@@ -120,6 +121,17 @@ export function CabinetDashboard() {
   const [columnCount, setColumnCount] = useState<number>(3)
   const [mobileDrawerMode, setMobileDrawerMode] = useState<"folders" | "library" | null>(null)
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false)
+  const [readerState, setReaderState] = useState<{
+    bookmark: any
+    initialTab?: "reader" | "webview"
+  } | null>(null)
+
+  const handleOpenReader = (
+    bookmark: any,
+    initialTab: "reader" | "webview" = "reader"
+  ) => {
+    setReaderState({ bookmark, initialTab })
+  }
 
   const activeMobileTab = React.useMemo<MobileTab>(() => {
     if (filterFavorite) return "favorites"
@@ -1283,6 +1295,7 @@ export function CabinetDashboard() {
                 onRestoreBookmark={handleRestoreBookmark}
                 onPermanentDeleteBookmark={handlePermanentDeleteBookmark}
                 onEmptyTrash={handleEmptyTrash}
+                onOpenReader={handleOpenReader}
               />
 
               {/* Load More Button */}
@@ -1422,6 +1435,14 @@ export function CabinetDashboard() {
         onOpenCollections={() => setMobileDrawerMode("folders")}
         onOpenLibrary={() => setMobileDrawerMode("library")}
         trashCount={healthSummary?.trash || 0}
+      />
+
+      {/* Reader Mode, Live Web View & Digital Preservation Dialog */}
+      <ReaderDialog
+        bookmark={readerState?.bookmark}
+        isOpen={!!readerState}
+        initialTab={readerState?.initialTab || "reader"}
+        onClose={() => setReaderState(null)}
       />
     </div>
   )

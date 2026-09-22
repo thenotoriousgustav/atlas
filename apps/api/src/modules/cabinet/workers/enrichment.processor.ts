@@ -6,6 +6,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { RedditProvider } from '../providers/reddit.provider';
 import { BookmarkEnrichmentProvider } from '../providers/enrichment-provider.interface';
 import { MetadataService } from '../services/metadata.service';
+import { ReaderService } from '../services/reader.service';
 
 export interface EnrichmentJobData {
   bookmarkId: string;
@@ -21,6 +22,7 @@ export class EnrichmentProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly redditProvider: RedditProvider,
     private readonly metadataService: MetadataService,
+    private readonly readerService: ReaderService,
   ) {
     super();
     // ponytail: register providers array cleanly for extensible provider matching
@@ -67,6 +69,39 @@ export class EnrichmentProcessor extends WorkerHost {
           },
         });
         this.logger.log(`Successfully enriched bookmark ${bookmarkId} via MetadataService`);
+
+        // ponytail: attempt reader content extraction for digital preservation and reader view
+        try {
+          const article = await this.readerService.extractArticle(url);
+          if (article) {
+            await this.prisma.bookmarkArticle.upsert({
+              where: { bookmarkId },
+              create: {
+                bookmarkId,
+                author: article.author,
+                publishedAt: article.publishedAt,
+                readingTimeMinutes: article.readingTimeMinutes,
+                wordCount: article.wordCount,
+                contentHtml: article.contentHtml,
+                contentMarkdown: article.contentMarkdown,
+                waybackUrl: article.waybackUrl,
+              },
+              update: {
+                author: article.author,
+                publishedAt: article.publishedAt,
+                readingTimeMinutes: article.readingTimeMinutes,
+                wordCount: article.wordCount,
+                contentHtml: article.contentHtml,
+                contentMarkdown: article.contentMarkdown,
+                waybackUrl: article.waybackUrl,
+              },
+            });
+            this.logger.log(`Preserved reader article content for bookmark ${bookmarkId} (${article.wordCount} words)`);
+          }
+        } catch (readerErr: any) {
+          this.logger.debug(`Reader extraction skipped for ${bookmarkId}: ${readerErr?.message || readerErr}`);
+        }
+
         return;
       }
 

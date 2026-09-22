@@ -16,6 +16,8 @@ import {
   Archive,
   Trash,
   ArrowCounterClockwise,
+  BookOpen,
+  Globe,
 } from "@phosphor-icons/react"
 
 interface BookmarkActionSheetProps {
@@ -29,6 +31,7 @@ interface BookmarkActionSheetProps {
   isTrashView?: boolean
   onRestoreBookmark?: (id: string) => void
   onPermanentDeleteBookmark?: (id: string) => void
+  onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void
 }
 
 export function BookmarkActionSheet({
@@ -42,6 +45,7 @@ export function BookmarkActionSheet({
   isTrashView,
   onRestoreBookmark,
   onPermanentDeleteBookmark,
+  onOpenReader,
 }: BookmarkActionSheetProps) {
   if (!bookmark) return null
 
@@ -99,6 +103,32 @@ export function BookmarkActionSheet({
             <ArrowSquareOut className="size-4 text-brand-muted" />
             <span>Open Link in New Tab</span>
           </a>
+
+          {/* Live Web View */}
+          <button
+            type="button"
+            onClick={() => {
+              onOpenChange(false)
+              onOpenReader?.(bookmark, "webview")
+            }}
+            className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
+          >
+            <Globe className="size-4 text-brand-muted" />
+            <span>Live Web View</span>
+          </button>
+
+          {/* Reader Mode & Archive */}
+          <button
+            type="button"
+            onClick={() => {
+              onOpenChange(false)
+              onOpenReader?.(bookmark, "reader")
+            }}
+            className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
+          >
+            <BookOpen className="size-4 text-brand-muted" />
+            <span>Reader Mode &amp; Archive</span>
+          </button>
 
           {/* Copy Link */}
           <button

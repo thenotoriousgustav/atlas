@@ -20,6 +20,8 @@ import {
   DotsThreeVertical,
   LinkSimple,
   ArrowCounterClockwise,
+  BookOpen,
+  Globe,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -53,6 +55,7 @@ interface MoodboardCardProps {
   onRestoreBookmark?: (id: string) => void
   onPermanentDeleteBookmark?: (id: string) => void
   onOpenActionSheet?: (bookmark: any) => void
+  onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void
 }
 
 function getProxiedImageUrl(imageUrl?: string | null): string {
@@ -84,6 +87,7 @@ export function MoodboardCard({
   onRestoreBookmark,
   onPermanentDeleteBookmark,
   onOpenActionSheet,
+  onOpenReader,
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
   const isReddit =
@@ -213,15 +217,33 @@ export function MoodboardCard({
             </>
           )}
 
-          {/* Folder Badge */}
-          {bookmark.folder && (
-            <Badge
-              variant="outline"
-              className="absolute top-3 right-3 shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
-            >
-              {bookmark.folder.name}
-            </Badge>
-          )}
+          {/* Folder & Reader Badges */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 shrink-0">
+            {bookmark.article?.readingTimeMinutes ? (
+              <Badge
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onOpenReader?.(bookmark)
+                }}
+                className="cursor-pointer rounded-none border border-brand-border/80 bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm hover:border-brand-charcoal"
+                title="Open Reader Mode"
+              >
+                <BookOpen className="mr-1 inline-block size-3 text-brand-muted" />
+                {bookmark.article.readingTimeMinutes}m
+              </Badge>
+            ) : null}
+
+            {bookmark.folder && (
+              <Badge
+                variant="outline"
+                className="shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
+              >
+                {bookmark.folder.name}
+              </Badge>
+            )}
+          </div>
         </a>
       </div>
 
@@ -347,6 +369,58 @@ export function MoodboardCard({
                     <TooltipContent>Favorite</TooltipContent>
                   </Tooltip>
 
+                  {/* Live Web View Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenReader?.(bookmark, "webview")
+                        }}
+                        variant="ghost"
+                        size="icon-xs"
+                        className="size-8 sm:size-7 text-brand-muted hover:text-brand-charcoal"
+                        title="Live Web View"
+                      >
+                        <Globe className="size-4 sm:size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Live Web View</TooltipContent>
+                  </Tooltip>
+
+                  {/* Reader Mode Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenReader?.(bookmark, "reader")
+                        }}
+                        variant="ghost"
+                        size="icon-xs"
+                        className={cn(
+                              "size-8 sm:size-7",
+                              bookmark.article?.isRead
+                                ? "text-emerald-700 hover:bg-emerald-50"
+                                : bookmark.article
+                                  ? "text-brand-charcoal hover:bg-brand-charcoal/10"
+                                  : "text-brand-muted hover:text-brand-charcoal"
+                        )}
+                        title="Reader Mode & Archive"
+                      >
+                        <BookOpen
+                          className="size-4 sm:size-3.5"
+                          weight={bookmark.article?.isRead ? "fill" : "regular"}
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {bookmark.article?.readingTimeMinutes
+                        ? `Reader Mode (${bookmark.article.readingTimeMinutes} min)`
+                        : "Reader Mode & Archive"}
+                    </TooltipContent>
+                  </Tooltip>
+
                   {/* Mobile Action Sheet Trigger */}
                   <Button
                     type="button"
@@ -381,7 +455,21 @@ export function MoodboardCard({
                           />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44 rounded-none">
+                      <DropdownMenuContent align="end" className="w-48 rounded-none">
+                        <DropdownMenuItem
+                          onClick={() => onOpenReader?.(bookmark, "webview")}
+                          className="flex items-center gap-2 text-xs cursor-pointer"
+                        >
+                          <Globe className="size-3.5 text-brand-muted" />
+                          <span>Live Web View</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onOpenReader?.(bookmark, "reader")}
+                          className="flex items-center gap-2 text-xs cursor-pointer"
+                        >
+                          <BookOpen className="size-3.5 text-brand-muted" />
+                          <span>Reader Mode &amp; Archive</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => onEditBookmark(bookmark)}
                           className="flex items-center gap-2 text-xs"
@@ -449,6 +537,7 @@ interface BookmarkMoodboardViewProps {
   onRestoreBookmark?: (id: string) => void
   onPermanentDeleteBookmark?: (id: string) => void
   onOpenActionSheet?: (bookmark: any) => void
+  onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void
 }
 
 export function BookmarkMoodboardView({
@@ -469,6 +558,7 @@ export function BookmarkMoodboardView({
   onRestoreBookmark,
   onPermanentDeleteBookmark,
   onOpenActionSheet,
+  onOpenReader,
 }: BookmarkMoodboardViewProps) {
   return (
     <Sortable
@@ -518,6 +608,7 @@ export function BookmarkMoodboardView({
                       onRestoreBookmark={onRestoreBookmark}
                       onPermanentDeleteBookmark={onPermanentDeleteBookmark}
                       onOpenActionSheet={onOpenActionSheet}
+                      onOpenReader={onOpenReader}
                     />
                   </SortableItem>
                 ))}

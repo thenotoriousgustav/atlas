@@ -46,4 +46,6 @@ export type {
   QueryTasksParams,
   DecomposeGoalResponse,
 } from "./queue"
+export { cabinetReaderApi } from "./cabinet-reader"
+export type { BookmarkArticle } from "./cabinet-reader"
 export * from "./custom-instance"

@@ -626,6 +626,64 @@
         ]
       }
     },
+    "/v1/bookmarks/{id}/article": {
+      "get": {
+        "operationId": "BookmarksController_getArticle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get reader view content and digital preservation archive for a bookmark",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/{id}/article/progress": {
+      "patch": {
+        "operationId": "BookmarksController_updateArticleProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update reading scroll progress and read status",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/{id}": {
       "get": {
         "operationId": "BookmarksController_findOne",

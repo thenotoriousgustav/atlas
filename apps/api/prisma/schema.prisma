@@ -88,9 +88,10 @@ model Bookmark {
   updatedAt      DateTime             @updatedAt
   deletedAt      DateTime?
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  tags   Tag[]   @relation("BookmarkTags")
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder  Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags    Tag[]            @relation("BookmarkTags")
+  article BookmarkArticle?
 
   @@index([provider])
   @@index([metadataStatus])
@@ -126,6 +127,26 @@ model Tag {
   bookmarks Bookmark[] @relation("BookmarkTags")
 
   @@map("tags")
+}
+
+model BookmarkArticle {
+  id                 String    @id @default(uuid()) @db.Uuid
+  bookmarkId         String    @unique @db.Uuid
+  bookmark           Bookmark  @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  author             String?
+  publishedAt        DateTime?
+  readingTimeMinutes Int?
+  wordCount          Int?
+  contentHtml        String?   @db.Text
+  contentMarkdown    String?   @db.Text
+  waybackUrl         String?
+  isRead             Boolean   @default(false)
+  readAt             DateTime?
+  scrollProgress     Float     @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("bookmark_articles")
 }
 
 model Vehicle {

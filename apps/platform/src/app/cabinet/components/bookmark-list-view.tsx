@@ -17,6 +17,8 @@ import {
   DotsThreeVertical,
   LinkSimple,
   ArrowCounterClockwise,
+  BookOpen,
+  Globe,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -49,6 +51,7 @@ interface BookmarkListViewProps {
   onRestoreBookmark?: (id: string) => void
   onPermanentDeleteBookmark?: (id: string) => void
   onOpenActionSheet?: (bookmark: any) => void
+  onOpenReader?: (bookmark: any, initialTab?: "reader" | "webview") => void
 }
 
 export function BookmarkListView({
@@ -67,6 +70,7 @@ export function BookmarkListView({
   onRestoreBookmark,
   onPermanentDeleteBookmark,
   onOpenActionSheet,
+  onOpenReader,
 }: BookmarkListViewProps) {
   const handleCopyUrl = (url: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -241,6 +245,58 @@ export function BookmarkListView({
                         <TooltipContent>Favorite</TooltipContent>
                       </Tooltip>
 
+                      {/* Live Web View Button */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenReader?.(bookmark, "webview")
+                            }}
+                            variant="ghost"
+                            size="icon-xs"
+                            className="size-8 sm:size-7 text-brand-muted hover:text-brand-charcoal"
+                            title="Live Web View"
+                          >
+                            <Globe className="size-4 sm:size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Live Web View</TooltipContent>
+                      </Tooltip>
+
+                      {/* Reader Mode Button */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenReader?.(bookmark, "reader")
+                            }}
+                            variant="ghost"
+                            size="icon-xs"
+                            className={cn(
+                              "size-8 sm:size-7",
+                              bookmark.article?.isRead
+                                ? "text-emerald-700 hover:bg-emerald-50"
+                                : bookmark.article
+                                  ? "text-brand-charcoal hover:bg-brand-charcoal/10"
+                                  : "text-brand-muted hover:text-brand-charcoal"
+                            )}
+                            title="Reader Mode & Archive"
+                          >
+                            <BookOpen
+                              className="size-4 sm:size-3.5"
+                              weight={bookmark.article?.isRead ? "fill" : "regular"}
+                            />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {bookmark.article?.readingTimeMinutes
+                            ? `Reader Mode (${bookmark.article.readingTimeMinutes} min)`
+                            : "Reader Mode & Archive"}
+                        </TooltipContent>
+                      </Tooltip>
+
                       {/* Mobile Action Sheet Trigger */}
                       <Button
                         type="button"
@@ -271,8 +327,22 @@ export function BookmarkListView({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="w-44 rounded-none"
+                            className="w-48 rounded-none"
                           >
+                            <DropdownMenuItem
+                              onClick={() => onOpenReader?.(bookmark, "webview")}
+                              className="flex items-center gap-2 text-xs cursor-pointer"
+                            >
+                              <Globe className="size-3.5 text-brand-muted" />
+                              <span>Live Web View</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onOpenReader?.(bookmark, "reader")}
+                              className="flex items-center gap-2 text-xs cursor-pointer"
+                            >
+                              <BookOpen className="size-3.5 text-brand-muted" />
+                              <span>Reader Mode &amp; Archive</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onEditBookmark(bookmark)}
                               className="flex items-center gap-2 text-xs"

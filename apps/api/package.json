@@ -18,6 +18,7 @@
     "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@extractus/article-extractor": "^9.0.1",
     "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
@@ -28,6 +29,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@simplewebauthn/server": "^13.3.2",
+    "@types/turndown": "^5.0.6",
     "argon2": "^0.44.0",
     "axios": "^1.18.1",
     "bullmq": "^6.0.9",
@@ -35,10 +37,12 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "ioredis": "^6.0.0",
+    "isomorphic-dompurify": "^4.3.0",
     "nest-winston": "^1.10.2",
     "pg": "^8.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "turndown": "^7.2.4",
     "winston": "^3.19.0"
   },
   "devDependencies": {

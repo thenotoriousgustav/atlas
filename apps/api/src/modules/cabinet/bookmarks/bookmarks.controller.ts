@@ -178,6 +178,22 @@ export class BookmarksController {
     return this.bookmarksService.emptyTrash(user.id);
   }
 
+  @Get(':id/article')
+  @ApiOperation({ summary: 'Get reader view content and digital preservation archive for a bookmark' })
+  async getArticle(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.bookmarksService.getArticle(user.id, id);
+  }
+
+  @Patch(':id/article/progress')
+  @ApiOperation({ summary: 'Update reading scroll progress and read status' })
+  async updateArticleProgress(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: { scrollProgress?: number; isRead?: boolean },
+  ) {
+    return this.bookmarksService.updateArticleProgress(user.id, id, dto);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get bookmark details by ID' })
   async findOne(@CurrentUser() user: any, @Param('id') id: string) {

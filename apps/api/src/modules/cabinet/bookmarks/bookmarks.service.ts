@@ -15,6 +15,7 @@ import { PrismaService } from "../../../prisma/prisma.service"
 import { MetadataService } from "../services/metadata.service"
 import { LinkCheckerService } from "../services/link-checker.service"
 import { RedditProvider } from "../providers/reddit.provider"
+import { ReaderService } from "../services/reader.service"
 import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
 
@@ -28,6 +29,7 @@ export class BookmarksService implements OnModuleInit {
     @Inject(forwardRef(() => LinkCheckerService))
     private linkCheckerService: LinkCheckerService,
     private redditProvider: RedditProvider,
+    private readerService: ReaderService,
     @InjectQueue("bookmark-enrichment")
     private enrichmentQueue: Queue
   ) {}
@@ -204,6 +206,18 @@ export class BookmarksService implements OnModuleInit {
       include: {
         tags: true,
         folder: true,
+        article: {
+          select: {
+            id: true,
+            author: true,
+            publishedAt: true,
+            readingTimeMinutes: true,
+            wordCount: true,
+            waybackUrl: true,
+            isRead: true,
+            scrollProgress: true,
+          },
+        },
       },
       orderBy: [{ position: "asc" }, { createdAt: "desc" }],
     }
@@ -245,6 +259,18 @@ export class BookmarksService implements OnModuleInit {
       include: {
         tags: true,
         folder: true,
+        article: {
+          select: {
+            id: true,
+            author: true,
+            publishedAt: true,
+            readingTimeMinutes: true,
+            wordCount: true,
+            waybackUrl: true,
+            isRead: true,
+            scrollProgress: true,
+          },
+        },
       },
     })
 
@@ -751,5 +777,82 @@ export class BookmarksService implements OnModuleInit {
     } catch (error: any) {
       return res.status(502).send(`Failed to proxy image: ${error.message}`)
     }
+  }
+
+  async getArticle(userId: string, id: string) {
+    const bookmark = await this.prisma.bookmark.findFirst({
+      where: { id, userId, deletedAt: null },
+      include: { article: true },
+    })
+
+    if (!bookmark) {
+      throw new NotFoundException("Bookmark not found")
+    }
+
+    if (bookmark.article && bookmark.article.contentHtml) {
+      return bookmark.article
+    }
+
+    // On-demand article extraction if not yet cached in background
+    const extracted = await this.readerService.extractArticle(bookmark.url)
+    if (!extracted) {
+      throw new NotFoundException("No readable article content found for this bookmark URL")
+    }
+
+    return this.prisma.bookmarkArticle.upsert({
+      where: { bookmarkId: id },
+      create: {
+        bookmarkId: id,
+        author: extracted.author,
+        publishedAt: extracted.publishedAt,
+        readingTimeMinutes: extracted.readingTimeMinutes,
+        wordCount: extracted.wordCount,
+        contentHtml: extracted.contentHtml,
+        contentMarkdown: extracted.contentMarkdown,
+        waybackUrl: extracted.waybackUrl,
+      },
+      update: {
+        author: extracted.author,
+        publishedAt: extracted.publishedAt,
+        readingTimeMinutes: extracted.readingTimeMinutes,
+        wordCount: extracted.wordCount,
+        contentHtml: extracted.contentHtml,
+        contentMarkdown: extracted.contentMarkdown,
+        waybackUrl: extracted.waybackUrl,
+      },
+    })
+  }
+
+  async updateArticleProgress(
+    userId: string,
+    id: string,
+    dto: { scrollProgress?: number; isRead?: boolean }
+  ) {
+    const bookmark = await this.prisma.bookmark.findFirst({
+      where: { id, userId, deletedAt: null },
+      include: { article: true },
+    })
+
+    if (!bookmark) {
+      throw new NotFoundException("Bookmark not found")
+    }
+
+    if (!bookmark.article) {
+      throw new NotFoundException("Article record not found for this bookmark")
+    }
+
+    const data: any = {}
+    if (dto.scrollProgress !== undefined) {
+      data.scrollProgress = Math.min(100, Math.max(0, dto.scrollProgress))
+    }
+    if (dto.isRead !== undefined) {
+      data.isRead = dto.isRead
+      data.readAt = dto.isRead ? new Date() : null
+    }
+
+    return this.prisma.bookmarkArticle.update({
+      where: { bookmarkId: id },
+      data,
+    })
   }
 }
