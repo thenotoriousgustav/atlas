@@ -110,6 +110,7 @@ export class BookmarksService implements OnModuleInit {
         imageUrl: extracted.imageUrl || null,
         faviconUrl: extracted.faviconUrl || null,
         siteName: extracted.siteName || null,
+        metadata: extracted.embedHtml ? { embedHtml: extracted.embedHtml } : undefined,
         folderId: createBookmarkDto.folderId || null,
         userId,
         provider: detectedProvider,

@@ -141,6 +141,7 @@ export class GenericMetadataProvider implements MetadataProvider {
         imageUrl,
         siteName,
         faviconUrl,
+        embedHtml: oembed?.html || undefined,
       }
     } catch (error) {
       this.logger.warn(

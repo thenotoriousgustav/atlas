@@ -4,6 +4,7 @@ export interface ExtractedMetadata {
   imageUrl?: string
   faviconUrl?: string
   siteName?: string
+  embedHtml?: string
 }
 
 export interface MetadataProvider {

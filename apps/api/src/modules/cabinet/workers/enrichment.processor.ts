@@ -63,6 +63,12 @@ export class EnrichmentProcessor extends WorkerHost {
             imageUrl: extracted.imageUrl || bookmark.imageUrl,
             faviconUrl: extracted.faviconUrl || bookmark.faviconUrl,
             siteName: extracted.siteName || bookmark.siteName,
+            metadata: extracted.embedHtml
+              ? {
+                  ...((bookmark.metadata as any) || {}),
+                  embedHtml: extracted.embedHtml,
+                }
+              : bookmark.metadata || undefined,
             metadataStatus: MetadataStatus.COMPLETED,
             metadataError: null,
             lastEnrichedAt: new Date(),
