@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { cabinetMediaApi } from "@atlas/api-client"
 import { Spinner } from "@atlas/ui/components/spinner"
 import { ArrowSquareOut } from "@phosphor-icons/react"
 import { cn } from "@atlas/ui/lib/utils"
@@ -28,21 +29,10 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
   // 2. Stored oEmbed HTML from backend
   const storedEmbedHtml = bookmark.metadata?.embedHtml
 
-  // 3. Fallback on-the-fly fetch of Reddit oEmbed if not already cached in DB
+  // 3. Fallback on-the-fly fetch of Reddit oEmbed via backend proxy (avoids browser CORS)
   const { data: oembedData, isLoading: isOEmbedFetching } = useQuery({
     queryKey: ["reddit-oembed-html", bookmark?.url],
-    queryFn: async () => {
-      try {
-        const oembedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(
-          bookmark.url
-        )}`
-        const res = await fetch(oembedUrl, { signal: AbortSignal.timeout(6000) })
-        if (res.ok) {
-          return await res.json()
-        }
-      } catch {}
-      return null
-    },
+    queryFn: () => cabinetMediaApi.getOEmbed(bookmark.url),
     enabled: !storedEmbedHtml && !!bookmark?.url,
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
   })
@@ -74,10 +64,13 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
   const srcDoc = useMemo(() => {
     if (!rawHtml) return ""
 
-    // Ensure the Reddit widgets.js or comment-embed.js script is included
+    // Ensure both widgets.js and comment-embed.js are available for both post and comment embeds
     let htmlWithScript = rawHtml
-    if (!htmlWithScript.includes("embed.reddit.com/widgets.js") && !htmlWithScript.includes("comment-embed.js")) {
+    if (!htmlWithScript.includes("embed.reddit.com/widgets.js")) {
       htmlWithScript += '<script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>'
+    }
+    if (!htmlWithScript.includes("comment-embed.js")) {
+      htmlWithScript += '<script async src="https://www.redditstatic.com/comment-embed.js"></script>'
     }
 
     return `<!DOCTYPE html>
@@ -190,15 +183,14 @@ export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
       </div>
 
       <div className="pt-3">
-        <a
-          href={bookmark.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => window.open(bookmark.url, "_blank", "noopener,noreferrer")}
           className="inline-flex items-center gap-1 font-mono text-[10px] text-brand-muted hover:text-brand-charcoal"
         >
           <span>View on reddit.com</span>
           <ArrowSquareOut className="size-3" />
-        </a>
+        </button>
       </div>
     </div>
   )

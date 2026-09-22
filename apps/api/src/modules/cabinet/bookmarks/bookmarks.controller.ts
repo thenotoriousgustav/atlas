@@ -45,6 +45,13 @@ export class BookmarksController {
     return this.bookmarksService.scrapeUrl(url);
   }
 
+  @Get('oembed')
+  @ApiOperation({ summary: 'Proxy oEmbed request to bypass CORS restrictions' })
+  @ApiQuery({ name: 'url', required: true })
+  async getOEmbed(@Query('url') url: string) {
+    return this.bookmarksService.getOEmbed(url);
+  }
+
   @Get('media/extract')
   @ApiOperation({ summary: 'Extract downloadable video/audio formats using yt-dlp' })
   @ApiQuery({ name: 'url', required: true })

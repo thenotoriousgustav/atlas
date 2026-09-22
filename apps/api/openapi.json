@@ -265,6 +265,35 @@
         ]
       }
     },
+    "/v1/bookmarks/oembed": {
+      "get": {
+        "operationId": "BookmarksController_getOEmbed",
+        "parameters": [
+          {
+            "name": "url",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Proxy oEmbed request to bypass CORS restrictions",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/media/extract": {
       "get": {
         "operationId": "BookmarksController_extractMedia",

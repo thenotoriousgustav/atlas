@@ -50,4 +50,15 @@ export const cabinetMediaApi = {
     link.parentNode?.removeChild(link)
     window.URL.revokeObjectURL(downloadUrl)
   },
+
+  getOEmbed: async (url: string): Promise<any | null> => {
+    try {
+      const res = await AXIOS_INSTANCE.get("/v1/bookmarks/oembed", {
+        params: { url },
+      })
+      return res.data?.data || res.data
+    } catch {
+      return null
+    }
+  },
 }

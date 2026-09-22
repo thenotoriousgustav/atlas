@@ -200,6 +200,10 @@ export function MoodboardCard({
               </Badge>
             )}
           </div>
+        ) : isReddit ? (
+          <div className="group/header relative block w-full bg-brand-canvas">
+            <RedditPreviewBox bookmark={bookmark} hostname={hostname} />
+          </div>
         ) : (
           <a
             href={bookmark.url}
@@ -207,98 +211,92 @@ export function MoodboardCard({
             rel="noreferrer"
             className="group/header relative block w-full bg-brand-canvas"
           >
-            {isReddit ? (
-              <RedditPreviewBox bookmark={bookmark} hostname={hostname} />
-            ) : (
-              <>
-                {imageStatus === "loading" && (
-                  <div className="absolute inset-0 flex min-h-[160px] animate-pulse items-center justify-center bg-gray-50/50">
-                    <Clock className="h-5 w-5 animate-spin text-gray-400" />
+            <>
+              {imageStatus === "loading" && (
+                <div className="absolute inset-0 flex min-h-[160px] animate-pulse items-center justify-center bg-gray-50/50">
+                  <Clock className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              )}
+
+              {imageStatus !== "error" && currentSrc && (
+                <img
+                  src={currentSrc}
+                  alt={bookmark.title || hostname}
+                  onLoad={() => setImageStatus("loaded")}
+                  onError={handleImageError}
+                  className={cn(
+                    "block h-auto max-h-[320px] w-full object-contain transition-opacity duration-300",
+                    imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              )}
+
+              {imageStatus === "error" && (
+                <div
+                  className={cn(
+                    "relative flex min-h-[140px] w-full flex-col items-center justify-center p-4",
+                    color.bg
+                  )}
+                >
+                  <div className="flex size-12 items-center justify-center rounded-xl border border-brand-border/60 bg-white shadow-sm">
+                    <img
+                      src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none"
+                      }}
+                      className="size-7 object-contain"
+                    />
                   </div>
-                )}
-
-                {imageStatus !== "error" && currentSrc && (
-                  <img
-                    src={currentSrc}
-                    alt={bookmark.title || hostname}
-                    onLoad={() => setImageStatus("loaded")}
-                    onError={handleImageError}
+                  <span
                     className={cn(
-                      "block h-auto max-h-[320px] w-full object-contain transition-opacity duration-300",
-                      imageStatus === "loaded" ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                )}
-
-                {imageStatus === "error" && (
-                  <div
-                    className={cn(
-                      "relative flex min-h-[140px] w-full flex-col items-center justify-center p-4",
-                      color.bg
+                      "mt-2 max-w-full truncate px-2 font-mono text-[11px] font-medium tracking-wider uppercase",
+                      color.text
                     )}
                   >
-                    <div className="flex size-12 items-center justify-center rounded-xl border border-brand-border/60 bg-white shadow-sm">
-                      <img
-                        src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
-                        alt=""
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none"
-                        }}
-                        className="size-7 object-contain"
-                      />
-                    </div>
-                    <span
-                      className={cn(
-                        "mt-2 max-w-full truncate px-2 font-mono text-[11px] font-medium tracking-wider uppercase",
-                        color.text
-                      )}
-                    >
-                      {hostname}
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
+                    {hostname}
+                  </span>
+                </div>
+              )}
+            </>
 
             {/* Folder & Reader Badges */}
-            {!isReddit && (
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 shrink-0">
-                {isVideo && (
-                  <Badge
-                    variant="outline"
-                    className="rounded-none border border-purple-200 bg-purple-50 px-1.5 py-0.5 font-mono text-[9px] font-medium text-purple-700 uppercase"
-                  >
-                    <VideoCamera className="mr-1 inline-block size-3" />
-                    Video
-                  </Badge>
-                )}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 shrink-0">
+              {isVideo && (
+                <Badge
+                  variant="outline"
+                  className="rounded-none border border-purple-200 bg-purple-50 px-1.5 py-0.5 font-mono text-[9px] font-medium text-purple-700 uppercase"
+                >
+                  <VideoCamera className="mr-1 inline-block size-3" />
+                  Video
+                </Badge>
+              )}
 
-                {bookmark.article?.readingTimeMinutes ? (
-                  <Badge
-                    variant="outline"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      onOpenReader?.(bookmark)
-                    }}
-                    className="cursor-pointer rounded-none border border-brand-border/80 bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm hover:border-brand-charcoal"
-                    title="Open Reader Mode"
-                  >
-                    <BookOpen className="mr-1 inline-block size-3 text-brand-muted" />
-                    {bookmark.article.readingTimeMinutes}m
-                  </Badge>
-                ) : null}
+              {bookmark.article?.readingTimeMinutes ? (
+                <Badge
+                  variant="outline"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onOpenReader?.(bookmark)
+                  }}
+                  className="cursor-pointer rounded-none border border-brand-border/80 bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm hover:border-brand-charcoal"
+                  title="Open Reader Mode"
+                >
+                  <BookOpen className="mr-1 inline-block size-3 text-brand-muted" />
+                  {bookmark.article.readingTimeMinutes}m
+                </Badge>
+              ) : null}
 
-                {bookmark.folder && (
-                  <Badge
-                    variant="outline"
-                    className="shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
-                  >
-                    {bookmark.folder.name}
-                  </Badge>
-                )}
-              </div>
-            )}
+              {bookmark.folder && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 rounded-none border border-brand-border/80 bg-white/95 px-2 py-0.5 font-mono text-[9px] font-medium text-brand-charcoal uppercase shadow-xs backdrop-blur-sm"
+                >
+                  {bookmark.folder.name}
+                </Badge>
+              )}
+            </div>
           </a>
         )}
       </div>

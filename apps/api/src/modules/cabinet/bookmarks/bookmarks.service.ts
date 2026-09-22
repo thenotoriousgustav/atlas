@@ -918,4 +918,41 @@ export class BookmarksService implements OnModuleInit {
   async downloadMedia(dto: DownloadMediaDto, res: Response) {
     return this.cabinetMediaService.download(dto, res)
   }
+
+  async getOEmbed(url: string) {
+    try {
+      const urlObj = new URL(url)
+      const host = urlObj.hostname.toLowerCase()
+      let oembedEndpoint: string | null = null
+
+      if (host.includes("reddit.com") || host.includes("redd.it")) {
+        oembedEndpoint = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`
+      } else if (host.includes("twitter.com") || host.includes("x.com")) {
+        oembedEndpoint = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`
+      } else if (host.includes("youtube.com") || host.includes("youtu.be")) {
+        oembedEndpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+      } else if (host.includes("tiktok.com")) {
+        oembedEndpoint = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+      }
+
+      if (!oembedEndpoint) {
+        return null
+      }
+
+      const res = await fetch(oembedEndpoint, {
+        headers: {
+          "User-Agent": "WhatsApp/2.24.6.77 A",
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(5000),
+      })
+
+      if (res.ok) {
+        return await res.json()
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
 }
