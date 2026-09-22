@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common"
 import {
   ExtractedMetadata,
   MetadataProvider,
+  CRAWLER_USER_AGENTS,
   decodeHtmlEntities,
 } from "./metadata-provider.interface"
 import { GenericMetadataProvider } from "./generic.metadata-provider"
@@ -32,7 +33,8 @@ export class TwitterMetadataProvider implements MetadataProvider {
         const vxUrl = `https://api.vxtwitter.com${path}`
         const vxRes = await fetch(vxUrl, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; AtlasCabinetBot/1.0)",
+            "User-Agent": CRAWLER_USER_AGENTS.WHATSAPP,
+            Accept: "application/json",
           },
           signal: AbortSignal.timeout(4000),
         })
@@ -41,7 +43,9 @@ export class TwitterMetadataProvider implements MetadataProvider {
           const vxData = await vxRes.json()
           if (vxData && (vxData.text || vxData.user_name)) {
             const author = vxData.user_name || "X User"
-            const handle = vxData.user_screen_name ? `@${vxData.user_screen_name}` : ""
+            const handle = vxData.user_screen_name
+              ? `@${vxData.user_screen_name}`
+              : ""
             const title = `${author} ${handle ? `(${handle}) ` : ""}on X`
             const description = vxData.text
             const imageUrl =
@@ -52,19 +56,27 @@ export class TwitterMetadataProvider implements MetadataProvider {
 
             return {
               title: decodeHtmlEntities(title.trim()),
-              description: description ? decodeHtmlEntities(description.trim()) : undefined,
+              description: description
+                ? decodeHtmlEntities(description.trim())
+                : undefined,
               imageUrl,
+              siteName: "X (Twitter)",
+              faviconUrl: "https://abs.twimg.com/favicons/twitter.3.ico",
             }
           }
         }
-      } catch (vxErr) {
-        this.logger.debug(`VxTwitter error for ${url}: ${vxErr}`)
+      } catch (vxErr: any) {
+        this.logger.debug(`VxTwitter error for ${url}: ${vxErr.message}`)
       }
 
       // 2. Try FixupX / FxTwitter API
       try {
         const fxUrl = `https://api.fxtwitter.com${path}`
         const fxRes = await fetch(fxUrl, {
+          headers: {
+            "User-Agent": CRAWLER_USER_AGENTS.FACEBOOK_EXTERNAL_HIT,
+            Accept: "application/json",
+          },
           signal: AbortSignal.timeout(4000),
         })
 
@@ -73,7 +85,9 @@ export class TwitterMetadataProvider implements MetadataProvider {
           const tweet = fxData.tweet
           if (tweet) {
             const author = tweet.author?.name || "X User"
-            const handle = tweet.author?.screen_name ? `@${tweet.author.screen_name}` : ""
+            const handle = tweet.author?.screen_name
+              ? `@${tweet.author.screen_name}`
+              : ""
             const title = `${author} ${handle ? `(${handle}) ` : ""}on X`
             const description = tweet.text
             const imageUrl =
@@ -83,44 +97,20 @@ export class TwitterMetadataProvider implements MetadataProvider {
 
             return {
               title: decodeHtmlEntities(title.trim()),
-              description: description ? decodeHtmlEntities(description.trim()) : undefined,
+              description: description
+                ? decodeHtmlEntities(description.trim())
+                : undefined,
               imageUrl,
+              siteName: "X (Twitter)",
+              faviconUrl: "https://abs.twimg.com/favicons/twitter.3.ico",
             }
           }
         }
-      } catch (fxErr) {
-        this.logger.debug(`FxTwitter error for ${url}: ${fxErr}`)
+      } catch (fxErr: any) {
+        this.logger.debug(`FxTwitter error for ${url}: ${fxErr.message}`)
       }
 
-      // 3. Try Twitter oEmbed
-      try {
-        const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`
-        const oembedRes = await fetch(oembedUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          },
-          signal: AbortSignal.timeout(4000),
-        })
-
-        if (oembedRes.ok) {
-          const data = await oembedRes.json()
-          const htmlSnippet = data.html || ""
-          const textMatch = htmlSnippet.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1]
-          const cleanText = textMatch
-            ? decodeHtmlEntities(textMatch.replace(/<[^>]+>/g, "").trim())
-            : undefined
-
-          const authorName = data.author_name || "X Post"
-          return {
-            title: `${authorName} on X`,
-            description: cleanText,
-            imageUrl: undefined,
-          }
-        }
-      } catch (oembedErr) {
-        this.logger.debug(`Twitter oEmbed error for ${url}: ${oembedErr}`)
-      }
-
+      // 3. Fallback to generic extractor with Meta/WhatsApp user-agent
       return await this.genericProvider.extract(url, urlObj)
     } catch {
       return null

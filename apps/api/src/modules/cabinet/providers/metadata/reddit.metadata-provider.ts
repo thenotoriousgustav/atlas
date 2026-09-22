@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common"
 import {
   ExtractedMetadata,
   MetadataProvider,
+  CRAWLER_USER_AGENTS,
   decodeHtmlEntities,
 } from "./metadata-provider.interface"
 import { GenericMetadataProvider } from "./generic.metadata-provider"
@@ -26,136 +27,78 @@ export class RedditMetadataProvider implements MetadataProvider {
 
   async extract(url: string, urlObj: URL): Promise<ExtractedMetadata | null> {
     try {
-      // 1. Check for Reddit Post ID in URL
-      const postIdMatch =
-        urlObj.pathname.match(
-          /(?:comments|post|preview\/post)\/([a-zA-Z0-9]+)/i
-        ) || urlObj.pathname.match(/^\/([a-zA-Z0-9]{5,8})$/i)
+      // 1. Extract Post ID & Subreddit from URL path
+      const postMatch = urlObj.pathname.match(
+        /\/r\/([^/]+)\/comments\/([a-zA-Z0-9]+)/i
+      )
+      const shortMatch = urlObj.pathname.match(/^\/([a-zA-Z0-9]{5,8})$/i)
 
-      const postId = postIdMatch ? postIdMatch[1] : null
+      const subreddit = postMatch ? postMatch[1] : undefined
+      const postId = postMatch ? postMatch[2] : shortMatch ? shortMatch[1] : null
 
-      // If we have a post ID, use Reddit's official dynamic social preview card
+      // 2. Reddit's Dynamic Social Image Card Generator
+      // Reddit renders a dynamic white card with subreddit icon, title, snippet, upvotes, and comments
+      // at https://share.redd.it/preview/post/${postId}
       let dynamicCardUrl: string | undefined = undefined
       if (postId) {
         dynamicCardUrl = `https://share.redd.it/preview/post/${postId}`
       }
 
-      // 2. Try Reddit oEmbed endpoint
+      // 3. Fetch title and author via Reddit oEmbed endpoint
+      let title: string | undefined = undefined
+      let description: string | undefined = undefined
+
       try {
         const oembedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`
         const oembedRes = await fetch(oembedUrl, {
           headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": CRAWLER_USER_AGENTS.WHATSAPP,
+            Accept: "application/json",
           },
           signal: AbortSignal.timeout(4000),
         })
 
         if (oembedRes.ok) {
           const oembedData = await oembedRes.json()
-          const title = oembedData.title
-            ? decodeHtmlEntities(oembedData.title.trim())
-            : urlObj.hostname
-          const author = oembedData.author_name
-          const provider = oembedData.provider_name || "Reddit"
-
-          const description = undefined
-
-          const imageUrl =
-            dynamicCardUrl ||
-            (oembedData.thumbnail_url
-              ? decodeHtmlEntities(
-                  oembedData.thumbnail_url.replace(/&amp;/g, "&")
-                )
-              : undefined)
-
-          return {
-            title,
-            description,
-            imageUrl,
+          if (oembedData.title) {
+            title = decodeHtmlEntities(oembedData.title.trim())
+          }
+          if (oembedData.author_name) {
+            description = `Posted by u/${oembedData.author_name}${
+              subreddit ? ` in r/${subreddit}` : ""
+            }`
           }
         }
-      } catch (oembedErr) {
-        this.logger.debug(`Reddit oEmbed error for ${url}: ${oembedErr}`)
+      } catch (oembedErr: any) {
+        this.logger.debug(`Reddit oEmbed error for ${url}: ${oembedErr.message}`)
       }
 
-      // 3. Try Reddit JSON endpoint (.json)
-      try {
-        let jsonUrl = url
-        if (!jsonUrl.includes(".json")) {
-          const cleanPath = urlObj.pathname.replace(/\/+$/, "")
-          jsonUrl = `https://www.reddit.com${cleanPath}.json?raw_json=1`
-        }
-
-        const jsonRes = await fetch(jsonUrl, {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (compatible; AtlasCabinetBot/1.0; +https://atlas.app)",
-            Accept: "application/json",
-          },
-          signal: AbortSignal.timeout(4000),
-        })
-
-        if (jsonRes.ok) {
-          const postDataArray = await jsonRes.json()
-          const post =
-            Array.isArray(postDataArray) &&
-            postDataArray[0]?.data?.children?.[0]?.data
-              ? postDataArray[0].data.children[0].data
-              : postDataArray?.data?.children?.[0]?.data
-
-          if (post) {
-            const subreddit =
-              post.subreddit_name_prefixed || `r/${post.subreddit}`
-            const rawTitle = post.title
-              ? `${post.title} : ${subreddit}`
-              : subreddit
-            const title = decodeHtmlEntities(rawTitle.trim())
-            const description = post.selftext
-              ? decodeHtmlEntities(post.selftext.slice(0, 300).trim())
-              : undefined
-
-            let imageUrl = dynamicCardUrl
-            if (!imageUrl && post.preview?.images?.[0]?.source?.url) {
-              imageUrl = decodeHtmlEntities(
-                post.preview.images[0].source.url.replace(/&amp;/g, "&")
-              )
-            } else if (
-              !imageUrl &&
-              post.url_overridden_by_dest &&
-              /\.(jpg|jpeg|png|webp|gif)/i.test(post.url_overridden_by_dest)
-            ) {
-              imageUrl = post.url_overridden_by_dest
-            } else if (
-              !imageUrl &&
-              post.thumbnail &&
-              post.thumbnail.startsWith("http")
-            ) {
-              imageUrl = post.thumbnail
-            }
-
-            return {
-              title,
-              description,
-              imageUrl,
-            }
-          }
-        }
-      } catch (jsonErr) {
-        this.logger.debug(`Reddit JSON error for ${url}: ${jsonErr}`)
-      }
-
-      // 4. Fallback to generic extractor with dynamic Reddit card
-      const general = await this.genericProvider.extract(url, urlObj)
-      if (general) {
-        return {
-          ...general,
-          imageUrl: dynamicCardUrl || general.imageUrl,
+      // 4. Fallback title from URL slug if oembed was blocked
+      if (!title) {
+        const pathParts = urlObj.pathname.split("/").filter(Boolean)
+        if (pathParts.length >= 4) {
+          const slug = pathParts[3]
+            .replace(/[_-]+/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+          title = `${slug}${subreddit ? ` : r/${subreddit}` : ""}`
+        } else if (subreddit) {
+          title = `Reddit Post in r/${subreddit}`
+        } else {
+          title = "Reddit Post"
         }
       }
-      return null
-    } catch {
-      return null
+
+      return {
+        title: title || "Reddit Post",
+        description,
+        imageUrl: dynamicCardUrl,
+        siteName: "Reddit",
+        faviconUrl:
+          "https://www.redditstatic.com/shreddit/assets/favicon/192x192.png",
+      }
+    } catch (err: any) {
+      this.logger.warn(`Reddit metadata extraction failed for ${url}: ${err.message}`)
+      return this.genericProvider.extract(url, urlObj)
     }
   }
 }

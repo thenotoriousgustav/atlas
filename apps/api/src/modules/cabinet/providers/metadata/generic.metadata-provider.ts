@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common"
 import {
   ExtractedMetadata,
   MetadataProvider,
+  CRAWLER_USER_AGENTS,
   decodeHtmlEntities,
 } from "./metadata-provider.interface"
 
@@ -9,14 +10,14 @@ import {
 export class GenericMetadataProvider implements MetadataProvider {
   private readonly logger = new Logger(GenericMetadataProvider.name)
 
-  // ponytail: prioritized user agents — social preview crawler first (whitelisted by e-commerce/SPA sites like Shopee), standard browser fallback
+  // Prioritized list: Meta/WhatsApp social crawlers first (whitelisted by e-commerce & SPA sites), desktop fallback
   private readonly userAgents = [
-    "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    CRAWLER_USER_AGENTS.FACEBOOK_EXTERNAL_HIT,
+    CRAWLER_USER_AGENTS.WHATSAPP,
+    CRAWLER_USER_AGENTS.CHROME_DESKTOP,
   ]
 
   supports(_url: URL): boolean {
-    // ponytail: fallback generic provider supports all URLs
     return true
   }
 
@@ -121,7 +122,7 @@ export class GenericMetadataProvider implements MetadataProvider {
               "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
           },
-          signal: AbortSignal.timeout(7000),
+          signal: AbortSignal.timeout(6000),
           redirect: "follow",
         })
 
@@ -131,6 +132,7 @@ export class GenericMetadataProvider implements MetadataProvider {
 
         const html = await response.text()
         if (typeof html === "string" && html.length > 0) {
+          // If the page returns actual meta/title tags, use it
           if (
             html.includes("og:") ||
             html.includes("<title") ||
@@ -138,6 +140,7 @@ export class GenericMetadataProvider implements MetadataProvider {
           ) {
             return html
           }
+          // If this was the last fallback, return whatever HTML we have
           if (userAgent === this.userAgents[this.userAgents.length - 1]) {
             return html
           }
