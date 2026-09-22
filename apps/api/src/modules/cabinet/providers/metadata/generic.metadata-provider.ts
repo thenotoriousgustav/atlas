@@ -10,7 +10,7 @@ import {
 export class GenericMetadataProvider implements MetadataProvider {
   private readonly logger = new Logger(GenericMetadataProvider.name)
 
-  // Prioritized list: Meta/WhatsApp social crawlers first (whitelisted by e-commerce & SPA sites), desktop fallback
+  // Prioritized list: Meta/WhatsApp social crawlers first (whitelisted by e-commerce, Reddit & SPA sites), desktop fallback
   private readonly userAgents = [
     CRAWLER_USER_AGENTS.FACEBOOK_EXTERNAL_HIT,
     CRAWLER_USER_AGENTS.WHATSAPP,
@@ -23,49 +23,81 @@ export class GenericMetadataProvider implements MetadataProvider {
 
   async extract(url: string, _urlObj?: URL): Promise<ExtractedMetadata | null> {
     try {
+      // 1. Fetch oEmbed metadata in parallel with HTML scraping
+      const oembedPromise = this.fetchOEmbed(url)
+
+      // 2. Fetch HTML using Facebook/WhatsApp crawler UA for rich OpenGraph tags
       const html = await this.fetchHtml(url)
-      if (!html) {
+      const oembed = await oembedPromise
+
+      if (!html && !oembed) {
         return { title: this.getDomain(url) }
       }
 
-      // Title: og:title -> twitter:title -> <title>
-      const ogTitle =
-        this.getMetaContent(html, "property", "og:title") ||
-        this.getMetaContent(html, "name", "og:title") ||
-        this.getMetaContent(html, "name", "twitter:title") ||
-        this.getMetaContent(html, "property", "twitter:title")
-      const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]
-      const rawTitle = ogTitle || titleTag || this.getDomain(url)
-      const title = decodeHtmlEntities(rawTitle.trim())
-
-      // Description: og:description -> twitter:description -> description
-      const rawDescription =
-        this.getMetaContent(html, "property", "og:description") ||
-        this.getMetaContent(html, "name", "og:description") ||
-        this.getMetaContent(html, "name", "twitter:description") ||
-        this.getMetaContent(html, "property", "twitter:description") ||
-        this.getMetaContent(html, "name", "description")
-      const description = rawDescription
-        ? decodeHtmlEntities(rawDescription.trim())
+      // Title determination priority:
+      // If oEmbed provides a specific title, prefer it over localized/generic og:titles (e.g. Reddit "Dari komunitas ...", 404s)
+      const ogTitle = html
+        ? this.getMetaContent(html, "property", "og:title") ||
+          this.getMetaContent(html, "name", "og:title") ||
+          this.getMetaContent(html, "name", "twitter:title") ||
+          this.getMetaContent(html, "property", "twitter:title")
         : undefined
 
-      // Image: og:image -> twitter:image -> link[rel=image_src] -> itemprop[image]
-      const rawImage =
-        this.getMetaContent(html, "property", "og:image") ||
-        this.getMetaContent(html, "property", "og:image:url") ||
-        this.getMetaContent(html, "property", "og:image:secure_url") ||
-        this.getMetaContent(html, "name", "og:image") ||
-        this.getMetaContent(html, "name", "twitter:image") ||
-        this.getMetaContent(html, "property", "twitter:image") ||
-        this.getMetaContent(html, "name", "twitter:image:src") ||
-        this.getMetaContent(html, "itemprop", "image") ||
-        html.match(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
-        html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']image_src["']/i)?.[1]
+      const titleTag = html?.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]
 
-      let imageUrl = rawImage ? decodeHtmlEntities(rawImage.trim()) : undefined
+      let chosenTitle = oembed?.title || ogTitle || titleTag || this.getDomain(url)
+      if (
+        chosenTitle &&
+        (chosenTitle.includes("komunitas") ||
+          chosenTitle.includes("community on Reddit") ||
+          chosenTitle.includes("404 Error"))
+      ) {
+        chosenTitle = oembed?.title || titleTag || this.getDomain(url)
+      }
 
-      // Resolve relative image URLs to absolute URLs
+      const title = decodeHtmlEntities(chosenTitle?.trim() || this.getDomain(url))
+
+      // Description determination:
+      const rawDescription = html
+        ? this.getMetaContent(html, "property", "og:description") ||
+          this.getMetaContent(html, "name", "og:description") ||
+          this.getMetaContent(html, "name", "twitter:description") ||
+          this.getMetaContent(html, "property", "twitter:description") ||
+          this.getMetaContent(html, "name", "description")
+        : undefined
+
+      const isReddit = url.includes("reddit.com") || url.includes("redd.it")
+      let description: string | undefined = undefined
+
+      if (isReddit && oembed?.author_name) {
+        description = `Posted by u/${oembed.author_name}`
+      } else if (rawDescription && !rawDescription.includes("Explore this post") && !rawDescription.includes("Jelajahi postingan ini")) {
+        description = rawDescription
+      } else if (oembed?.author_name) {
+        description = `By ${oembed.author_name}`
+      }
+
+      if (description) {
+        description = decodeHtmlEntities(description.trim())
+      }
+
+      // Image: og:image -> twitter:image -> oembed.thumbnail_url
+      const rawImage = html
+        ? this.getMetaContent(html, "property", "og:image") ||
+          this.getMetaContent(html, "property", "og:image:url") ||
+          this.getMetaContent(html, "property", "og:image:secure_url") ||
+          this.getMetaContent(html, "name", "og:image") ||
+          this.getMetaContent(html, "name", "twitter:image") ||
+          this.getMetaContent(html, "property", "twitter:image") ||
+          this.getMetaContent(html, "name", "twitter:image:src") ||
+          this.getMetaContent(html, "itemprop", "image") ||
+          html.match(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
+          html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']image_src["']/i)?.[1]
+        : undefined
+
+      let imageUrl = rawImage || oembed?.thumbnail_url
       if (imageUrl) {
+        imageUrl = decodeHtmlEntities(imageUrl.trim())
         try {
           imageUrl = new URL(imageUrl, url).href
         } catch {
@@ -73,20 +105,26 @@ export class GenericMetadataProvider implements MetadataProvider {
         }
       }
 
-      // Site name: og:site_name -> name=application-name -> apple-mobile-web-app-title
-      const rawSiteName =
-        this.getMetaContent(html, "property", "og:site_name") ||
-        this.getMetaContent(html, "name", "og:site_name") ||
-        this.getMetaContent(html, "name", "application-name") ||
-        this.getMetaContent(html, "name", "apple-mobile-web-app-title")
-      const siteName = rawSiteName ? decodeHtmlEntities(rawSiteName.trim()) : undefined
+      // Site name: og:site_name -> name=application-name -> apple-mobile-web-app-title -> oembed.provider_name
+      const rawSiteName = html
+        ? this.getMetaContent(html, "property", "og:site_name") ||
+          this.getMetaContent(html, "name", "og:site_name") ||
+          this.getMetaContent(html, "name", "application-name") ||
+          this.getMetaContent(html, "name", "apple-mobile-web-app-title")
+        : undefined
+
+      const siteName =
+        (rawSiteName ? decodeHtmlEntities(rawSiteName.trim()) : undefined) ||
+        oembed?.provider_name ||
+        undefined
 
       // Favicon URL: link[rel=icon] -> link[rel="shortcut icon"] -> link[rel=apple-touch-icon]
-      const rawFavicon =
-        html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
-        html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut )?icon["']/i)?.[1] ||
-        html.match(/<link[^>]+rel=["']apple-touch-icon(?:-precomposed)?["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
-        html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']apple-touch-icon(?:-precomposed)?["']/i)?.[1]
+      const rawFavicon = html
+        ? html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
+          html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut )?icon["']/i)?.[1] ||
+          html.match(/<link[^>]+rel=["']apple-touch-icon(?:-precomposed)?["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
+          html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']apple-touch-icon(?:-precomposed)?["']/i)?.[1]
+        : undefined
 
       let faviconUrl = rawFavicon ? decodeHtmlEntities(rawFavicon.trim()) : undefined
       if (faviconUrl) {
@@ -112,6 +150,46 @@ export class GenericMetadataProvider implements MetadataProvider {
     }
   }
 
+  private async fetchOEmbed(url: string): Promise<any | null> {
+    try {
+      const urlObj = new URL(url)
+      const host = urlObj.hostname.toLowerCase()
+
+      let oembedEndpoint: string | null = null
+
+      if (host.includes("reddit.com") || host.includes("redd.it")) {
+        oembedEndpoint = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`
+      } else if (host.includes("twitter.com") || host.includes("x.com")) {
+        oembedEndpoint = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`
+      } else if (host.includes("youtube.com") || host.includes("youtu.be")) {
+        oembedEndpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+      } else if (host.includes("tiktok.com")) {
+        oembedEndpoint = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+      } else if (host.includes("vimeo.com")) {
+        oembedEndpoint = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`
+      }
+
+      if (!oembedEndpoint) {
+        return null
+      }
+
+      const res = await fetch(oembedEndpoint, {
+        headers: {
+          "User-Agent": CRAWLER_USER_AGENTS.WHATSAPP,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(4000),
+      })
+
+      if (res.ok) {
+        return await res.json()
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
   private async fetchHtml(url: string): Promise<string | null> {
     for (const userAgent of this.userAgents) {
       try {
@@ -132,7 +210,6 @@ export class GenericMetadataProvider implements MetadataProvider {
 
         const html = await response.text()
         if (typeof html === "string" && html.length > 0) {
-          // If the page returns actual meta/title tags, use it
           if (
             html.includes("og:") ||
             html.includes("<title") ||
@@ -140,7 +217,6 @@ export class GenericMetadataProvider implements MetadataProvider {
           ) {
             return html
           }
-          // If this was the last fallback, return whatever HTML we have
           if (userAgent === this.userAgents[this.userAgents.length - 1]) {
             return html
           }
