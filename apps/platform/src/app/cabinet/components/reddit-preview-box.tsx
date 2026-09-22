@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useMemo } from "react"
-import { ArrowUp, ChatCircle, LinkSimple } from "@phosphor-icons/react"
+import React, { useState, useEffect, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Spinner } from "@atlas/ui/components/spinner"
+import { ArrowSquareOut } from "@phosphor-icons/react"
 import { cn } from "@atlas/ui/lib/utils"
 
 interface RedditPreviewBoxProps {
@@ -10,182 +12,193 @@ interface RedditPreviewBoxProps {
 }
 
 export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
+  const [frameHeight, setFrameHeight] = useState<number>(340)
+  const [isFrameLoading, setIsFrameLoading] = useState<boolean>(true)
+
   // 1. Extract subreddit
-  const subredditClean = useMemo(() => {
+  const subreddit = useMemo(() => {
     try {
       const match = bookmark.url?.match(/\/r\/([^/]+)/i)
-      return match?.[1] || "reddit"
+      return match?.[1] ? `r/${match[1]}` : "r/reddit"
     } catch {
-      return "reddit"
+      return "r/reddit"
     }
   }, [bookmark.url])
 
-  const displaySubreddit = `r/${subredditClean}`
+  // 2. Stored oEmbed HTML from backend
+  const storedEmbedHtml = bookmark.metadata?.embedHtml
 
-  // 2. Clean title
-  const cleanTitle = useMemo(() => {
-    let t = bookmark.title || "Reddit Post"
-    return t
-      .replace(/\s*:\s*r\/[a-zA-Z0-9_-]+$/i, "")
-      .replace(/^From the .* community on Reddit:?\s*/i, "")
-      .replace(/^Dari komunitas .* di Reddit:?\s*/i, "")
-      .trim() || "Reddit Post"
-  }, [bookmark.title])
+  // 3. Fallback on-the-fly fetch of Reddit oEmbed if not already cached in DB
+  const { data: oembedData, isLoading: isOEmbedFetching } = useQuery({
+    queryKey: ["reddit-oembed-html", bookmark?.url],
+    queryFn: async () => {
+      try {
+        const oembedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(
+          bookmark.url
+        )}`
+        const res = await fetch(oembedUrl, { signal: AbortSignal.timeout(6000) })
+        if (res.ok) {
+          return await res.json()
+        }
+      } catch {}
+      return null
+    },
+    enabled: !storedEmbedHtml && !!bookmark?.url,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  })
 
-  // 3. Post body snippet (text content)
-  const bodyText = useMemo(() => {
-    const raw =
-      bookmark.notes ||
-      bookmark.description ||
-      bookmark.metadata?.reddit?.post?.selftext ||
-      bookmark.metadata?.selftext ||
-      ""
+  const rawHtml = storedEmbedHtml || oembedData?.html
 
-    if (
-      raw &&
-      !raw.toLowerCase().includes("explore this post") &&
-      !raw.toLowerCase().includes("jelajahi postingan ini") &&
-      !raw.toLowerCase().includes("from the ")
-    ) {
-      return raw.replace(/^Posted by u\/[^\s]+(?:\s+in\s+r\/[^\s]+)?\s*•?\s*/i, "").trim()
+  // 4. Listen for dynamic resize messages from Reddit embed script
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
+        if (
+          data?.type === "atlas-reddit-resize" &&
+          data?.id === bookmark.id &&
+          typeof data.height === "number" &&
+          data.height > 60
+        ) {
+          setFrameHeight(data.height + 12)
+          setIsFrameLoading(false)
+        }
+      } catch {}
     }
-    return ""
-  }, [bookmark.notes, bookmark.description, bookmark.metadata])
 
-  // 4. Author & Subtitle stats
-  const authorName = useMemo(() => {
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [bookmark.id])
+
+  // 5. Build self-contained HTML document for the iframe srcDoc
+  const srcDoc = useMemo(() => {
+    if (!rawHtml) return ""
+
+    // Ensure the Reddit widgets.js or comment-embed.js script is included
+    let htmlWithScript = rawHtml
+    if (!htmlWithScript.includes("embed.reddit.com/widgets.js") && !htmlWithScript.includes("comment-embed.js")) {
+      htmlWithScript += '<script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>'
+    }
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+    blockquote.reddit-embed-bq, .reddit-embed, .reddit-card {
+      margin: 0 auto !important;
+      max-width: 100% !important;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 16px;
+      background: #ffffff;
+      color: #1a1a1b;
+    }
+    blockquote.reddit-embed-bq a, .reddit-embed a {
+      color: #ff4500;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    blockquote.reddit-embed-bq a:hover, .reddit-embed a:hover {
+      text-decoration: underline;
+    }
+    iframe {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 auto !important;
+      display: block !important;
+    }
+  </style>
+</head>
+<body>
+  ${htmlWithScript}
+  <script>
+    window.addEventListener("message", function(e) {
+      try {
+        var d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (d && d.type === "resize.embed" && d.data) {
+          window.parent.postMessage({ type: "atlas-reddit-resize", id: "${bookmark.id}", height: d.data }, "*");
+        }
+      } catch(err) {}
+    });
+  </script>
+</body>
+</html>`
+  }, [rawHtml, bookmark.id])
+
+  if (rawHtml) {
     return (
-      bookmark.metadata?.reddit?.author?.username ||
-      bookmark.metadata?.author ||
-      (bookmark.description?.match(/Posted by u\/([^\s•]+)/i)?.[1]) ||
-      null
+      <div className="relative w-full overflow-hidden bg-white dark:bg-zinc-900 border-b border-brand-border">
+        {isFrameLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 backdrop-blur-xs dark:bg-zinc-900/90">
+            <div className="flex items-center gap-2 font-mono text-xs text-brand-muted">
+              <Spinner className="size-4" />
+              <span>Loading Reddit oEmbed...</span>
+            </div>
+          </div>
+        )}
+        <iframe
+          srcDoc={srcDoc}
+          title={bookmark.title || "Reddit oEmbed"}
+          sandbox="allow-scripts allow-same-origin allow-popups"
+          loading="lazy"
+          onLoad={() => {
+            setTimeout(() => setIsFrameLoading(false), 800)
+          }}
+          className="w-full border-none transition-all duration-300"
+          style={{ height: `${frameHeight}px`, minHeight: "220px", display: "block" }}
+        />
+      </div>
     )
-  }, [bookmark.metadata, bookmark.description])
+  }
 
-  // 5. Upvotes & Comments stats
-  const score = useMemo(() => {
-    const raw =
-      bookmark.metadata?.reddit?.stats?.score ??
-      bookmark.metadata?.score ??
-      null
-    if (raw !== null && raw !== undefined) return raw
-    return 2 // aesthetic fallback matching Reddit card
-  }, [bookmark.metadata])
+  // Loading state while on-the-fly oEmbed is fetching
+  if (isOEmbedFetching) {
+    return (
+      <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 border-b border-brand-border bg-white p-6 font-mono text-xs text-brand-muted dark:bg-zinc-900">
+        <Spinner className="size-5" />
+        <span>Fetching Reddit oEmbed...</span>
+      </div>
+    )
+  }
 
-  const commentCount = useMemo(() => {
-    const raw =
-      bookmark.metadata?.reddit?.stats?.commentCount ??
-      bookmark.metadata?.num_comments ??
-      bookmark.metadata?.comments ??
-      null
-    if (raw !== null && raw !== undefined) return raw
-    return 24 // aesthetic fallback matching Reddit card
-  }, [bookmark.metadata])
-
-  // Avatar initial or flag
-  const isIndonesia = subredditClean.toLowerCase() === "indonesia"
-
+  // Fallback card if Reddit oEmbed returns 404 or fails
   return (
-    <div className="w-full select-none overflow-hidden rounded-xl border border-[#025144]/40 bg-[#025144] p-2 sm:p-2.5 text-left font-sans shadow-md">
-      {/* 1. The Inner White Card (Exact Reddit WhatsApp Visual Card) */}
-      <div className="flex flex-col justify-between rounded-lg bg-white p-4 shadow-sm sm:p-5 text-neutral-900">
-        <div>
-          {/* Header Row: Subreddit Icon + Name + Visitors + Orange Reddit Logo */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              {/* Subreddit Icon */}
-              {isIndonesia ? (
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-[#fff5ea] text-base shadow-2xs">
-                  🇮🇩
-                </div>
-              ) : (
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#FF4500] to-[#FF8700] font-mono text-xs font-bold text-white shadow-2xs">
-                  r/
-                </div>
-              )}
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate font-sans text-base font-bold tracking-tight text-neutral-900">
-                    {displaySubreddit}
-                  </span>
-                </div>
-                <p className="truncate text-xs font-normal text-neutral-500">
-                  {authorName ? `u/${authorName}` : "191K weekly visitors"}
-                </p>
-              </div>
-            </div>
-
-            {/* Top-Right Reddit Orange Snoo Logo */}
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#FF4500] shadow-xs">
-              <svg
-                className="size-4 fill-white"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.196-.491.956 0 1.733.777 1.733 1.733 0 .658-.363 1.226-.897 1.52.01.144.017.29.017.435 0 3.057-3.55 5.534-7.931 5.534-4.382 0-7.932-2.477-7.932-5.534 0-.14.006-.28.016-.423C3.655 14.85 3.3 14.288 3.3 13.636c0-.956.777-1.733 1.733-1.733.468 0 .89.183 1.198.494 1.192-.857 2.846-1.418 4.668-1.489l.915-4.29 3.197.674a1.25 1.25 0 0 1 1.25-.993zm-8.878 7.37a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm6.368 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm-5.067 3.99a.53.53 0 0 0-.084.743A5.452 5.452 0 0 0 12 17.8c1.558 0 2.91-.703 3.653-1.953a.53.53 0 0 0-.898-.564c-.58.972-1.637 1.517-2.755 1.517-1.118 0-2.175-.545-2.755-1.517a.53.53 0 0 0-.743-.083z" />
-              </svg>
-            </div>
+    <div className="flex min-h-[160px] w-full flex-col justify-between border-b border-brand-border bg-white p-5 text-left dark:bg-zinc-900">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-[#FF4500] text-white font-bold text-[10px]">
+            r/
           </div>
-
-          {/* Post Title */}
-          <h2 className="mt-4 line-clamp-3 text-lg font-extrabold leading-snug tracking-tight text-neutral-900 sm:text-xl">
-            {cleanTitle}
-          </h2>
-
-          {/* Post Body Snippet */}
-          {bodyText ? (
-            <p className="mt-2.5 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-neutral-600 sm:text-sm">
-              {bodyText}
-            </p>
-          ) : (
-            <p className="mt-2 line-clamp-2 text-xs italic text-neutral-400">
-              Explore discussion and comments from the community...
-            </p>
-          )}
+          <span className="font-semibold text-xs text-brand-charcoal">{subreddit}</span>
         </div>
-
-        {/* Upvotes & Comments Stats Bar */}
-        <div className="mt-5 flex items-center gap-4 text-xs font-semibold text-neutral-700">
-          <div className="flex items-center gap-1.5">
-            <ArrowUp className="size-4 stroke-[2.5] text-neutral-800" />
-            <span className="font-bold">{typeof score === "number" ? score.toLocaleString() : score}</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <ChatCircle className="size-4 stroke-[2.5] text-neutral-800" />
-            <span>
-              {typeof commentCount === "number" ? commentCount.toLocaleString() : commentCount} comments
-            </span>
-          </div>
-        </div>
+        <h3 className="text-sm font-bold leading-snug text-brand-charcoal line-clamp-3">
+          {bookmark.title || "Reddit Post"}
+        </h3>
+        {bookmark.description && (
+          <p className="text-xs text-brand-muted line-clamp-2">{bookmark.description}</p>
+        )}
       </div>
 
-      {/* 2. WhatsApp Bottom Link Metadata Bar (The Dark Green Chat Strip) */}
-      <div className="px-2 pt-2.5 pb-1 text-white">
-        <h4 className="line-clamp-1 text-xs font-bold leading-snug text-white">
-          From the {subredditClean} community on Reddit
-        </h4>
-        <p className="mt-0.5 line-clamp-1 text-[11px] text-emerald-100/80">
-          Explore this post and more from the {subredditClean} community
-        </p>
-
-        <div className="mt-2 flex items-center justify-between border-t border-emerald-800/60 pt-1.5">
-          <div className="flex items-center gap-1 font-mono text-[10px] text-emerald-200/90">
-            <LinkSimple className="size-3" />
-            <span>reddit.com</span>
-          </div>
-
-          <div className="flex size-4 items-center justify-center rounded-full bg-[#FF4500]">
-            <svg
-              className="size-2.5 fill-white"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.196-.491.956 0 1.733.777 1.733 1.733 0 .658-.363 1.226-.897 1.52.01.144.017.29.017.435 0 3.057-3.55 5.534-7.931 5.534-4.382 0-7.932-2.477-7.932-5.534 0-.14.006-.28.016-.423C3.655 14.85 3.3 14.288 3.3 13.636c0-.956.777-1.733 1.733-1.733.468 0 .89.183 1.198.494 1.192-.857 2.846-1.418 4.668-1.489l.915-4.29 3.197.674a1.25 1.25 0 0 1 1.25-.993zm-8.878 7.37a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm6.368 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm-5.067 3.99a.53.53 0 0 0-.084.743A5.452 5.452 0 0 0 12 17.8c1.558 0 2.91-.703 3.653-1.953a.53.53 0 0 0-.898-.564c-.58.972-1.637 1.517-2.755 1.517-1.118 0-2.175-.545-2.755-1.517a.53.53 0 0 0-.743-.083z" />
-            </svg>
-          </div>
-        </div>
+      <div className="pt-3">
+        <a
+          href={bookmark.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-mono text-[10px] text-brand-muted hover:text-brand-charcoal"
+        >
+          <span>View on reddit.com</span>
+          <ArrowSquareOut className="size-3" />
+        </a>
       </div>
     </div>
   )
