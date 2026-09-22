@@ -1,10 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { cabinetMediaApi } from "@atlas/api-client"
-import { Spinner } from "@atlas/ui/components/spinner"
-import { ArrowSquareOut } from "@phosphor-icons/react"
+import React, { useState, useMemo } from "react"
+import { Clock, LinkSimple } from "@phosphor-icons/react"
 import { cn } from "@atlas/ui/lib/utils"
 
 interface RedditPreviewBoxProps {
@@ -12,185 +9,127 @@ interface RedditPreviewBoxProps {
   hostname?: string
 }
 
-export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
-  const [frameHeight, setFrameHeight] = useState<number>(340)
-  const [isFrameLoading, setIsFrameLoading] = useState<boolean>(true)
+function getProxiedImageUrl(imageUrl?: string | null): string {
+  if (!imageUrl) return ""
+  if (
+    imageUrl.startsWith("/") ||
+    imageUrl.startsWith("blob:") ||
+    imageUrl.startsWith("data:")
+  ) {
+    return imageUrl
+  }
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+  return `${apiBase}/v1/bookmarks/proxy-image?url=${encodeURIComponent(imageUrl)}`
+}
 
-  // 1. Extract subreddit
-  const subreddit = useMemo(() => {
+export function RedditPreviewBox({ bookmark }: RedditPreviewBoxProps) {
+  const [imageStatus, setImageStatus] = useState<"loading" | "loaded" | "error">("loading")
+
+  // 1. Extract Post ID & Subreddit
+  const postId = useMemo(() => {
     try {
-      const match = bookmark.url?.match(/\/r\/([^/]+)/i)
-      return match?.[1] ? `r/${match[1]}` : "r/reddit"
+      const match =
+        bookmark.url?.match(/\/comments\/([a-zA-Z0-9]+)/i) ||
+        bookmark.url?.match(/redd\.it\/([a-zA-Z0-9]+)/i)
+      return match?.[1] || null
     } catch {
-      return "r/reddit"
+      return null
     }
   }, [bookmark.url])
 
-  // 2. Stored oEmbed HTML from backend
-  const storedEmbedHtml = bookmark.metadata?.embedHtml
-
-  // 3. Fallback on-the-fly fetch of Reddit oEmbed via backend proxy (avoids browser CORS)
-  const { data: oembedData, isLoading: isOEmbedFetching } = useQuery({
-    queryKey: ["reddit-oembed-html", bookmark?.url],
-    queryFn: () => cabinetMediaApi.getOEmbed(bookmark.url),
-    enabled: !storedEmbedHtml && !!bookmark?.url,
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
-  })
-
-  const rawHtml = storedEmbedHtml || oembedData?.html
-
-  // 4. Listen for dynamic resize messages from Reddit embed script
-  useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
-        if (
-          data?.type === "atlas-reddit-resize" &&
-          data?.id === bookmark.id &&
-          typeof data.height === "number" &&
-          data.height > 60
-        ) {
-          setFrameHeight(data.height + 12)
-          setIsFrameLoading(false)
-        }
-      } catch {}
+  const subreddit = useMemo(() => {
+    try {
+      const match = bookmark.url?.match(/\/r\/([^/]+)/i)
+      return match?.[1] || "reddit"
+    } catch {
+      return "reddit"
     }
+  }, [bookmark.url])
 
-    window.addEventListener("message", handleMessage)
-    return () => window.removeEventListener("message", handleMessage)
-  }, [bookmark.id])
+  // 2. Candidate dynamic card image (share.redd.it/preview/post/:id or bookmark.imageUrl)
+  const rawImageUrl = useMemo(() => {
+    if (bookmark.imageUrl) return bookmark.imageUrl
+    if (postId) return `https://share.redd.it/preview/post/${postId}`
+    return null
+  }, [bookmark.imageUrl, postId])
 
-  // 5. Build self-contained HTML document for the iframe srcDoc
-  const srcDoc = useMemo(() => {
-    if (!rawHtml) return ""
+  const proxiedImageUrl = useMemo(
+    () => getProxiedImageUrl(rawImageUrl),
+    [rawImageUrl]
+  )
 
-    // Ensure both widgets.js and comment-embed.js are available for both post and comment embeds
-    let htmlWithScript = rawHtml
-    if (!htmlWithScript.includes("embed.reddit.com/widgets.js")) {
-      htmlWithScript += '<script async src="https://embed.reddit.com/widgets.js" charset="UTF-8"></script>'
-    }
-    if (!htmlWithScript.includes("comment-embed.js")) {
-      htmlWithScript += '<script async src="https://www.redditstatic.com/comment-embed.js"></script>'
-    }
+  const cleanTitle = useMemo(() => {
+    return (bookmark.title || "Reddit Post")
+      .replace(/\s*:\s*r\/[a-zA-Z0-9_-]+$/i, "")
+      .replace(/^From the .* community on Reddit:?\s*/i, "")
+      .replace(/^Dari komunitas .* di Reddit:?\s*/i, "")
+      .trim() || "Reddit Post"
+  }, [bookmark.title])
 
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow: hidden;
-    }
-    blockquote.reddit-embed-bq, .reddit-embed, .reddit-card {
-      margin: 0 auto !important;
-      max-width: 100% !important;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 12px 16px;
-      background: #ffffff;
-      color: #1a1a1b;
-    }
-    blockquote.reddit-embed-bq a, .reddit-embed a {
-      color: #ff4500;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    blockquote.reddit-embed-bq a:hover, .reddit-embed a:hover {
-      text-decoration: underline;
-    }
-    iframe {
-      width: 100% !important;
-      max-width: 100% !important;
-      margin: 0 auto !important;
-      display: block !important;
-    }
-  </style>
-</head>
-<body>
-  ${htmlWithScript}
-  <script>
-    window.addEventListener("message", function(e) {
-      try {
-        var d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        if (d && d.type === "resize.embed" && d.data) {
-          window.parent.postMessage({ type: "atlas-reddit-resize", id: "${bookmark.id}", height: d.data }, "*");
-        }
-      } catch(err) {}
-    });
-  </script>
-</body>
-</html>`
-  }, [rawHtml, bookmark.id])
-
-  if (rawHtml) {
-    return (
-      <div className="relative w-full overflow-hidden bg-white dark:bg-zinc-900 border-b border-brand-border">
-        {isFrameLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 backdrop-blur-xs dark:bg-zinc-900/90">
-            <div className="flex items-center gap-2 font-mono text-xs text-brand-muted">
-              <Spinner className="size-4" />
-              <span>Loading Reddit oEmbed...</span>
+  return (
+    <div className="w-full overflow-hidden bg-[#025144] select-none text-left">
+      {/* 1. The Reddit Dynamic Card Image (Just like WhatsApp) */}
+      <div className="relative w-full bg-[#111b21] overflow-hidden flex items-center justify-center min-h-[160px]">
+        {imageStatus === "loading" && (
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 animate-pulse z-10">
+            <div className="flex items-center gap-2 font-mono text-xs text-zinc-400">
+              <Clock className="size-4 animate-spin text-[#FF4500]" />
+              <span>Loading preview...</span>
             </div>
           </div>
         )}
-        <iframe
-          srcDoc={srcDoc}
-          title={bookmark.title || "Reddit oEmbed"}
-          sandbox="allow-scripts allow-same-origin allow-popups"
-          loading="lazy"
-          onLoad={() => {
-            setTimeout(() => setIsFrameLoading(false), 800)
-          }}
-          className="w-full border-none transition-all duration-300"
-          style={{ height: `${frameHeight}px`, minHeight: "220px", display: "block" }}
-        />
-      </div>
-    )
-  }
 
-  // Loading state while on-the-fly oEmbed is fetching
-  if (isOEmbedFetching) {
-    return (
-      <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-2 border-b border-brand-border bg-white p-6 font-mono text-xs text-brand-muted dark:bg-zinc-900">
-        <Spinner className="size-5" />
-        <span>Fetching Reddit oEmbed...</span>
-      </div>
-    )
-  }
-
-  // Fallback card if Reddit oEmbed returns 404 or fails
-  return (
-    <div className="flex min-h-[160px] w-full flex-col justify-between border-b border-brand-border bg-white p-5 text-left dark:bg-zinc-900">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-[#FF4500] text-white font-bold text-[10px]">
-            r/
+        {proxiedImageUrl && imageStatus !== "error" ? (
+          <img
+            src={proxiedImageUrl}
+            alt={cleanTitle}
+            onLoad={() => setImageStatus("loaded")}
+            onError={() => setImageStatus("error")}
+            className={cn(
+              "w-full h-auto max-h-[380px] object-cover transition-opacity duration-300",
+              imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+            )}
+          />
+        ) : (
+          /* Fallback visual banner if image fails */
+          <div className="flex w-full min-h-[160px] flex-col justify-between p-5 bg-gradient-to-br from-[#1a1a1b] to-[#0e0e0f] text-white">
+            <div className="flex items-center gap-2">
+              <div className="flex size-6 items-center justify-center rounded-full bg-[#FF4500]">
+                <span className="font-bold text-[10px] text-white">r/</span>
+              </div>
+              <span className="font-semibold text-xs text-white/90">r/{subreddit}</span>
+            </div>
+            <h3 className="line-clamp-2 text-sm font-bold text-white leading-snug">{cleanTitle}</h3>
+            <span className="text-[10px] font-mono text-zinc-400">reddit.com</span>
           </div>
-          <span className="font-semibold text-xs text-brand-charcoal">{subreddit}</span>
-        </div>
-        <h3 className="text-sm font-bold leading-snug text-brand-charcoal line-clamp-3">
-          {bookmark.title || "Reddit Post"}
-        </h3>
-        {bookmark.description && (
-          <p className="text-xs text-brand-muted line-clamp-2">{bookmark.description}</p>
         )}
       </div>
 
-      <div className="pt-3">
-        <button
-          type="button"
-          onClick={() => window.open(bookmark.url, "_blank", "noopener,noreferrer")}
-          className="inline-flex items-center gap-1 font-mono text-[10px] text-brand-muted hover:text-brand-charcoal"
-        >
-          <span>View on reddit.com</span>
-          <ArrowSquareOut className="size-3" />
-        </button>
+      {/* 2. WhatsApp Dark-Green Link Preview Strip */}
+      <div className="p-3 text-white bg-[#025144]">
+        <h4 className="line-clamp-1 text-xs font-bold leading-snug text-white">
+          From the {subreddit} community on Reddit
+        </h4>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-emerald-100/80">
+          Explore this post and more from the {subreddit} community
+        </p>
+
+        <div className="mt-2.5 flex items-center justify-between border-t border-emerald-800/60 pt-2">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-emerald-200/90">
+            <LinkSimple className="size-3" />
+            <span>reddit.com</span>
+          </div>
+
+          <div className="flex size-4 items-center justify-center rounded-full bg-[#FF4500]">
+            <svg
+              className="size-2.5 fill-white"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.196-.491.956 0 1.733.777 1.733 1.733 0 .658-.363 1.226-.897 1.52.01.144.017.29.017.435 0 3.057-3.55 5.534-7.931 5.534-4.382 0-7.932-2.477-7.932-5.534 0-.14.006-.28.016-.423C3.655 14.85 3.3 14.288 3.3 13.636c0-.956.777-1.733 1.733-1.733.468 0 .89.183 1.198.494 1.192-.857 2.846-1.418 4.668-1.489l.915-4.29 3.197.674a1.25 1.25 0 0 1 1.25-.993zm-8.878 7.37a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm6.368 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm-5.067 3.99a.53.53 0 0 0-.084.743A5.452 5.452 0 0 0 12 17.8c1.558 0 2.91-.703 3.653-1.953a.53.53 0 0 0-.898-.564c-.58.972-1.637 1.517-2.755 1.517-1.118 0-2.175-.545-2.755-1.517a.53.53 0 0 0-.743-.083z" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
   )
