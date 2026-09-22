@@ -303,41 +303,43 @@ export function MoodboardCard({
 
       {/* Card Content */}
       <div className="flex flex-col justify-between gap-3 p-3 sm:gap-4 sm:p-4">
-        <div className="space-y-1.5">
-          <a
-            href={bookmark.url}
-            target="_blank"
-            rel="noreferrer"
-            className="group/link block text-sm leading-tight font-semibold text-brand-charcoal hover:underline"
-          >
-            {bookmark.title || bookmark.url}
-            <ArrowSquareOut className="ml-1 inline-block h-3 w-3 text-brand-muted opacity-0 transition-opacity group-hover/link:opacity-100" />
-          </a>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {bookmark.status === "BROKEN" && (
-              <Badge
-                variant="outline"
-                className="shrink-0 rounded-none border-none bg-red-50 px-1.5 py-0.5 font-mono text-[9px] text-red-600 uppercase"
-              >
-                Broken
-              </Badge>
-            )}
-            {bookmark.status === "REDIRECTED" && (
-              <Badge
-                variant="outline"
-                className="shrink-0 rounded-none border-none bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 uppercase"
-                title="URL updated automatically to new address"
-              >
-                Redirected
-              </Badge>
+        {!isReddit && (
+          <div className="space-y-1.5">
+            <a
+              href={bookmark.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group/link block text-sm leading-tight font-semibold text-brand-charcoal hover:underline"
+            >
+              {bookmark.title || bookmark.url}
+              <ArrowSquareOut className="ml-1 inline-block h-3 w-3 text-brand-muted opacity-0 transition-opacity group-hover/link:opacity-100" />
+            </a>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {bookmark.status === "BROKEN" && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 rounded-none border-none bg-red-50 px-1.5 py-0.5 font-mono text-[9px] text-red-600 uppercase"
+                >
+                  Broken
+                </Badge>
+              )}
+              {bookmark.status === "REDIRECTED" && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 rounded-none border-none bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 uppercase"
+                  title="URL updated automatically to new address"
+                >
+                  Redirected
+                </Badge>
+              )}
+            </div>
+            {bookmark.description && (
+              <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-brand-muted">
+                {bookmark.description}
+              </p>
             )}
           </div>
-          {bookmark.description && (
-            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-brand-muted">
-              {bookmark.description}
-            </p>
-          )}
-        </div>
+        )}
 
         <div className="space-y-2.5 pt-1 sm:space-y-3 sm:pt-2">
           {/* Tags */}
