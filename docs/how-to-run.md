@@ -1,94 +1,135 @@
-# 🚀 Running the Atlas Platform
+# Running Cabinet
 
-Here is the quickstart guide to running, database seeding, and developing on the Atlas monorepo platform.
+Cabinet is one application for bookmarks, notes, and saved reading. Its Next.js frontend and NestJS API run as separate services.
 
-## 📋 Prerequisites
-Ensure you have the following installed on your machine:
-- **Node.js** (v22+)
-- **pnpm** (v11+)
-- **PostgreSQL** (v15+) running locally on port `5432`
+## Requirements
 
----
+- Node.js 22.13+
+- pnpm 11+
+- PostgreSQL and Redis, or Docker Compose
 
-## ⚡ Quickstart (All-in-One Command)
-
-To spin up the entire monorepo (both the backend and the frontend) simultaneously with live-reload:
+## Setup
 
 ```bash
+pnpm install
+cp apps/api/.env.example apps/api/.env
+pnpm db:up
+pnpm --filter @cabinet/api prisma:generate
+pnpm --filter @cabinet/api prisma:migrate
+pnpm --filter @cabinet/api prisma:seed
 pnpm dev
 ```
 
-This starts:
-- **Backend API**: [http://localhost:4000](http://localhost:4000)
-- **Cabinet Frontend**: [http://localhost:3000](http://localhost:3000)
+Configure `apps/api/.env` before running migrations. Generate `BETTER_AUTH_SECRET` with `openssl rand -hex 32` and set it before starting the API. Docker uses the username `postgres` and password `postgrespassword`.
 
----
+The database retains its existing name, `atlas`, to preserve compatibility with existing data. Do not reset the database or remove Docker volumes for this rename.
 
-## 🛠️ Running Services Separately
+## Services
 
-If you prefer to run services in separate terminal sessions for isolated logs:
+- Cabinet: http://localhost:3000
+- API: http://localhost:4000
+- API documentation: http://localhost:4000/api/docs
 
-### 1. Database (If using Docker Compose)
-If you aren't using a native PostgreSQL setup, you can launch database containers:
-```bash
-pnpm db:up
-```
-
-### 2. NestJS Backend API
-Starts the backend dev server (generates OpenAPI spec and maps routes):
-```bash
-pnpm --filter @atlas/api dev
-```
-
-### 3. Cabinet Frontend
-Starts the Next.js frontend dev server:
-```bash
-pnpm --filter @atlas/cabinet dev
-```
-
----
-
-## 🔑 Default Login Credentials
-
-We pre-seeded a default administrator account into the local database:
-
-- **Email**: `admin@gustam.dev`
-- **Password**: `password123`
-
----
-
-## 🔍 Interactive Endpoints
-
-Once the apps are running, you can explore:
-
-* **Swagger API Documentation**: [http://localhost:4000/api/docs](http://localhost:4000/api/docs)
-* **OpenAPI Schema (JSON)**: [http://localhost:4000/api-json](http://localhost:4000/api-json)
-* **Cabinet Frontend Shell**: [http://localhost:3000](http://localhost:3000)
-
----
-
-## 💾 Database Migrations & Seeding
-
-If you need to rebuild the database schema or re-run the seed script:
+Run services separately:
 
 ```bash
-# Apply Prisma migrations
-pnpm --filter @atlas/api prisma:migrate
-
-# Seed database with initial users
-pnpm --filter @atlas/api prisma:seed
+pnpm --filter @cabinet/api dev
+pnpm --filter @cabinet/web dev
 ```
 
----
+Set `NEXT_PUBLIC_API_URL` in `apps/web/.env.local` when the API is not at `http://localhost:4000`.
 
-## 🎨 Shared UI Components (shadcn)
+## Link previews (WhatsApp and social apps)
 
-To add new shadcn components directly into the shared `@atlas/ui` workspace package:
+Set the public **frontend** origin in `apps/web/.env.local` or your deployment's build environment before building:
+
+```dotenv
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
+
+Replace the example with your real HTTPS domain, then rebuild and redeploy. Without this setting, metadata uses `http://localhost:3000` for local development only. WhatsApp cannot fetch localhost URLs.
+
+The root layout provides Open Graph metadata and a large-image Twitter card. `apps/web/src/app/opengraph-image.tsx` generates the shared 1200 × 630 PNG at `/opengraph-image`; edit that file to change its design. All routes use generic Cabinet branding, never private notes or bookmark contents.
+
+The shared page and image must be publicly reachable without login, deployment protection, or bot challenges. This does not make library data public. Test by pasting the deployed homepage URL into WhatsApp and waiting for the preview before sending. Messaging apps may cache old previews and control the final card layout; exact rendering is not guaranteed.
+
+Optional local smoke check, with the web server running:
 
 ```bash
-# Add a component to the shared UI package
-pnpm --filter @atlas/ui exec npx shadcn add <component-name>
+node apps/web/test/link-preview.smoke.mjs http://localhost:3000
 ```
 
-Remember to export any new components in [packages/ui/src/index.ts](file:///Users/gustam/Developer/projects/atlas/packages/ui/src/index.ts) so they are accessible by other applications in the monorepo.
+## Development login
 
+The seed script defaults to `admin@gustam.dev` / `password123`. Override `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME` in `apps/api/.env`. Use strong credentials outside local development. The seed updates only that account and its Better Auth password credential; it never deletes other users.
+
+## GitHub and Google sign-in
+
+Configure these values in `apps/api/.env`:
+
+```dotenv
+BETTER_AUTH_SECRET=your-unique-random-secret-of-at-least-32-characters
+FRONTEND_URL=http://localhost:3000
+API_URL=http://localhost:4000
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+Register a GitHub OAuth App and a Google OAuth client of type **Web application**. Set their callback URLs to:
+
+- GitHub: `http://localhost:4000/v1/auth/callback/github`
+- Google: `http://localhost:4000/v1/auth/callback/google`
+
+Use your public API URL for production callbacks. Use HTTPS in production. Keep client secrets on the API server; never put them in `NEXT_PUBLIC_*` variables. Google apps in testing mode permit only configured test users; publish the consent screen to allow general access.
+
+Apply the new migration before starting the API:
+
+```bash
+pnpm --filter @cabinet/api exec prisma migrate deploy
+pnpm --filter @cabinet/api prisma:generate
+pnpm dev
+```
+
+Better Auth runs in the NestJS API at `/v1/auth`, backed by Prisma and database sessions. Generate `BETTER_AUTH_SECRET` using `openssl rand -hex 32`. For a deployment such as `app.cabinet.com` and `api.cabinet.com`, set `COOKIE_DOMAIN=.cabinet.com` and the exact frontend and API URLs. Leave cross-domain cookies disabled on localhost.
+
+New GitHub and Google users receive separate Cabinet accounts. Both providers require a verified email. Email/password sign-in remains available to accounts with a password; new email/password registration is disabled. Better Auth verifies the existing Argon2 hashes, so users do not need to reset their passwords.
+
+When a verified Google or GitHub email matches an existing Cabinet account, Better Auth automatically links that provider to the existing user. It never merges or deletes user records. Only verified Google and GitHub identities are trusted for automatic linking.
+
+Passkey login and registration remain disabled. The Better Auth migration preserves user IDs, bookmarks, password hashes, OAuth identities, and all legacy authentication records. Existing JWT sessions are no longer accepted; users need to sign in again. Password changes use Better Auth's `changePassword` API rather than the profile endpoint. Profile updates accept only `name` and `avatar`.
+
+Run the authentication integration check against the development database after applying migrations. It starts a temporary API on port 4141, checks password login, cookie sessions, protected routes, signup restrictions, origin checks, profile updates, and logout, then removes only its own temporary user:
+
+```bash
+pnpm --filter @cabinet/api test:auth
+```
+
+## API client
+
+The API writes `apps/api/openapi.json` on startup. After changing endpoints, regenerate and build the client:
+
+```bash
+pnpm --filter @cabinet/api-client generate
+pnpm --filter @cabinet/api-client build
+```
+
+## UI components
+
+Web UI components live in `apps/web/src/components/ui`:
+
+```bash
+cd apps/web
+pnpm exec shadcn add <component-name>
+```
+
+Import components through `@/components/ui/<component-name>`. Styling lives in `apps/web/src/app/globals.css`.
+
+## Shared code and future mobile clients
+
+`packages/api-client` contains API endpoints, generated query hooks, types, and a configurable Axios instance. It does not set browser cookies or redirect pages. Each client configures `AXIOS_INSTANCE.defaults.baseURL` and its own authentication policy.
+
+Web code imports `@/lib/api-client`, which configures cookie requests, redirects after expired sessions, and browser file downloads. Authentication uses `@/lib/auth-client` and Better Auth's browser client; there is no custom JWT refresh flow or separate auth store. Future React Native code imports `@cabinet/api-client` directly and configures native authentication separately. This change does not implement mobile token storage or a native login flow.
+
+ESLint and TypeScript configuration remain shared in `packages/eslint-config` and `packages/typescript-config`.
