@@ -16,7 +16,7 @@ export class LinkCheckerService implements OnModuleInit {
   async runScan() {
     this.logger.log('Starting bookmark health check scan...');
     const bookmarks = await this.prisma.bookmark.findMany({
-      where: { deletedAt: null },
+      where: { type: "BOOKMARK", url: { not: null }, deletedAt: null },
       orderBy: [{ lastChecked: 'asc' }],
       take: 100,
     });
@@ -41,7 +41,7 @@ export class LinkCheckerService implements OnModuleInit {
         redirect: 'manual',
         signal: AbortSignal.timeout(5000),
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; AtlasBot/1.0; +http://atlasapp.internal)',
+          'User-Agent': 'Mozilla/5.0 (compatible; CabinetBot/1.0)',
         },
       });
 
@@ -62,11 +62,13 @@ export class LinkCheckerService implements OnModuleInit {
         return;
       }
 
+      // Access controls and rate limits do not prove that a URL is dead.
+      const isInconclusive = [401, 403, 429].includes(response.status);
       const isOk = response.ok || response.status < 400;
       await this.prisma.bookmark.update({
         where: { id: bookmark.id },
         data: {
-          status: isOk ? 'OK' : 'BROKEN',
+          status: isInconclusive ? 'UNKNOWN' : isOk ? 'OK' : 'BROKEN',
           statusCode: response.status,
           lastChecked: new Date(),
         },

@@ -5,6 +5,9 @@ import { MetadataService } from '../services/metadata.service';
 import { LinkCheckerService } from '../services/link-checker.service';
 import { CabinetMediaService } from '../services/cabinet-media.service';
 import { getQueueToken } from '@nestjs/bullmq';
+import axios from 'axios';
+import type { Response } from 'express';
+import { CRAWLER_USER_AGENTS } from '../providers/metadata/metadata-provider.interface';
 
 describe('BookmarksService - Trash Functionality', () => {
   let service: BookmarksService;
@@ -52,6 +55,34 @@ describe('BookmarksService - Trash Functionality', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('image previews', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it.each([
+      ['https://share.redd.it/preview/post/1x9mx67', true],
+      ['https://images.example.com/photo.jpg', false],
+      ['https://share.redd.it.example.com/photo.jpg', false],
+    ])('requests the appropriate image variant for %s', async (url, isRedditShare) => {
+      const pipe = jest.fn();
+      const get = jest.spyOn(axios, 'get').mockResolvedValue({
+        headers: { 'content-type': 'image/jpeg', 'content-length': '123' },
+        data: { pipe },
+      });
+      const res = { setHeader: jest.fn() } as unknown as Response;
+
+      await service.proxyImage(url, res);
+
+      const options = get.mock.calls[0][1]!;
+      expect(get.mock.calls[0][0]).toBe(url);
+      expect(options.headers!['User-Agent']).toEqual(
+        isRedditShare ? CRAWLER_USER_AGENTS.WHATSAPP : expect.stringContaining('Chrome/'),
+      );
+      expect(options.headers!.Referer).toBe(new URL(url).origin);
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
+      expect(pipe).toHaveBeenCalledWith(res);
+    });
   });
 
   describe('note autosave', () => {

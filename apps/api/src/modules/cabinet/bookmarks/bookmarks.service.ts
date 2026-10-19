@@ -24,6 +24,7 @@ import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
 import { DownloadMediaDto } from "../dto/download-media.dto"
 import { SaveNoteDto } from "./dto/save-note.dto"
+import { CRAWLER_USER_AGENTS } from "../providers/metadata/metadata-provider.interface"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -773,15 +774,19 @@ export class BookmarksService implements OnModuleInit {
     }
 
     try {
+      const imageHost = new URL(imageUrl)
       const response = await axios.get(imageUrl, {
         responseType: "stream",
         timeout: 10000,
         headers: {
+          // Reddit's share endpoint returns a generic logo to desktop browsers.
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            imageHost.hostname === "share.redd.it"
+              ? CRAWLER_USER_AGENTS.WHATSAPP
+              : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
           Accept:
             "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-          Referer: new URL(imageUrl).origin,
+          Referer: imageHost.origin,
         },
         maxRedirects: 5,
         validateStatus: (status) => status >= 200 && status < 400,

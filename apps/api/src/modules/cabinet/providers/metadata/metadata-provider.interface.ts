@@ -4,7 +4,6 @@ export interface ExtractedMetadata {
   imageUrl?: string
   faviconUrl?: string
   siteName?: string
-  embedHtml?: string
 }
 
 export interface MetadataProvider {
@@ -13,7 +12,7 @@ export interface MetadataProvider {
 }
 
 export const CRAWLER_USER_AGENTS = {
-  // Primary Meta/WhatsApp social preview crawlers whitelisted by Reddit, Shopee, Tokopedia, YouTube, etc.
+  // Crawler identities tried before the desktop browser fallback.
   FACEBOOK_EXTERNAL_HIT:
     "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
   WHATSAPP: "WhatsApp/2.24.6.77 A",
