@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from "@nestjs/swagger"
-import { IsArray, IsEnum, IsOptional, IsString, IsUUID } from "class-validator"
+import {
+  IsArray,
+  IsEnum,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from "class-validator"
 import { BookmarkType } from "@prisma/client"
 
 export class CreateBookmarkDto {
@@ -37,12 +44,13 @@ export class CreateBookmarkDto {
   description?: string
 
   @ApiPropertyOptional({
-    example: "Personal markdown notes and thoughts",
-    description: "Markdown notes and annotations",
+    type: "object",
+    additionalProperties: true,
+    description: "Structured note content",
   })
-  @IsString()
+  @IsObject()
   @IsOptional()
-  notes?: string
+  noteDocument?: Record<string, any>
 
   @ApiPropertyOptional({
     example: "123e4567-e89b-12d3-a456-426614174000",

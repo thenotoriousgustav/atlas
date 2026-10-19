@@ -4,6 +4,8 @@ import {
   Post,
   Body,
   Patch,
+  Put,
+  ParseUUIDPipe,
   Param,
   Delete,
   Query,
@@ -21,6 +23,7 @@ import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
 import { ImportBookmarksDto } from './dto/import-bookmarks.dto';
 import { ReorderBookmarksDto } from './dto/reorder-bookmarks.dto';
 import { DownloadMediaDto } from '../dto/download-media.dto';
+import { SaveNoteDto } from './dto/save-note.dto';
 import { BookmarkType, BookmarkContentType } from '@prisma/client';
 
 @ApiTags('bookmarks')
@@ -29,6 +32,16 @@ import { BookmarkType, BookmarkContentType } from '@prisma/client';
 @UseGuards(AuthGuard)
 export class BookmarksController {
   constructor(private readonly bookmarksService: BookmarksService) {}
+
+  @Put(':id/note')
+  @ApiOperation({ summary: 'Create or autosave a note using a stable ID' })
+  async saveNote(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SaveNoteDto,
+  ) {
+    return this.bookmarksService.saveNote(user.id, id, dto);
+  }
 
   @Public()
   @Get('proxy-image')
@@ -43,13 +56,6 @@ export class BookmarksController {
   @ApiQuery({ name: 'url', required: true })
   async scrape(@Query('url') url: string) {
     return this.bookmarksService.scrapeUrl(url);
-  }
-
-  @Get('oembed')
-  @ApiOperation({ summary: 'Proxy oEmbed request to bypass CORS restrictions' })
-  @ApiQuery({ name: 'url', required: true })
-  async getOEmbed(@Query('url') url: string) {
-    return this.bookmarksService.getOEmbed(url);
   }
 
   @Get('media/extract')
@@ -125,18 +131,6 @@ export class BookmarksController {
     });
   }
 
-  @Get('export')
-  @ApiOperation({ summary: 'Export bookmarks as HTML file' })
-  async export(
-    @CurrentUser() user: any,
-    @Res() res: Response,
-  ) {
-    const html = await this.bookmarksService.exportBookmarks(user.id);
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Content-Disposition', 'attachment; filename=cabinet_bookmarks.html');
-    res.send(html);
-  }
-
   @Post('import')
   @ApiOperation({ summary: 'Import bookmarks from HTML file' })
   async import(
@@ -207,22 +201,6 @@ export class BookmarksController {
   @ApiOperation({ summary: 'Permanently delete all bookmarks in trash' })
   async emptyTrash(@CurrentUser() user: any) {
     return this.bookmarksService.emptyTrash(user.id);
-  }
-
-  @Get(':id/article')
-  @ApiOperation({ summary: 'Get reader view content and digital preservation archive for a bookmark' })
-  async getArticle(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.bookmarksService.getArticle(user.id, id);
-  }
-
-  @Patch(':id/article/progress')
-  @ApiOperation({ summary: 'Update reading scroll progress and read status' })
-  async updateArticleProgress(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-    @Body() dto: { scrollProgress?: number; isRead?: boolean },
-  ) {
-    return this.bookmarksService.updateArticleProgress(user.id, id, dto);
   }
 
   @Get(':id')

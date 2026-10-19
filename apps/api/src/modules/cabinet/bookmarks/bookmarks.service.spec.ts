@@ -3,9 +3,7 @@ import { BookmarksService } from './bookmarks.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MetadataService } from '../services/metadata.service';
 import { LinkCheckerService } from '../services/link-checker.service';
-import { ReaderService } from '../services/reader.service';
 import { CabinetMediaService } from '../services/cabinet-media.service';
-import { RedditProvider } from '../providers/reddit.provider';
 import { getQueueToken } from '@nestjs/bullmq';
 
 describe('BookmarksService - Trash Functionality', () => {
@@ -19,6 +17,7 @@ describe('BookmarksService - Trash Functionality', () => {
         findFirst: jest.fn(),
         count: jest.fn(),
         create: jest.fn(),
+        upsert: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
         delete: jest.fn(),
@@ -35,7 +34,6 @@ describe('BookmarksService - Trash Functionality', () => {
         BookmarksService,
         { provide: PrismaService, useValue: prisma },
         { provide: MetadataService, useValue: { extract: jest.fn() } },
-        { provide: ReaderService, useValue: { extractArticle: jest.fn() } },
         {
           provide: CabinetMediaService,
           useValue: {
@@ -45,7 +43,6 @@ describe('BookmarksService - Trash Functionality', () => {
           },
         },
         { provide: LinkCheckerService, useValue: { runScan: jest.fn() } },
-        { provide: RedditProvider, useValue: { supports: jest.fn() } },
         { provide: getQueueToken('bookmark-enrichment'), useValue: { add: jest.fn() } },
       ],
     }).compile();
@@ -55,6 +52,86 @@ describe('BookmarksService - Trash Functionality', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('note autosave', () => {
+    const document = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }] };
+    const snapshot = { title: 'My note', notes: 'Hello', noteDocument: document };
+
+    it('creates a stable note ID and keeps structured content and its preview', async () => {
+      prisma.bookmark.upsert.mockResolvedValue({ id: 'note-1' });
+      await service.saveNote('user-1', 'note-1', snapshot);
+      expect(prisma.bookmark.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'note-1', userId: 'user-1', type: 'NOTE', deletedAt: null },
+        create: expect.objectContaining({ id: 'note-1', userId: 'user-1', type: 'NOTE', ...snapshot }),
+        update: snapshot,
+      }));
+    });
+
+    it('preserves folder and tags when updating an existing note', async () => {
+      prisma.bookmark.findFirst.mockResolvedValue({ id: 'note-1', userId: 'user-1', type: 'NOTE', folderId: 'folder-1' });
+      await service.saveNote('user-1', 'note-1', snapshot);
+      const update = prisma.bookmark.upsert.mock.calls[0][0].update;
+      expect(update).toEqual(snapshot);
+      expect(update.folderId).toBeUndefined();
+      expect(update.tags).toBeUndefined();
+    });
+
+    it.each([
+      { userId: 'other-user', type: 'NOTE' },
+      { userId: 'user-1', type: 'BOOKMARK' },
+      { userId: 'user-1', type: 'NOTE', deletedAt: new Date() },
+    ])('rejects another user, non-note, and deleted IDs', async (existing) => {
+      prisma.bookmark.findFirst.mockResolvedValue(existing);
+      await expect(service.saveNote('user-1', 'note-1', snapshot)).rejects.toThrow('Note not found');
+      expect(prisma.bookmark.upsert).not.toHaveBeenCalled();
+    });
+
+    it('checks folder ownership before creating a note', async () => {
+      prisma.folder.findFirst.mockResolvedValue(null);
+      await expect(service.saveNote('user-1', 'note-1', { ...snapshot, folderId: 'folder-1' })).rejects.toThrow('Folder not found');
+      expect(prisma.bookmark.upsert).not.toHaveBeenCalled();
+    });
+
+    it('rejects invalid document roots', async () => {
+      await expect(service.saveNote('user-1', 'note-1', { ...snapshot, noteDocument: { type: 'paragraph' } })).rejects.toThrow('Invalid note document');
+      expect(prisma.bookmark.upsert).not.toHaveBeenCalled();
+    });
+
+    it('handles concurrent creation without crossing ownership boundaries', async () => {
+      prisma.bookmark.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'note-1', userId: 'user-1', type: 'NOTE' });
+      prisma.bookmark.upsert.mockRejectedValue({ code: 'P2002' });
+      await service.saveNote('user-1', 'note-1', snapshot);
+      expect(prisma.bookmark.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'note-1', userId: 'user-1', type: 'NOTE', deletedAt: null }, data: snapshot,
+      }));
+    });
+  });
+
+  describe('link health filtering', () => {
+    it('includes only URL bookmarks in broken-link results', async () => {
+      prisma.bookmark.findMany.mockResolvedValue([]);
+      prisma.bookmark.count.mockResolvedValue(0);
+
+      await service.findAll('user-1', { status: 'BROKEN' });
+
+      expect(prisma.bookmark.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ type: 'BOOKMARK', url: { not: null }, status: 'BROKEN' }),
+      }));
+    });
+
+    it('counts broken and redirected URLs only, not notes', async () => {
+      prisma.bookmark.count.mockResolvedValue(0);
+      prisma.bookmark.groupBy.mockResolvedValue([]);
+      await service.getHealthSummary('user-1');
+
+      expect(prisma.bookmark.count).toHaveBeenNthCalledWith(2, { where: {
+        userId: 'user-1', type: 'BOOKMARK', url: { not: null }, deletedAt: null, status: 'BROKEN',
+      } });
+      expect(prisma.bookmark.count).toHaveBeenNthCalledWith(3, { where: {
+        userId: 'user-1', type: 'BOOKMARK', url: { not: null }, deletedAt: null, status: 'REDIRECTED',
+      } });
+    });
   });
 
   describe('findAll with isTrash filter', () => {
@@ -290,58 +367,6 @@ describe('BookmarksService - Trash Functionality', () => {
         bookmarkId: 'bm-2',
         url: 'https://test.com',
       });
-    });
-  });
-
-  describe('getArticle & updateArticleProgress', () => {
-    it('should return existing article if already present', async () => {
-      const mockArticle = {
-        id: 'art-1',
-        contentHtml: '<p>Article content</p>',
-        readingTimeMinutes: 3,
-        wordCount: 500,
-      };
-
-      prisma.bookmark.findFirst.mockResolvedValue({
-        id: 'bm-1',
-        userId: 'user-1',
-        url: 'https://example.com/post',
-        article: mockArticle,
-      });
-
-      const result = await service.getArticle('user-1', 'bm-1');
-      expect(result).toEqual(mockArticle);
-    });
-
-    it('should update article reading progress and mark as read', async () => {
-      prisma.bookmark.findFirst.mockResolvedValue({
-        id: 'bm-1',
-        userId: 'user-1',
-        article: { id: 'art-1', scrollProgress: 0, isRead: false },
-      });
-      prisma.bookmarkArticle = {
-        update: jest.fn().mockResolvedValue({
-          id: 'art-1',
-          scrollProgress: 85,
-          isRead: true,
-        }),
-      };
-
-      const result = await service.updateArticleProgress('user-1', 'bm-1', {
-        scrollProgress: 85,
-        isRead: true,
-      });
-
-      expect(prisma.bookmarkArticle.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { bookmarkId: 'bm-1' },
-          data: expect.objectContaining({
-            scrollProgress: 85,
-            isRead: true,
-          }),
-        }),
-      );
-      expect(result.scrollProgress).toBe(85);
     });
   });
 });

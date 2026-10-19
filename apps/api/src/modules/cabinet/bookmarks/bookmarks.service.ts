@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   Inject,
   forwardRef,
   Logger,
@@ -9,7 +10,6 @@ import {
 import { InjectQueue } from "@nestjs/bullmq"
 import { Queue } from "bullmq"
 import {
-  BookmarkProvider,
   BookmarkType,
   BookmarkContentType,
   MetadataStatus,
@@ -19,12 +19,11 @@ import axios from "axios"
 import { PrismaService } from "../../../prisma/prisma.service"
 import { MetadataService } from "../services/metadata.service"
 import { LinkCheckerService } from "../services/link-checker.service"
-import { RedditProvider } from "../providers/reddit.provider"
-import { ReaderService } from "../services/reader.service"
 import { CabinetMediaService } from "../services/cabinet-media.service"
 import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
 import { DownloadMediaDto } from "../dto/download-media.dto"
+import { SaveNoteDto } from "./dto/save-note.dto"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -35,8 +34,6 @@ export class BookmarksService implements OnModuleInit {
     private metadataService: MetadataService,
     @Inject(forwardRef(() => LinkCheckerService))
     private linkCheckerService: LinkCheckerService,
-    private redditProvider: RedditProvider,
-    private readerService: ReaderService,
     private cabinetMediaService: CabinetMediaService,
     @InjectQueue("bookmark-enrichment")
     private enrichmentQueue: Queue
@@ -55,21 +52,20 @@ export class BookmarksService implements OnModuleInit {
     const isNote =
       createBookmarkDto.type === BookmarkType.NOTE || !createBookmarkDto.url
     const itemType = isNote ? BookmarkType.NOTE : BookmarkType.BOOKMARK
+    if (
+      createBookmarkDto.noteDocument &&
+      (!isNote ||
+        createBookmarkDto.noteDocument.type !== "doc" ||
+        !Array.isArray(createBookmarkDto.noteDocument.content))
+    ) {
+      throw new BadRequestException("Invalid note document")
+    }
 
     let extracted: any = {}
-    let detectedProvider: BookmarkProvider | null = null
     let contentType: BookmarkContentType | null = null
 
     if (!isNote && createBookmarkDto.url) {
       extracted = await this.metadataService.extract(createBookmarkDto.url)
-      try {
-        const urlObj = new URL(createBookmarkDto.url)
-        if (this.redditProvider.supports(urlObj)) {
-          detectedProvider = BookmarkProvider.REDDIT
-        }
-      } catch {
-        // Ignore invalid URL parsing errors here, handled downstream
-      }
 
       if (this.cabinetMediaService.isVideoUrl(createBookmarkDto.url)) {
         contentType = BookmarkContentType.VIDEO
@@ -106,16 +102,17 @@ export class BookmarksService implements OnModuleInit {
           (isNote ? "Untitled Note" : "Untitled"),
         description:
           createBookmarkDto.description || extracted.description || null,
-        notes: createBookmarkDto.notes || null,
+        notes: null,
+        noteDocument: createBookmarkDto.noteDocument,
         imageUrl: extracted.imageUrl || null,
         faviconUrl: extracted.faviconUrl || null,
         siteName: extracted.siteName || null,
-        metadata: extracted.embedHtml ? { embedHtml: extracted.embedHtml } : undefined,
         folderId: createBookmarkDto.folderId || null,
         userId,
-        provider: detectedProvider,
         contentType: contentType || (isNote ? null : undefined),
-        metadataStatus: isNote ? MetadataStatus.COMPLETED : MetadataStatus.PENDING,
+        metadataStatus: isNote
+          ? MetadataStatus.COMPLETED
+          : MetadataStatus.PENDING,
         tags: {
           connectOrCreate: tagConnectOrCreate,
         },
@@ -123,18 +120,6 @@ export class BookmarksService implements OnModuleInit {
       include: {
         tags: true,
         folder: true,
-        article: {
-          select: {
-            id: true,
-            author: true,
-            publishedAt: true,
-            readingTimeMinutes: true,
-            wordCount: true,
-            waybackUrl: true,
-            isRead: true,
-            scrollProgress: true,
-          },
-        },
       },
     })
 
@@ -153,6 +138,60 @@ export class BookmarksService implements OnModuleInit {
     }
 
     return bookmark
+  }
+
+  async saveNote(userId: string, id: string, dto: SaveNoteDto) {
+    if (
+      dto.noteDocument.type !== "doc" ||
+      !Array.isArray(dto.noteDocument.content)
+    ) {
+      throw new BadRequestException("Invalid note document")
+    }
+    const where = { id, userId, type: BookmarkType.NOTE, deletedAt: null }
+    const existing = await this.prisma.bookmark.findFirst({ where: { id } })
+    if (
+      existing &&
+      (existing.userId !== userId ||
+        existing.type !== BookmarkType.NOTE ||
+        existing.deletedAt)
+    ) {
+      throw new NotFoundException("Note not found")
+    }
+    if (!existing && dto.folderId) {
+      const folder = await this.prisma.folder.findFirst({
+        where: { id: dto.folderId, userId, deletedAt: null },
+      })
+      if (!folder) throw new NotFoundException("Folder not found")
+    }
+    const data = {
+      title: dto.title?.trim() || "Untitled note",
+      notes: dto.notes ?? "",
+      noteDocument: dto.noteDocument,
+    }
+    const include = { tags: true, folder: true }
+    try {
+      // A stable client-generated UUID makes retries safe after a lost response.
+      return await this.prisma.bookmark.upsert({
+        where,
+        create: {
+          id,
+          userId,
+          folderId: dto.folderId || null,
+          type: BookmarkType.NOTE,
+          metadataStatus: MetadataStatus.COMPLETED,
+          ...data,
+        },
+        update: data,
+        include,
+      })
+    } catch (error) {
+      const code = (error as { code?: string }).code
+      if (code !== "P2002" && code !== "P2025") throw error
+      // An existing ID is writable only by its owner, and only while it is an active note.
+      const note = await this.prisma.bookmark.findFirst({ where })
+      if (!note) throw new NotFoundException("Note not found")
+      return this.prisma.bookmark.update({ where, data, include })
+    }
   }
 
   async refreshEnrichment(userId: string, id: string) {
@@ -234,6 +273,10 @@ export class BookmarksService implements OnModuleInit {
 
     if (filters.status) {
       where.status = filters.status
+      if (filters.status === "BROKEN" || filters.status === "REDIRECTED") {
+        where.type = BookmarkType.BOOKMARK
+        where.url = { not: null }
+      }
     }
 
     if (filters.tag) {
@@ -259,18 +302,6 @@ export class BookmarksService implements OnModuleInit {
       include: {
         tags: true,
         folder: true,
-        article: {
-          select: {
-            id: true,
-            author: true,
-            publishedAt: true,
-            readingTimeMinutes: true,
-            wordCount: true,
-            waybackUrl: true,
-            isRead: true,
-            scrollProgress: true,
-          },
-        },
       },
       orderBy: [{ position: "asc" }, { createdAt: "desc" }],
     }
@@ -312,18 +343,6 @@ export class BookmarksService implements OnModuleInit {
       include: {
         tags: true,
         folder: true,
-        article: {
-          select: {
-            id: true,
-            author: true,
-            publishedAt: true,
-            readingTimeMinutes: true,
-            wordCount: true,
-            waybackUrl: true,
-            isRead: true,
-            scrollProgress: true,
-          },
-        },
       },
     })
 
@@ -367,7 +386,6 @@ export class BookmarksService implements OnModuleInit {
         url: updateBookmarkDto.url,
         title: updateBookmarkDto.title,
         description: updateBookmarkDto.description,
-        notes: updateBookmarkDto.notes,
         isFavorite: updateBookmarkDto.isFavorite,
         isArchived: updateBookmarkDto.isArchived,
         folderId:
@@ -484,55 +502,6 @@ export class BookmarksService implements OnModuleInit {
     return { deleted: result.count }
   }
 
-  async exportBookmarks(userId: string): Promise<string> {
-    const folders = await this.prisma.folder.findMany({
-      where: { userId, deletedAt: null },
-      include: {
-        bookmarks: {
-          where: { deletedAt: null },
-          include: { tags: true },
-        },
-      },
-    })
-
-    const rootBookmarks = await this.prisma.bookmark.findMany({
-      where: { userId, folderId: null, deletedAt: null },
-      include: { tags: true },
-    })
-
-    let html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
-<!-- This is an automatically generated file.
-     It will be read and imported by browsers and bookmark managers. -->
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
-<TITLE>Bookmarks</TITLE>
-<H1>Bookmarks</H1>
-<DL><p>
-`
-
-    for (const folder of folders) {
-      html += `    <DT><H3 ADD_DATE="${Math.floor(folder.createdAt.getTime() / 1000)}">${folder.name}</H3>\n    <DL><p>\n`
-      for (const bookmark of folder.bookmarks) {
-        const tagStr = bookmark.tags.map((t) => t.name).join(",")
-        html += `        <DT><A HREF="${bookmark.url}" ADD_DATE="${Math.floor(bookmark.createdAt.getTime() / 1000)}" TAGS="${tagStr}">${bookmark.title}</A>\n`
-        if (bookmark.description) {
-          html += `        <DD>${bookmark.description}\n`
-        }
-      }
-      html += `    </DL><p>\n`
-    }
-
-    for (const bookmark of rootBookmarks) {
-      const tagStr = bookmark.tags.map((t) => t.name).join(",")
-      html += `    <DT><A HREF="${bookmark.url}" ADD_DATE="${Math.floor(bookmark.createdAt.getTime() / 1000)}" TAGS="${tagStr}">${bookmark.title}</A>\n`
-      if (bookmark.description) {
-        html += `    <DD>${bookmark.description}\n`
-      }
-    }
-
-    html += `</DL><p>\n`
-    return html
-  }
-
   async importBookmarks(userId: string, htmlContent: string) {
     const lines = htmlContent.split("\n")
     let currentFolderId: string | null = null
@@ -614,11 +583,17 @@ export class BookmarksService implements OnModuleInit {
     const total = await this.prisma.bookmark.count({
       where: { userId, deletedAt: null },
     })
+    const linkWhere = {
+      userId,
+      type: BookmarkType.BOOKMARK,
+      url: { not: null },
+      deletedAt: null,
+    }
     const broken = await this.prisma.bookmark.count({
-      where: { userId, status: "BROKEN", deletedAt: null },
+      where: { ...linkWhere, status: "BROKEN" },
     })
     const redirected = await this.prisma.bookmark.count({
-      where: { userId, status: "REDIRECTED", deletedAt: null },
+      where: { ...linkWhere, status: "REDIRECTED" },
     })
     const favorites = await this.prisma.bookmark.count({
       where: { userId, isFavorite: true, deletedAt: null },
@@ -772,7 +747,8 @@ export class BookmarksService implements OnModuleInit {
     })
     return {
       success: true,
-      message: "Health scan and missing metadata enrichment started in background",
+      message:
+        "Health scan and missing metadata enrichment started in background",
     }
   }
 
@@ -834,125 +810,11 @@ export class BookmarksService implements OnModuleInit {
     }
   }
 
-  async getArticle(userId: string, id: string) {
-    const bookmark = await this.prisma.bookmark.findFirst({
-      where: { id, userId, deletedAt: null },
-      include: { article: true },
-    })
-
-    if (!bookmark) {
-      throw new NotFoundException("Bookmark not found")
-    }
-
-    if (bookmark.article && bookmark.article.contentHtml) {
-      return bookmark.article
-    }
-
-    // On-demand article extraction if not yet cached in background
-    const extracted = await this.readerService.extractArticle(bookmark.url)
-    if (!extracted) {
-      throw new NotFoundException("No readable article content found for this bookmark URL")
-    }
-
-    return this.prisma.bookmarkArticle.upsert({
-      where: { bookmarkId: id },
-      create: {
-        bookmarkId: id,
-        author: extracted.author,
-        publishedAt: extracted.publishedAt,
-        readingTimeMinutes: extracted.readingTimeMinutes,
-        wordCount: extracted.wordCount,
-        contentHtml: extracted.contentHtml,
-        contentMarkdown: extracted.contentMarkdown,
-        waybackUrl: extracted.waybackUrl,
-      },
-      update: {
-        author: extracted.author,
-        publishedAt: extracted.publishedAt,
-        readingTimeMinutes: extracted.readingTimeMinutes,
-        wordCount: extracted.wordCount,
-        contentHtml: extracted.contentHtml,
-        contentMarkdown: extracted.contentMarkdown,
-        waybackUrl: extracted.waybackUrl,
-      },
-    })
-  }
-
-  async updateArticleProgress(
-    userId: string,
-    id: string,
-    dto: { scrollProgress?: number; isRead?: boolean }
-  ) {
-    const bookmark = await this.prisma.bookmark.findFirst({
-      where: { id, userId, deletedAt: null },
-      include: { article: true },
-    })
-
-    if (!bookmark) {
-      throw new NotFoundException("Bookmark not found")
-    }
-
-    if (!bookmark.article) {
-      throw new NotFoundException("Article record not found for this bookmark")
-    }
-
-    const data: any = {}
-    if (dto.scrollProgress !== undefined) {
-      data.scrollProgress = Math.min(100, Math.max(0, dto.scrollProgress))
-    }
-    if (dto.isRead !== undefined) {
-      data.isRead = dto.isRead
-      data.readAt = dto.isRead ? new Date() : null
-    }
-
-    return this.prisma.bookmarkArticle.update({
-      where: { bookmarkId: id },
-      data,
-    })
-  }
-
   async extractMedia(url: string) {
     return this.cabinetMediaService.extract(url)
   }
 
   async downloadMedia(dto: DownloadMediaDto, res: Response) {
     return this.cabinetMediaService.download(dto, res)
-  }
-
-  async getOEmbed(url: string) {
-    try {
-      const urlObj = new URL(url)
-      const host = urlObj.hostname.toLowerCase()
-      let oembedEndpoint: string | null = null
-
-      if (host.includes("reddit.com") || host.includes("redd.it")) {
-        oembedEndpoint = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`
-      } else if (host.includes("twitter.com") || host.includes("x.com")) {
-        oembedEndpoint = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`
-      } else if (host.includes("youtube.com") || host.includes("youtu.be")) {
-        oembedEndpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
-      } else if (host.includes("tiktok.com")) {
-        oembedEndpoint = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
-      }
-
-      if (!oembedEndpoint) {
-        return null
-      }
-
-      const res = await fetch(oembedEndpoint, {
-        headers: {
-          "User-Agent": "WhatsApp/2.24.6.77 A",
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(5000),
-      })
-
-      if (res.ok) {
-        return await res.json()
-      }
-      return null
-    } catch {
-      return null
-    }
   }
 }

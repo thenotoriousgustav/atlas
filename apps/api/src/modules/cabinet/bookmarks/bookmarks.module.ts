@@ -4,10 +4,8 @@ import { BookmarksController } from "./bookmarks.controller"
 import { BookmarksService } from "./bookmarks.service"
 import { MetadataService } from "../services/metadata.service"
 import { LinkCheckerService } from "../services/link-checker.service"
-import { RedditProvider } from "../providers/reddit.provider"
 import { EnrichmentProcessor } from "../workers/enrichment.processor"
 import { GenericMetadataProvider } from "../providers/metadata/generic.metadata-provider"
-import { ReaderService } from "../services/reader.service"
 import { CabinetMediaService } from "../services/cabinet-media.service"
 
 @Module({
@@ -21,12 +19,10 @@ import { CabinetMediaService } from "../services/cabinet-media.service"
     BookmarksService,
     MetadataService,
     LinkCheckerService,
-    RedditProvider,
     EnrichmentProcessor,
-    ReaderService,
     CabinetMediaService,
     GenericMetadataProvider,
   ],
-  exports: [BookmarksService, MetadataService, ReaderService, CabinetMediaService],
+  exports: [BookmarksService, MetadataService, CabinetMediaService],
 })
 export class BookmarksModule {}

@@ -139,6 +139,7 @@ model Bookmark {
   title          String
   description    String?
   notes          String?              @db.Text
+  noteDocument   Json?
   imageUrl       String?
   faviconUrl     String?
   siteName       String?

@@ -43,14 +43,6 @@ export class UpdateBookmarkDto {
   description?: string
 
   @ApiPropertyOptional({
-    example: "Personal markdown notes and thoughts",
-    description: "Markdown notes and annotations",
-  })
-  @IsString()
-  @IsOptional()
-  notes?: string
-
-  @ApiPropertyOptional({
     example: "123e4567-e89b-12d3-a456-426614174000",
     description: "Folder ID",
   })
