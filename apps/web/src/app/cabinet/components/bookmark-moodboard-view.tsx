@@ -1,5 +1,6 @@
 import React from "react"
 import { cn } from "@/lib/utils"
+import { startBookmarkDrag } from "@/lib/bookmark-drag"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -158,11 +159,7 @@ export function MoodboardCard({
       onDragStart={(e) => {
         // Pack selected IDs if current card is part of selection, otherwise pack this single ID
         const ids = isSelected && selectedBookmarkIds.length > 0 ? selectedBookmarkIds : [bookmark.id]
-        e.dataTransfer.setData("application/json", JSON.stringify(ids))
-        e.dataTransfer.setData("text/plain", JSON.stringify(ids))
-        e.dataTransfer.effectAllowed = "move"
-        const rect = e.currentTarget.getBoundingClientRect()
-        e.dataTransfer.setDragImage(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top)
+        startBookmarkDrag(e, ids, bookmark.title || hostname || "Bookmark")
       }}
       onClick={(e) => {
         // When selection mode is active (any item is selected), clicking anywhere on the card toggles select

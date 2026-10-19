@@ -180,7 +180,7 @@ export function CabinetSidebarFilters({
   })
 
   return (
-    <WorkspaceSidebar>
+    <WorkspaceSidebar data-bookmark-sidebar>
       {/* Quick Filters / Library Group */}
       {viewSection !== "folders" && (
         <>

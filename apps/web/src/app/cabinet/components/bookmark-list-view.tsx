@@ -1,5 +1,6 @@
 import React from "react"
 import { cn } from "@/lib/utils"
+import { startBookmarkDrag } from "@/lib/bookmark-drag"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -126,11 +127,7 @@ export function BookmarkListView({
               draggable
               onDragStart={(e) => {
                 const ids = isSelected && selectedBookmarkIds.length > 0 ? selectedBookmarkIds : [bookmark.id]
-                e.dataTransfer.setData("application/json", JSON.stringify(ids))
-                e.dataTransfer.setData("text/plain", JSON.stringify(ids))
-                e.dataTransfer.effectAllowed = "move"
-                const rect = e.currentTarget.getBoundingClientRect()
-                e.dataTransfer.setDragImage(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top)
+                startBookmarkDrag(e, ids, bookmark.title || hostname || "Bookmark")
               }}
               onClick={(e) => {
                 if (selectedBookmarkIds.length > 0 || e.shiftKey || e.metaKey || e.ctrlKey) {
