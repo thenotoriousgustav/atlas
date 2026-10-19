@@ -397,6 +397,8 @@ export function CabinetDashboard() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isFetching: isFetchingBookmarks,
+    isFetchNextPageError,
   } = useBookmarksControllerFindAllInfinite(
     {
       folderId: filterTrash ? undefined : selectedFolderId,
@@ -418,6 +420,28 @@ export function CabinetDashboard() {
       },
     }
   )
+  const bookmarkScrollRef = React.useRef<HTMLElement>(null)
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const root = bookmarkScrollRef.current
+    const target = loadMoreRef.current
+    if (!root || !target || filterDuplicates || !hasNextPage || isFetchingBookmarks || isFetchNextPageError) return
+
+    let active = true
+    const observer = new IntersectionObserver((entries) => {
+      if (active && entries.some((entry) => entry.isIntersecting)) {
+        active = false
+        observer.disconnect()
+        void fetchNextPage({ cancelRefetch: false })
+      }
+    }, { root, rootMargin: "0px 0px 300px 0px" })
+    observer.observe(target)
+    return () => {
+      active = false
+      observer.disconnect()
+    }
+  }, [mounted, isLoading, user, filterDuplicates, hasNextPage, isFetchingBookmarks, isFetchNextPageError, fetchNextPage, bookmarksInfiniteData])
+
   const rawBookmarks =
     bookmarksInfiniteData?.pages.flatMap(
       (page: any) => page?.data?.data || []
@@ -1259,7 +1283,7 @@ export function CabinetDashboard() {
               </DrawerContent>
             </Drawer>
 
-            <section className="h-full min-w-0 flex-1 space-y-4 overflow-y-auto pr-0 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:space-y-6 sm:pr-2 md:pb-8">
+            <section ref={bookmarkScrollRef} className="h-full min-w-0 flex-1 space-y-4 overflow-y-auto pr-0 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:space-y-6 sm:pr-2 md:pb-8">
               <Toolbar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -1331,12 +1355,20 @@ export function CabinetDashboard() {
                 onInspectBookmark={setInspectedBookmark}
               />
 
-              {/* Load More Button */}
               {!filterDuplicates && hasNextPage && (
-                <div className="flex justify-center pt-4 pb-4 sm:pt-6">
-                  <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} variant="outline">
-                    {isFetchingNextPage ? <><Spinner /> Loading...</> : "Load More"}
-                  </Button>
+                <div ref={loadMoreRef} className="flex min-h-12 items-center justify-center py-4" aria-live="polite">
+                  {isFetchingNextPage ? (
+                    <span role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Spinner /> Loading more bookmarks...
+                    </span>
+                  ) : isFetchNextPageError ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Could not load more bookmarks.</span>
+                      <Button variant="outline" size="sm" disabled={isFetchingBookmarks} onClick={() => fetchNextPage({ cancelRefetch: false })}>
+                        Try again
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </section>
