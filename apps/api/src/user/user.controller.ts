@@ -6,13 +6,14 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
 
 @ApiTags('users')
+@ApiCookieAuth()
 @Controller('v1/users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard)
 export class UserController {
   constructor(private userService: UserService) {}
 

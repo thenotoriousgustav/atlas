@@ -9,7 +9,10 @@ generator client {
 model User {
   id            String           @id @default(uuid()) @db.Uuid
   email         String           @unique
-  password      String
+  emailVerified Boolean          @default(false)
+  sessions      Session[]
+  accounts      Account[]
+  password      String?
   name          String
   avatar        String?
   createdAt     DateTime         @default(now())
@@ -19,8 +22,71 @@ model User {
   folders       Folder[]
   bookmarks     Bookmark[]
   credentials   UserCredential[]
+  oauthAccounts OAuthAccount[]
+  tags          Tag[]
 
   @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("auth_verifications")
+}
+
+model OAuthAccount {
+  id        String   @id @default(uuid()) @db.Uuid
+  provider  String
+  subject   String
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([provider, subject])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 model RefreshToken {
@@ -48,13 +114,13 @@ model UserCredential {
 }
 
 model Folder {
-  id          String     @id @default(uuid()) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   name        String
   description String?
-  parentId    String?    @db.Uuid
-  userId      String     @db.Uuid
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  parentId    String?   @db.Uuid
+  userId      String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -132,12 +198,16 @@ enum MetadataStatus {
 
 model Tag {
   id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
+  name      String
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   bookmarks Bookmark[] @relation("BookmarkTags")
 
+  @@unique([name, userId])
+  @@index([userId])
   @@map("tags")
 }
 

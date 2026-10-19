@@ -81,8 +81,8 @@ export class BookmarksService implements OnModuleInit {
       createBookmarkDto.tags?.map((name) => {
         const formatted = name.trim().toLowerCase()
         return {
-          where: { name: formatted },
-          create: { name: formatted },
+          where: { name_userId: { name: formatted, userId } },
+          create: { name: formatted, userId },
         }
       }) || []
 
@@ -355,8 +355,8 @@ export class BookmarksService implements OnModuleInit {
     const tagConnectOrCreate = updateBookmarkDto.tags?.map((name) => {
       const formatted = name.trim().toLowerCase()
       return {
-        where: { name: formatted },
-        create: { name: formatted },
+        where: { name_userId: { name: formatted, userId } },
+        create: { name: formatted, userId },
       }
     })
 
@@ -581,8 +581,8 @@ export class BookmarksService implements OnModuleInit {
             metadataStatus: MetadataStatus.PENDING,
             tags: {
               connectOrCreate: tags.map((name) => ({
-                where: { name: name.toLowerCase() },
-                create: { name: name.toLowerCase() },
+                where: { name_userId: { name: name.toLowerCase(), userId } },
+                create: { name: name.toLowerCase(), userId },
               })),
             },
           },

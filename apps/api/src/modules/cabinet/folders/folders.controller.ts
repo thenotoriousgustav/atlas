@@ -8,17 +8,17 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
+import { AuthGuard } from '../../../auth/guards/auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { FoldersService } from './folders.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
 
 @ApiTags('folders')
-@ApiBearerAuth()
+@ApiCookieAuth()
 @Controller('v1/folders')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard)
 export class FoldersController {
   constructor(private readonly foldersService: FoldersService) {}
 

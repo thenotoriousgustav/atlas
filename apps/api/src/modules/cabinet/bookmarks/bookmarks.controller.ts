@@ -10,9 +10,9 @@ import {
   UseGuards,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
+import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiQuery, ApiCookieAuth } from '@nestjs/swagger';
+import { AuthGuard } from '../../../auth/guards/auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
 import { BookmarksService } from './bookmarks.service';
@@ -24,9 +24,9 @@ import { DownloadMediaDto } from '../dto/download-media.dto';
 import { BookmarkType, BookmarkContentType } from '@prisma/client';
 
 @ApiTags('bookmarks')
-@ApiBearerAuth()
+@ApiCookieAuth()
 @Controller('v1/bookmarks')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard)
 export class BookmarksController {
   constructor(private readonly bookmarksService: BookmarksService) {}
 

@@ -1,7 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
+import { toNodeHandler } from 'better-auth/node';
+import { AuthService } from './auth/auth.service';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -29,31 +31,21 @@ async function bootstrap() {
     ],
   });
 
-  const app = await NestFactory.create(AppModule, { logger });
-
-  // Middleware
-  app.use(cookieParser());
+  const app = await NestFactory.create(AppModule, { logger, bodyParser: false });
 
   // CORS
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman, etc.)
-      if (!origin) return callback(null, true);
-      
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://cabinet.localhost:3000',
-        'https://cabinet.gustam.dev',
-      ];
-      
-      if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.gustam.dev')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow dev access
-      }
+      const frontendOrigin = new URL(process.env.FRONTEND_URL || 'http://localhost:3000').origin;
+      callback(null, !origin || origin === frontendOrigin);
     },
     credentials: true,
   });
+
+  // Better Auth reads the raw body before the other API routes parse it.
+  app.getHttpAdapter().getInstance().all('/v1/auth/{*path}', toNodeHandler(app.get(AuthService).auth));
+  app.use(json({ limit: '2mb' }));
+  app.use(urlencoded({ extended: true }));
 
   // Global validation pipes
   app.useGlobalPipes(
@@ -70,10 +62,10 @@ async function bootstrap() {
 
   // Swagger setup
   const config = new DocumentBuilder()
-    .setTitle('Gustam Platform API')
-    .setDescription('Central API for Gustam Platform')
+    .setTitle('Cabinet API')
+    .setDescription('API for Cabinet bookmarks, notes, and saved reading')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addCookieAuth('cabinet.session_token')
     .build();
   
   const document = SwaggerModule.createDocument(app, config);
