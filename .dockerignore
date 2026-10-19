@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+.cabinet-stash
+.pi
+.agents

@@ -1,0 +1,128 @@
+name: cabinet
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:?required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 256m
+    command: [redis-server, --appendonly, "yes", --maxmemory, 128mb, --maxmemory-policy, noeviction]
+    volumes:
+      - redis_data:/data
+    networks: [backend]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  api:
+    image: cabinet-api:${IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    init: true
+    mem_limit: 768m
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      NODE_OPTIONS: --max-old-space-size=512
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?required}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      API_URL: ${API_URL:-http://localhost:4000}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-4000}:4000"
+    networks: [backend, outbound]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/v1/health', {signal: AbortSignal.timeout(3000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    logging: *logging
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: [https]
+    restart: unless-stopped
+    mem_limit: 128m
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [outbound]
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *logging
+
+  seed:
+    image: cabinet-api:${IMAGE_TAG:-latest}
+    profiles: [tools]
+    init: true
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?required}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin}
+    command: [pnpm, exec, ts-node, prisma/seed.ts]
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logging
+
+networks:
+  backend:
+    internal: true
+  outbound:
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
