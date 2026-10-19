@@ -117,3 +117,4 @@ Thumbs.db
 # Cypress videos and screenshots
 cypress/videos/
 cypress/screenshots/
+.vercel

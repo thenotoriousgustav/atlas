@@ -1,0 +1,15 @@
+.git
+.cabinet-stash
+.agents
+.pi
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+apps/api
+docker
+docs

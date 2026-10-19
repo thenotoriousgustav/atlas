@@ -143,7 +143,7 @@ export function BookmarkInspector({
         {bookmark.imageUrl && !isNote && (
           <div className="relative aspect-[16/10] w-full overflow-hidden border border-border bg-muted/20">
             <img
-              src={`http://localhost:4000/v1/bookmarks/proxy-image?v=2&url=${encodeURIComponent(bookmark.imageUrl)}`}
+              src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/v1/bookmarks/proxy-image?v=2&url=${encodeURIComponent(bookmark.imageUrl)}`}
               alt={bookmark.title || hostname}
               className="size-full object-contain p-1"
             />
