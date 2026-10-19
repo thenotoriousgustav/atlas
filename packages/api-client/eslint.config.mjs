@@ -1,4 +1,4 @@
-import baseConfig from '@atlas/eslint-config/base.mjs';
+import baseConfig from '@cabinet/eslint-config/base.mjs';
 
 export default [
   ...baseConfig,

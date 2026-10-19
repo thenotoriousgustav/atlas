@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/api-client",
+  "name": "@cabinet/api-client",
   "version": "0.0.0",
   "private": true,
   "main": "./dist/src/index.js",
@@ -16,8 +16,8 @@
     "axios": "^1.18.1"
   },
   "devDependencies": {
-    "@atlas/eslint-config": "workspace:*",
-    "@atlas/typescript-config": "workspace:*",
+    "@cabinet/eslint-config": "workspace:*",
+    "@cabinet/typescript-config": "workspace:*",
     "@types/node": "^22.15.0",
     "orval": "^8.21.0",
     "typescript": "^5.9.3"

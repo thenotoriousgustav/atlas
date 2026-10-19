@@ -1,0 +1,11 @@
+{
+  "extends": "@cabinet/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "next-env.d.ts", ".next/types/**/*.ts"]
+}

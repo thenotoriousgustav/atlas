@@ -1,4 +1,4 @@
-import nestConfig from '@atlas/eslint-config/nest';
+import nestConfig from '@cabinet/eslint-config/nest';
 
 export default [
   ...nestConfig,

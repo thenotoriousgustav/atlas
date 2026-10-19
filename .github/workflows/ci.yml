@@ -43,7 +43,7 @@ jobs:
         run: pnpm install
 
       - name: Generate Prisma Client
-        run: pnpm --filter @atlas/api prisma:generate
+        run: pnpm --filter @cabinet/api prisma:generate
 
       - name: Build packages and apps
         run: pnpm build

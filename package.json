@@ -1,5 +1,5 @@
 {
-  "name": "atlas",
+  "name": "cabinet",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -11,6 +11,7 @@
     "db:down": "docker compose -f docker/docker-compose.yml down"
   },
   "devDependencies": {
+    "@cabinet/typescript-config": "workspace:*",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "turbo": "^2.10.4",
