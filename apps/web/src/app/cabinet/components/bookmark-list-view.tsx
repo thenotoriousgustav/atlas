@@ -95,6 +95,7 @@ export function BookmarkListView({
       onValueChange={(newItems) => onReorder?.(newItems)}
       getItemValue={(item) => item.id}
       orientation="vertical"
+      nativeDrag
     >
       <SortableContent className="divide-y divide-brand-border border border-brand-border">
         {bookmarks.map((bookmark: any) => {
@@ -115,8 +116,9 @@ export function BookmarkListView({
             <SortableItem
               key={bookmark.id}
               value={bookmark.id}
-
-              disabled={isTrashView}
+              asHandle
+              aria-label={`Reorder ${bookmark.title || "bookmark"}`}
+              disabled={isTrashView || !onReorder}
               className={cn(
                 "group/item flex h-10 items-center justify-between gap-3 bg-white px-3 text-xs transition-colors hover:bg-muted/40",
                 isSelected && "bg-muted/60"

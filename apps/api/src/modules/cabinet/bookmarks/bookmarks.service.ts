@@ -304,7 +304,7 @@ export class BookmarksService implements OnModuleInit {
         tags: true,
         folder: true,
       },
-      orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ position: "asc" }, { createdAt: "desc" }, { id: "asc" }],
     }
 
     if (take !== undefined) {
@@ -754,14 +754,28 @@ export class BookmarksService implements OnModuleInit {
   }
 
   async reorder(userId: string, ids: string[]) {
-    await this.prisma.$transaction(
-      ids.map((id, index) =>
-        this.prisma.bookmark.updateMany({
-          where: { id, userId },
-          data: { position: index },
+    await this.prisma.$transaction(async (tx) => {
+      const bookmarks = await tx.bookmark.findMany({
+        where: { userId, deletedAt: null },
+        select: { id: true },
+        orderBy: [{ position: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+      })
+      const moved = new Set(ids)
+      const owned = new Set(bookmarks.map((bookmark) => bookmark.id))
+      if (moved.size !== ids.length || ids.some((id) => !owned.has(id))) {
+        throw new BadRequestException("Invalid bookmark order")
+      }
+
+      // Keep filtered/unloaded bookmarks in their slots, not interleaved at position 0.
+      // ponytail: renumber the library; use sparse ranks if library size makes this costly.
+      let next = 0
+      await Promise.all(bookmarks.map((bookmark, position) =>
+        tx.bookmark.updateMany({
+          where: { id: moved.has(bookmark.id) ? ids[next++] : bookmark.id, userId },
+          data: { position },
         })
-      )
-    )
+      ))
+    })
     return { success: true }
   }
 

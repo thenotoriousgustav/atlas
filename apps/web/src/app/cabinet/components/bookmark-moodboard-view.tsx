@@ -579,6 +579,7 @@ export function BookmarkMoodboardView({
       onValueChange={(newItems) => onReorder?.(newItems)}
       getItemValue={(item) => item.id}
       orientation="mixed"
+      nativeDrag
     >
       <SortableContent withoutSlot>
         <div
@@ -603,9 +604,10 @@ export function BookmarkMoodboardView({
                   <SortableItem
                     key={bookmark.id}
                     value={bookmark.id}
-
-                    disabled={isTrashView}
-                    className="w-full"
+                    asHandle
+                    aria-label={`Reorder ${bookmark.title || "bookmark"}`}
+                    disabled={isTrashView || !onReorder}
+                    className="w-full data-dragging:relative data-dragging:z-10"
                   >
                     <MoodboardCard
                       displayPreferences={displayPreferences}

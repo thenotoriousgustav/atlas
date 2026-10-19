@@ -3,7 +3,6 @@
 import {
   type Announcements,
   closestCenter,
-  closestCorners,
   DndContext,
   type DndContextProps,
   type DragEndEvent,
@@ -15,7 +14,6 @@ import {
   defaultDropAnimationSideEffects,
   KeyboardSensor,
   MouseSensor,
-  rectIntersection,
   type ScreenReaderInstructions,
   TouchSensor,
   type UniqueIdentifier,
@@ -58,7 +56,7 @@ const orientationConfig = {
   mixed: {
     modifiers: [],
     strategy: rectSortingStrategy,
-    collisionDetection: rectIntersection,
+    collisionDetection: closestCenter,
   },
 };
 
@@ -77,6 +75,8 @@ interface SortableRootContextValue<T> {
   setActiveId: (id: UniqueIdentifier | null) => void;
   getItemValue: (item: T) => UniqueIdentifier;
   flatCursor: boolean;
+  nativeDrag: boolean;
+  moveNativeItem: (active: UniqueIdentifier, over: UniqueIdentifier) => void;
 }
 
 const SortableRootContext =
@@ -108,6 +108,7 @@ type SortableProps<T> = DndContextProps &
     strategy?: SortableContextProps["strategy"];
     orientation?: "vertical" | "horizontal" | "mixed";
     flatCursor?: boolean;
+    nativeDrag?: boolean;
   };
 
 function Sortable<T>(props: SortableProps<T>) {
@@ -120,6 +121,7 @@ function Sortable<T>(props: SortableProps<T>) {
     onMove,
     orientation = "vertical",
     flatCursor = false,
+    nativeDrag = false,
     getItemValue: getItemValueProp,
     accessibility,
     ...sortableProps
@@ -128,12 +130,12 @@ function Sortable<T>(props: SortableProps<T>) {
   const id = React.useId();
   const [activeId, setActiveId] = React.useState<UniqueIdentifier | null>(null);
 
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: { distance: 8 },
+  });
+  // Native mouse dragging also reaches the sidebar's HTML drop targets.
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
+    nativeDrag ? null : mouseSensor,
     useSensor(TouchSensor, {
       activationConstraint: {
         delay: 250,
@@ -170,9 +172,6 @@ function Sortable<T>(props: SortableProps<T>) {
   const onDragStart = React.useCallback(
     (event: DragStartEvent) => {
       sortableProps.onDragStart?.(event);
-
-      if (event.activatorEvent.defaultPrevented) return;
-
       setActiveId(event.active.id);
     },
     [sortableProps.onDragStart],
@@ -181,8 +180,6 @@ function Sortable<T>(props: SortableProps<T>) {
   const onDragEnd = React.useCallback(
     (event: DragEndEvent) => {
       sortableProps.onDragEnd?.(event);
-
-      if (event.activatorEvent.defaultPrevented) return;
 
       const { active, over } = event;
       if (over && active.id !== over?.id) {
@@ -207,9 +204,6 @@ function Sortable<T>(props: SortableProps<T>) {
   const onDragCancel = React.useCallback(
     (event: DragEndEvent) => {
       sortableProps.onDragCancel?.(event);
-
-      if (event.activatorEvent.defaultPrevented) return;
-
       setActiveId(null);
     },
     [sortableProps.onDragCancel],
@@ -269,6 +263,15 @@ function Sortable<T>(props: SortableProps<T>) {
     [orientation],
   );
 
+  const moveNativeItem = React.useCallback((active: UniqueIdentifier, over: UniqueIdentifier) => {
+    const from = items.indexOf(active);
+    const to = items.indexOf(over);
+    if (from !== -1 && to !== -1 && from !== to) {
+      onValueChange?.(arrayMove(value, from, to));
+    }
+    setActiveId(null);
+  }, [items, value, onValueChange]);
+
   const contextValue = React.useMemo(
     () => ({
       id,
@@ -279,6 +282,8 @@ function Sortable<T>(props: SortableProps<T>) {
       setActiveId,
       getItemValue,
       flatCursor,
+      nativeDrag,
+      moveNativeItem,
     }),
     [
       id,
@@ -290,6 +295,8 @@ function Sortable<T>(props: SortableProps<T>) {
       activeId,
       getItemValue,
       flatCursor,
+      nativeDrag,
+      moveNativeItem,
     ],
   );
 
@@ -414,6 +421,7 @@ function SortableItem(props: SortableItemProps) {
   }
 
   const context = useSortableContext(ITEM_NAME);
+  const [nativeOver, setNativeOver] = React.useState(false);
   const id = React.useId();
   const {
     attributes,
@@ -426,11 +434,11 @@ function SortableItem(props: SortableItemProps) {
   } = useSortable({ id: value, disabled });
 
   const composedRef = useComposedRefs(ref, (node) => {
-    if (disabled) return;
     setNodeRef(node);
     if (asHandle) setActivatorNodeRef(node);
   });
 
+  const dragging = isDragging || (context.nativeDrag && context.activeId === value);
   const composedStyle = React.useMemo<React.CSSProperties>(() => {
     return {
       transform: CSS.Translate.toString(transform),
@@ -458,22 +466,48 @@ function SortableItem(props: SortableItemProps) {
       <ItemPrimitive
         id={id}
         data-disabled={disabled}
-        data-dragging={isDragging ? "" : undefined}
+        data-dragging={dragging ? "" : undefined}
         data-slot="sortable-item"
         {...itemProps}
         {...(asHandle && !disabled ? attributes : {})}
-        {...(asHandle && !disabled ? listeners : {})}
+        {...(asHandle && !disabled ? {
+          ...listeners,
+          onTouchStart: (event: React.TouchEvent) => {
+            if (event.target instanceof Element && event.target.closest('button, input, textarea, select, [contenteditable="true"]')) return;
+            listeners?.onTouchStart?.(event);
+          },
+        } : {})}
+        {...(context.nativeDrag && asHandle && !disabled ? {
+          draggable: true,
+          onDragStartCapture: () => context.setActiveId(value),
+          onDragEnd: () => context.setActiveId(null),
+          onDragOver: (event: React.DragEvent) => {
+            if (context.activeId === null) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            setNativeOver(true);
+          },
+          onDragLeave: () => setNativeOver(false),
+          onDrop: (event: React.DragEvent) => {
+            if (context.activeId === null) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setNativeOver(false);
+            context.moveNativeItem(context.activeId, value);
+          },
+        } : {})}
         ref={composedRef}
         style={composedStyle}
         className={cn(
           "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1",
           {
-            "touch-none select-none": asHandle,
+            "select-none": asHandle && !disabled,
+            "touch-none": asHandle && !disabled && !context.nativeDrag,
+            "ring-2 ring-ring": nativeOver && context.activeId !== null && context.activeId !== value,
             "cursor-default": context.flatCursor,
             "data-dragging:cursor-grabbing": !context.flatCursor,
-            "cursor-grab": !isDragging && asHandle && !context.flatCursor,
+            "cursor-grab": !isDragging && asHandle && !disabled && !context.flatCursor,
             "opacity-50": isDragging,
-            "pointer-events-none opacity-50": disabled,
           },
           className,
         )}
@@ -495,7 +529,6 @@ function SortableItemHandle(props: SortableItemHandleProps) {
   const isDisabled = disabled ?? itemContext.disabled;
 
   const composedRef = useComposedRefs(ref, (node) => {
-    if (!isDisabled) return;
     itemContext.setActivatorNodeRef(node);
   });
 
@@ -513,7 +546,7 @@ function SortableItemHandle(props: SortableItemHandleProps) {
       {...(isDisabled ? {} : itemContext.listeners)}
       ref={composedRef}
       className={cn(
-        "select-none disabled:pointer-events-none disabled:opacity-50",
+        "touch-none select-none disabled:pointer-events-none disabled:opacity-50",
         context.flatCursor
           ? "cursor-default"
           : "cursor-grab data-dragging:cursor-grabbing",

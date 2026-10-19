@@ -435,7 +435,9 @@ export function CabinetDashboard() {
     setOptimisticOrder(null)
   }, [bookmarksInfiniteData])
 
-  const reorderMutation = useBookmarksControllerReorder()
+  const reorderMutation = useBookmarksControllerReorder({
+    mutation: { scope: { id: "bookmark-order" } },
+  })
 
   const handleReorder = React.useCallback(
     (newOrder: any[]) => {

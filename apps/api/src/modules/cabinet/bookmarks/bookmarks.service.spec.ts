@@ -57,6 +57,35 @@ describe('BookmarksService - Trash Functionality', () => {
     expect(service).toBeDefined();
   });
 
+  describe('bookmark ordering', () => {
+    beforeEach(() => {
+      prisma.$transaction = jest.fn((run) => run(prisma));
+      // Includes unloaded/filtered items; legacy positions can all be zero.
+      prisma.bookmark.findMany.mockResolvedValue([
+        { id: 'a' }, { id: 'hidden' }, { id: 'b' }, { id: 'unloaded' },
+      ]);
+    });
+
+    it('reorders visible slots without letting unseen bookmarks jump ahead', async () => {
+      await service.reorder('user-1', ['b', 'a']);
+      expect(prisma.bookmark.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { userId: 'user-1', deletedAt: null },
+      }));
+      expect(prisma.bookmark.updateMany.mock.calls.map(([args]) => args)).toEqual(
+        ['b', 'hidden', 'a', 'unloaded'].map((id, position) => ({
+          where: { id, userId: 'user-1' }, data: { position },
+        })),
+      );
+    });
+
+    it.each([['a', 'a'], ['a', 'another-users-bookmark']])(
+      'rejects duplicate or unowned IDs: %s, %s', async (...ids) => {
+        await expect(service.reorder('user-1', ids)).rejects.toThrow('Invalid bookmark order');
+        expect(prisma.bookmark.updateMany).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe('image previews', () => {
     afterEach(() => jest.restoreAllMocks());
 
