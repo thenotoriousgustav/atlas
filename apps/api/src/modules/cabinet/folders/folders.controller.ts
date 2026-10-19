@@ -7,10 +7,14 @@ import {
   Param,
   Delete,
   UseGuards,
+  Put,
+  Header,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../../../auth/guards/auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { Public } from '../../../common/decorators/public.decorator';
 import { FoldersService } from './folders.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -35,6 +39,36 @@ export class FoldersController {
   @ApiOperation({ summary: 'Get all active folders' })
   async findAll(@CurrentUser() user: any) {
     return this.foldersService.findAll(user.id);
+  }
+
+  @Public()
+  @Get('shared/:token')
+  @Header('Cache-Control', 'private, no-store')
+  @Header('X-Robots-Tag', 'noindex, nofollow')
+  @ApiOperation({ summary: 'View a shared collection of bookmarks without signing in' })
+  async findShared(@Param('token') token: string) {
+    return this.foldersService.findShared(token);
+  }
+
+  @Get(':id/share')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Get folder sharing status (owner only)' })
+  async getShare(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.foldersService.getShare(user.id, id);
+  }
+
+  @Put(':id/share')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Enable a public collection link (owner only)' })
+  async enableShare(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.foldersService.enableShare(user.id, id);
+  }
+
+  @Delete(':id/share')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Revoke a public collection link (owner only)' })
+  async disableShare(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.foldersService.disableShare(user.id, id);
   }
 
   @Get(':id')

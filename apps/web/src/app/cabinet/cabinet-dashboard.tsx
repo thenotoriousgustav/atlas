@@ -31,6 +31,7 @@ import { WorkspaceHeader } from "@/components/workspace-header"
 import { CabinetContainer } from "@/components/cabinet-container"
 import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
 import { Toolbar } from "./components/toolbar"
+import { ShareFolderDialog } from "./components/share-folder-dialog"
 import { BookmarkList } from "./components/bookmark-list"
 import { Archive, Trash, ArrowCounterClockwise } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
@@ -359,6 +360,7 @@ export function CabinetDashboard() {
   // Fetch Folders, Bookmarks, Tags
   const { data: foldersData } = useFoldersControllerFindAll()
   const folders = (foldersData as any)?.data || []
+  const selectedFolder = folders.find((folder: any) => folder.id === selectedFolderId)
 
   const { data: tagsData } = useTagsControllerFindAll()
   const tags = (tagsData as any)?.data || []
@@ -1274,6 +1276,13 @@ export function CabinetDashboard() {
                 activeFilterLabel={activeFilterLabel}
                 onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
               />
+
+              {selectedFolder && !filterTrash && (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                  <h2 className="min-w-0 break-words text-lg font-medium">{selectedFolder.name}</h2>
+                  <ShareFolderDialog key={selectedFolder.id} folder={selectedFolder} />
+                </div>
+              )}
 
               {/* Bookmarks Grid / List */}
               <BookmarkList

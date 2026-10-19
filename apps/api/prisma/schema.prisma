@@ -115,6 +115,7 @@ model UserCredential {
 
 model Folder {
   id          String    @id @default(uuid()) @db.Uuid
+  shareToken  String?   @unique @db.VarChar(64)
   name        String
   description String?
   parentId    String?   @db.Uuid

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -73,6 +74,59 @@ export class FoldersService {
     return folder;
   }
 
+  async getShare(userId: string, id: string) {
+    const folder = await this.prisma.folder.findFirst({
+      where: { id, userId, deletedAt: null },
+      select: { shareToken: true },
+    });
+    if (!folder) throw new NotFoundException('Folder not found');
+    return folder;
+  }
+
+  async enableShare(userId: string, id: string) {
+    // Conditional update keeps an existing link stable, including concurrent requests.
+    await this.prisma.folder.updateMany({
+      where: { id, userId, deletedAt: null, shareToken: null },
+      data: { shareToken: randomBytes(32).toString('hex') },
+    });
+    return this.getShare(userId, id);
+  }
+
+  async disableShare(userId: string, id: string) {
+    const result = await this.prisma.folder.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { shareToken: null },
+    });
+    if (!result.count) throw new NotFoundException('Folder not found');
+    return { shareToken: null };
+  }
+
+  async findShared(token: string) {
+    if (!/^[a-f0-9]{64}$/.test(token)) {
+      throw new NotFoundException('Collection not found');
+    }
+    const folder = await this.prisma.folder.findFirst({
+      where: { shareToken: token, deletedAt: null },
+      select: { id: true, userId: true, name: true },
+    });
+    if (!folder) throw new NotFoundException('Collection not found');
+
+    // Explicit allowlist: never serialize private notes, tags, metadata, or owner data.
+    const bookmarks = await this.prisma.bookmark.findMany({
+      where: {
+        folderId: folder.id,
+        userId: folder.userId,
+        type: 'BOOKMARK',
+        url: { not: null },
+        deletedAt: null,
+        isArchived: false,
+      },
+      select: { id: true, url: true, title: true, description: true, imageUrl: true },
+      orderBy: [{ position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
+    });
+    return { name: folder.name, bookmarks };
+  }
+
   async update(userId: string, id: string, updateFolderDto: UpdateFolderDto) {
     await this.findOne(userId, id); // check existence
 
@@ -110,7 +164,7 @@ export class FoldersService {
       // Soft delete this folder
       const folder = await tx.folder.update({
         where: { id },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: new Date(), shareToken: null },
       });
 
       // Recursively soft delete subfolders and bookmarks
@@ -137,7 +191,7 @@ export class FoldersService {
     for (const sub of subfolders) {
       await tx.folder.update({
         where: { id: sub.id },
-        data: { deletedAt: now },
+        data: { deletedAt: now, shareToken: null },
       });
       // Recurse
       await this.softDeleteFolderContents(tx, sub.id);
