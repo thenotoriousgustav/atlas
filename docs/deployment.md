@@ -22,24 +22,16 @@ Then open:
 
 The additional `4000` forward handles the OAuth callbacks configured by `API_URL=http://localhost:4000`, including `http://localhost:4000/v1/auth/callback/google`. Keep any local API stopped while this forward uses port 4000. Register the exact callback URL in the provider console; copying OAuth credentials does not change the provider's allowed redirect URLs.
 
-For a local frontend in production mode, create `apps/web/.env.production.local`:
+## Local development against production API
+
+To run the local frontend during development against the live production backend, set in `apps/web/.env.local`:
 
 ```dotenv
-NEXT_PUBLIC_API_URL=http://localhost:14000
+NEXT_PUBLIC_API_URL=https://api.cabinety.space
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-Keep the SSH tunnel running in one terminal, then run from the repository root in another terminal:
-
-```sh
-pnpm prod
-```
-
-This builds the frontend and its API-client dependency, then starts the frontend at http://localhost:3000. It does **not** start a local API, PostgreSQL, or Redis. Redis and the database remain on the VPS and are accessed only by the backend. Re-run `pnpm prod` after changing `NEXT_PUBLIC_API_URL`, because public variables are embedded at build time.
-
-For frontend development with hot reload against the same production API, put `NEXT_PUBLIC_API_URL=http://localhost:14000` in `apps/web/.env.local` and run `pnpm --filter @cabinet/web dev`. Do not run the root `pnpm dev` for this setup: it also starts a local API. Both setups use real production data.
-
-The trusted frontend origin is `http://localhost:3000`. Frontend and API share the `localhost` hostname for cookies; do not switch one of them to `127.0.0.1`.
+Then run `pnpm --filter @cabinet/web dev` to start the frontend on http://localhost:3000. It connects directly over HTTPS without needing an SSH tunnel.
 
 ## First deployment
 
