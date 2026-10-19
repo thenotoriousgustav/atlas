@@ -16,172 +16,6 @@
         ]
       }
     },
-    "/v1/auth/login": {
-      "post": {
-        "operationId": "AuthController_login",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Login successful or 2FA required"
-          },
-          "401": {
-            "description": "Invalid credentials"
-          }
-        },
-        "summary": "Authenticate user and check for 2FA requirements",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/logout": {
-      "post": {
-        "operationId": "AuthController_logout",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Clear auth cookies",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/refresh": {
-      "post": {
-        "operationId": "AuthController_refresh",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Rotate refresh token",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/me": {
-      "get": {
-        "operationId": "AuthController_me",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Get current user profile",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/passkey/register-options": {
-      "get": {
-        "operationId": "AuthController_generateRegisterOptions",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Generate registration options for a new Passkey",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/passkey/register-verify": {
-      "post": {
-        "operationId": "AuthController_verifyRegister",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "summary": "Verify and register a new Passkey",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/passkey/check": {
-      "get": {
-        "operationId": "AuthController_checkPasskey",
-        "parameters": [
-          {
-            "name": "email",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Check if an email has any registered passkeys",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/passkey/login-options": {
-      "get": {
-        "operationId": "AuthController_generateLoginOptions",
-        "parameters": [
-          {
-            "name": "email",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Generate authentication options for login",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/v1/auth/passkey/login-verify": {
-      "post": {
-        "operationId": "AuthController_verifyLogin",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Verify Passkey login and set auth cookies",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
     "/v1/users/profile": {
       "patch": {
         "operationId": "UserController_updateProfile",
@@ -201,9 +35,53 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
         "summary": "Update user profile",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/v1/bookmarks/{id}/note": {
+      "put": {
+        "operationId": "BookmarksController_saveNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create or autosave a note using a stable ID",
+        "tags": [
+          "bookmarks"
         ]
       }
     },
@@ -227,7 +105,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Proxy external image to bypass CORS and hotlink protection",
@@ -256,39 +134,10 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Scrape metadata and generate tags for a URL",
-        "tags": [
-          "bookmarks"
-        ]
-      }
-    },
-    "/v1/bookmarks/oembed": {
-      "get": {
-        "operationId": "BookmarksController_getOEmbed",
-        "parameters": [
-          {
-            "name": "url",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Proxy oEmbed request to bypass CORS restrictions",
         "tags": [
           "bookmarks"
         ]
@@ -314,7 +163,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Extract downloadable video/audio formats using yt-dlp",
@@ -344,7 +193,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Stream download video or audio file via yt-dlp",
@@ -374,7 +223,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Create a new bookmark (extracts title/metadata if omitted)",
@@ -485,30 +334,10 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get bookmarks with optional filtering",
-        "tags": [
-          "bookmarks"
-        ]
-      }
-    },
-    "/v1/bookmarks/export": {
-      "get": {
-        "operationId": "BookmarksController_export",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Export bookmarks as HTML file",
         "tags": [
           "bookmarks"
         ]
@@ -535,7 +364,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Import bookmarks from HTML file",
@@ -555,7 +384,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get bookmark health status count summary",
@@ -575,7 +404,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get groups of duplicate bookmarks",
@@ -595,7 +424,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Auto-clean duplicate bookmarks",
@@ -615,7 +444,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Trigger manual scan of bookmark links status",
@@ -635,7 +464,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Queue background enrichment for bookmarks with missing images/metadata",
@@ -665,7 +494,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Reorder bookmarks position",
@@ -685,7 +514,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Restore multiple soft-deleted bookmarks",
@@ -705,7 +534,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Permanently delete multiple bookmarks",
@@ -725,68 +554,10 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Permanently delete all bookmarks in trash",
-        "tags": [
-          "bookmarks"
-        ]
-      }
-    },
-    "/v1/bookmarks/{id}/article": {
-      "get": {
-        "operationId": "BookmarksController_getArticle",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get reader view content and digital preservation archive for a bookmark",
-        "tags": [
-          "bookmarks"
-        ]
-      }
-    },
-    "/v1/bookmarks/{id}/article/progress": {
-      "patch": {
-        "operationId": "BookmarksController_updateArticleProgress",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update reading scroll progress and read status",
         "tags": [
           "bookmarks"
         ]
@@ -812,7 +583,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get bookmark details by ID",
@@ -849,7 +620,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Update a bookmark by ID",
@@ -876,7 +647,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Soft delete a bookmark by ID",
@@ -905,7 +676,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Restore a soft-deleted bookmark",
@@ -934,7 +705,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Refresh enrichment metadata for a bookmark",
@@ -963,7 +734,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Permanently delete a bookmark by ID",
@@ -993,7 +764,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Create a new folder",
@@ -1011,10 +782,122 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get all active folders",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
+    "/v1/folders/shared/{token}": {
+      "get": {
+        "operationId": "FoldersController_findShared",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "View a shared collection of bookmarks without signing in",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
+    "/v1/folders/{id}/share": {
+      "get": {
+        "operationId": "FoldersController_getShare",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get folder sharing status (owner only)",
+        "tags": [
+          "folders"
+        ]
+      },
+      "put": {
+        "operationId": "FoldersController_enableShare",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Enable a public collection link (owner only)",
+        "tags": [
+          "folders"
+        ]
+      },
+      "delete": {
+        "operationId": "FoldersController_disableShare",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Revoke a public collection link (owner only)",
         "tags": [
           "folders"
         ]
@@ -1040,7 +923,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get folder details by ID",
@@ -1077,7 +960,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Update a folder by ID",
@@ -1104,7 +987,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Soft delete a folder and all its contents recursively",
@@ -1124,7 +1007,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Create a new tag",
@@ -1142,7 +1025,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Get all active tags with bookmarks count",
@@ -1171,7 +1054,7 @@
         },
         "security": [
           {
-            "bearer": []
+            "cookie": []
           }
         ],
         "summary": "Delete a tag by id",
@@ -1182,8 +1065,8 @@
     }
   },
   "info": {
-    "title": "Gustam Platform API",
-    "description": "Central API for Gustam Platform",
+    "title": "Cabinet API",
+    "description": "API for Cabinet bookmarks, notes, and saved reading",
     "version": "1.0",
     "contact": {}
   },
@@ -1191,30 +1074,13 @@
   "servers": [],
   "components": {
     "securitySchemes": {
-      "bearer": {
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-        "type": "http"
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cabinet.session_token"
       }
     },
     "schemas": {
-      "LoginDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "example": "admin@gustam.dev"
-          },
-          "password": {
-            "type": "string",
-            "example": "password123"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ]
-      },
       "UpdateUserDto": {
         "type": "object",
         "properties": {
@@ -1222,19 +1088,36 @@
             "type": "string",
             "example": "Gustam"
           },
-          "email": {
-            "type": "string",
-            "example": "admin@gustam.dev"
-          },
-          "password": {
-            "type": "string",
-            "example": "password123"
-          },
           "avatar": {
             "type": "string",
             "example": "https://avatar.url"
           }
         }
+      },
+      "SaveNoteDto": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "Destination folder for a new note"
+          },
+          "title": {
+            "type": "string",
+            "description": "Note title"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Plain-text preview of the note"
+          },
+          "noteDocument": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Tiptap document JSON"
+          }
+        },
+        "required": [
+          "noteDocument"
+        ]
       },
       "DownloadMediaDto": {
         "type": "object",
@@ -1293,10 +1176,10 @@
             "example": "Quick summary or excerpt",
             "description": "Short description"
           },
-          "notes": {
-            "type": "string",
-            "example": "Personal markdown notes and thoughts",
-            "description": "Markdown notes and annotations"
+          "noteDocument": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Structured note content"
           },
           "folderId": {
             "type": "string",
@@ -1368,11 +1251,6 @@
             "type": "string",
             "example": "Next.js developer reference manual",
             "description": "Bookmark description"
-          },
-          "notes": {
-            "type": "string",
-            "example": "Personal markdown notes and thoughts",
-            "description": "Markdown notes and annotations"
           },
           "folderId": {
             "type": "string",

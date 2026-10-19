@@ -10,10 +10,10 @@ async function generateSpec() {
   const app = await NestFactory.create(AppModule, { logger: false });
   
   const config = new DocumentBuilder()
-    .setTitle('Gustam Platform API')
-    .setDescription('Central API for Gustam Platform')
+    .setTitle('Cabinet API')
+    .setDescription('API for Cabinet bookmarks, notes, and saved reading')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addCookieAuth('cabinet.session_token')
     .build();
   
   const document = SwaggerModule.createDocument(app, config);
