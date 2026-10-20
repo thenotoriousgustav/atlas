@@ -1,4 +1,5 @@
 import React from "react"
+import { useDroppable } from "@dnd-kit/core"
 import { Button } from "@/components/ui/button"
 import { FolderSimple, PencilSimple, Trash, Plus } from "@phosphor-icons/react"
 import {
@@ -8,6 +9,22 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
+
+function FolderDropTarget({ folderId, disabled, className, ...props }: React.ComponentProps<"div"> & {
+  folderId: string
+  disabled: boolean
+}) {
+  const instanceId = React.useId()
+  const { setNodeRef, isOver } = useDroppable({
+    id: `folder:${folderId}:${instanceId}`,
+    data: { type: "folder", folderId },
+    disabled,
+  })
+  return <div {...props} ref={setNodeRef} data-folder-drop={folderId} className={cn(
+    className,
+    isOver && "bg-primary text-primary-foreground ring-2 ring-primary/40",
+  )} />
+}
 
 interface FolderTreeProps {
   folders: any[]
@@ -85,7 +102,9 @@ export function FolderTree({
               value={folder.id}
               className="border-none"
             >
-              <div
+              <FolderDropTarget
+                folderId={folder.id}
+                disabled={!onDropBookmarkToFolder}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
                 onDragLeave={(e) => handleDragLeave(e, folder.id)}
                 onDrop={(e) => handleDrop(e, folder.id)}
@@ -155,7 +174,7 @@ export function FolderTree({
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-              </div>
+              </FolderDropTarget>
               <AccordionContent className="pt-0.5 pb-0">
                 <FolderTree
                   folders={folders}
@@ -175,7 +194,9 @@ export function FolderTree({
 
         return (
           <div key={folder.id} className="space-y-1">
-            <div
+            <FolderDropTarget
+              folderId={folder.id}
+              disabled={!onDropBookmarkToFolder}
               onDragOver={(e) => handleDragOver(e, folder.id)}
               onDragLeave={(e) => handleDragLeave(e, folder.id)}
               onDrop={(e) => handleDrop(e, folder.id)}
@@ -237,7 +258,7 @@ export function FolderTree({
                   <Trash className="h-3 w-3" />
                 </Button>
               </div>
-            </div>
+            </FolderDropTarget>
           </div>
         )
       })}

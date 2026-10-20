@@ -22,7 +22,7 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@diceui": "https://diceui.com/r/{name}.json",
+    "@diceui": "https://diceui.com/r/radix-lyra/{name}.json",
     "@editorcn": "https://editorcn.vercel.app/r/{name}.json"
   }
 }

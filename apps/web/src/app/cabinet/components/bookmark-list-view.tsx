@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip"
 import {
   Star,
+  PushPin,
   Archive,
   PencilSimple,
   Trash,
@@ -43,6 +44,7 @@ interface BookmarkListViewProps {
   selectedBookmarkIds: string[]
   onToggleSelect: (id: string) => void
   onSelectTag: (tagName: string) => void
+  onTogglePin?: (bookmark: any) => void
   onToggleFavorite: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
   onEditBookmark: (bookmark: any) => void
@@ -65,6 +67,7 @@ export function BookmarkListView({
   onToggleSelect,
   onSelectTag,
   onToggleFavorite,
+  onTogglePin,
   onToggleArchive,
   onEditBookmark,
   onDeleteBookmark,
@@ -96,7 +99,6 @@ export function BookmarkListView({
       onValueChange={(newItems) => onReorder?.(newItems)}
       getItemValue={(item) => item.id}
       orientation="vertical"
-      nativeDrag
     >
       <SortableContent className="divide-y divide-brand-border border border-brand-border">
         {bookmarks.map((bookmark: any) => {
@@ -117,9 +119,9 @@ export function BookmarkListView({
             <SortableItem
               key={bookmark.id}
               value={bookmark.id}
-              asHandle
+              asHandle={!isTrashView && !!onReorder && !bookmark.isPinned}
+              disabled={isTrashView || !onReorder || bookmark.isPinned}
               aria-label={`Reorder ${bookmark.title || "bookmark"}`}
-              disabled={isTrashView || !onReorder}
               className={cn(
                 "group/item flex h-10 items-center justify-between gap-3 bg-white px-3 text-xs transition-colors hover:bg-muted/40",
                 isSelected && "bg-muted/60"
@@ -155,6 +157,16 @@ export function BookmarkListView({
                   />
                 </div>
 
+                {!isTrashView && onTogglePin && (
+                  <Button variant="ghost" size="icon-xs"
+                    onClick={(e) => { e.stopPropagation(); onTogglePin(bookmark) }}
+                    title={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
+                    aria-label={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
+                    aria-pressed={!!bookmark.isPinned}
+                  >
+                    <PushPin weight={bookmark.isPinned ? "fill" : "regular"} />
+                  </Button>
+                )}
                 {/* Favicon / Icon */}
                 {isNote ? (
                   <div className="flex size-4 shrink-0 items-center justify-center bg-[#fbf0d9] text-[#8a5d3b]">
@@ -162,11 +174,19 @@ export function BookmarkListView({
                   </div>
                 ) : preferences.showImage ? (
                   <img
-                    src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                    src={
+                      bookmark.faviconUrl ||
+                      `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
+                    }
                     alt=""
                     className="size-4 shrink-0 rounded-none border border-border bg-white object-contain"
                     onError={(e) => {
-                      ;(e.currentTarget as HTMLElement).style.display = "none"
+                      const fallback = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback
+                      } else {
+                        ;(e.currentTarget as HTMLElement).style.display = "none"
+                      }
                     }}
                   />
                 ) : null}
@@ -297,7 +317,7 @@ export function BookmarkListView({
                             }
                             variant="ghost"
                             size="icon-xs"
-                            className="size-7 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
                             title="Delete permanently"
                           >
                             <Trash className="size-3.5" />
@@ -434,8 +454,8 @@ export function BookmarkListView({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
+                              variant="destructive"
                               onClick={() => onDeleteBookmark(bookmark.id)}
-                              className="flex items-center gap-2 text-xs text-red-600 focus:bg-red-50 focus:text-red-700"
                             >
                               <Trash className="size-3.5" />
                               <span>Delete</span>

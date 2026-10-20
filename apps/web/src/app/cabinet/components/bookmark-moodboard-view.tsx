@@ -1,4 +1,9 @@
+"use client"
+
 import React from "react"
+import { useDndContext } from "@dnd-kit/core"
+import { Masonry, MasonryItem } from "@/components/ui/masonry"
+import { bookmarkCollisionDetection, masonrySortingStrategy } from "@/lib/bookmark-sortable"
 import { cn } from "@/lib/utils"
 import { startBookmarkDrag } from "@/lib/bookmark-drag"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +17,7 @@ import {
 } from "@/components/ui/tooltip"
 import {
   Star,
+  PushPin,
   Archive,
   PencilSimple,
   Trash,
@@ -23,6 +29,7 @@ import {
   FileText,
   DownloadSimple,
   VideoCamera,
+  Clock,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -37,9 +44,12 @@ import {
   Sortable,
   SortableContent,
   SortableItem,
+  SortableOverlay,
 } from "@/components/ui/sortable"
 
 interface MoodboardCardProps {
+  nativeDrag?: boolean
+  onTogglePin?: (bookmark: any) => void
   displayPreferences?: DisplayPreferences
   bookmark: any
   onSelectTag: (tagName: string) => void
@@ -77,6 +87,8 @@ function getProxiedImageUrl(imageUrl?: string | null): string {
 }
 
 export function MoodboardCard({
+  nativeDrag = true,
+  onTogglePin,
   displayPreferences,
   bookmark,
   onSelectTag,
@@ -119,20 +131,31 @@ export function MoodboardCard({
   const color = getPastelColor(hostname)
 
   const rawImageUrl = bookmark.imageUrl || ""
+  const isPendingEnrichment =
+    !isNote &&
+    (bookmark.metadataStatus === "PENDING" ||
+      bookmark.metadataStatus === "PROCESSING")
+
   const proxiedImageUrl = React.useMemo(
     () => getProxiedImageUrl(rawImageUrl),
     [rawImageUrl]
   )
+  const imageRef = React.useRef<HTMLImageElement>(null)
   const [currentSrc, setCurrentSrc] = React.useState<string>(proxiedImageUrl)
-  const [imageStatus, setImageStatus] = React.useState<"ready" | "error">(
-    rawImageUrl ? "ready" : "error"
-  )
+  const [imageStatus, setImageStatus] = React.useState<
+    "loading" | "ready" | "error"
+  >(rawImageUrl || isPendingEnrichment ? "loading" : "error")
 
   React.useEffect(() => {
     const nextProxied = getProxiedImageUrl(bookmark.imageUrl)
     setCurrentSrc(nextProxied)
-    setImageStatus(bookmark.imageUrl ? "ready" : "error")
-  }, [bookmark.imageUrl])
+    const image = imageRef.current
+    setImageStatus(
+      image?.getAttribute("src") === nextProxied && image.complete && image.naturalWidth > 0
+        ? "ready"
+        : bookmark.imageUrl || isPendingEnrichment ? "loading" : "error"
+    )
+  }, [bookmark.imageUrl, isPendingEnrichment])
 
   const handleImageError = () => {
     // If the proxied image failed, try falling back directly to raw URL before giving up
@@ -155,8 +178,12 @@ export function MoodboardCard({
 
   return (
     <Card
-      draggable
+      draggable={nativeDrag}
       onDragStart={(e) => {
+        if (!nativeDrag) {
+          e.preventDefault()
+          return
+        }
         // Pack selected IDs if current card is part of selection, otherwise pack this single ID
         const ids = isSelected && selectedBookmarkIds.length > 0 ? selectedBookmarkIds : [bookmark.id]
         startBookmarkDrag(e, ids, bookmark.title || hostname || "Bookmark")
@@ -184,7 +211,7 @@ export function MoodboardCard({
           onClick={(e) => e.stopPropagation()}
           className={cn(
             "absolute top-2.5 left-2.5 z-20 flex items-center gap-1 rounded-sm border border-border/70 bg-background/90 p-0.5 shadow-2xs backdrop-blur-xs transition-opacity",
-            isSelected
+            isSelected || bookmark.isPinned
               ? "opacity-100"
               : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100"
           )}
@@ -194,6 +221,7 @@ export function MoodboardCard({
             onCheckedChange={onToggleSelect}
             className="rounded-xs border-border"
           />
+          {bookmark.isPinned && <PushPin className="size-3.5" weight="fill" aria-label="Pinned bookmark" />}
         </div>
 
         {/* Floating Quick Action Buttons (Top Right - Raindrop style) */}
@@ -224,7 +252,7 @@ export function MoodboardCard({
                     onClick={() => onPermanentDeleteBookmark?.(bookmark.id)}
                     variant="ghost"
                     size="icon-xs"
-                    className="size-6 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="size-6 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     title="Delete permanently"
                   >
                     <Trash className="size-3.5" />
@@ -235,6 +263,18 @@ export function MoodboardCard({
             </>
           ) : (
             <>
+              {onTogglePin && (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onTogglePin(bookmark)}
+                  title={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
+                  aria-label={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
+                  aria-pressed={!!bookmark.isPinned}
+                >
+                  <PushPin weight={bookmark.isPinned ? "fill" : "regular"} />
+                </Button>
+              )}
               {/* Star / Favorite */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -340,8 +380,8 @@ export function MoodboardCard({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
+                      variant="destructive"
                       onClick={() => onDeleteBookmark(bookmark.id)}
-                      className="flex items-center gap-2 text-xs text-red-600 focus:bg-red-50 focus:text-red-700"
                     >
                       <Trash className="size-3.5" />
                       <span>Delete</span>
@@ -394,12 +434,39 @@ export function MoodboardCard({
             className="group/header relative block w-full overflow-hidden bg-muted/20"
           >
             <>
-              {imageStatus !== "error" && currentSrc && (
+              {/* Thumbnail loading state with Clock icon */}
+              {imageStatus === "loading" && (
+                <div
+                  className="relative flex aspect-[16/10] w-full flex-col items-center justify-center bg-muted/40 p-4 text-muted-foreground animate-pulse"
+                  role="status"
+                  aria-label="Loading thumbnail"
+                >
+                  <div className="flex size-10 items-center justify-center rounded-sm border border-border/60 bg-background/80 shadow-2xs">
+                    <Clock
+                      className="size-5 text-muted-foreground animate-spin"
+                      style={{ animationDuration: "3s" }}
+                    />
+                  </div>
+                  <span className="mt-2 font-mono text-[10px] font-medium tracking-wider text-muted-foreground/80 uppercase">
+                    {isPendingEnrichment
+                      ? "Generating preview..."
+                      : "Loading thumbnail..."}
+                  </span>
+                </div>
+              )}
+
+              {currentSrc && (
                 <img
+                  ref={imageRef}
+                  draggable={false}
                   src={currentSrc}
                   alt={bookmark.title || hostname}
+                  onLoad={() => setImageStatus("ready")}
                   onError={handleImageError}
-                  className="block h-auto w-full object-cover"
+                  className={cn(
+                    "block h-auto w-full object-cover transition-opacity duration-200",
+                    imageStatus === "ready" ? "opacity-100" : "hidden"
+                  )}
                 />
               )}
 
@@ -409,10 +476,18 @@ export function MoodboardCard({
                 >
                   <div className="flex size-10 items-center justify-center rounded-sm border border-border/60 bg-background shadow-2xs">
                     <img
-                      src={`https://www.google.com/s2/favicons?sz=128&domain=${hostname}`}
+                      src={
+                        bookmark.faviconUrl ||
+                        `https://www.google.com/s2/favicons?sz=128&domain=${hostname}`
+                      }
                       alt=""
                       onError={(e) => {
-                        e.currentTarget.style.display = "none"
+                        const fallback = `https://www.google.com/s2/favicons?sz=128&domain=${hostname}`
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback
+                        } else {
+                          e.currentTarget.style.display = "none"
+                        }
                       }}
                       className="size-5 object-contain"
                     />
@@ -525,7 +600,27 @@ export function MoodboardCard({
   )
 }
 
+function MoodboardDragPreview({ bookmark, count, children }: {
+  bookmark: any
+  count: number
+  children: React.ReactNode
+}) {
+  const { over } = useDndContext()
+  return (
+    <div inert aria-hidden="true" className="pointer-events-none">
+      {over?.data.current?.type === "folder" ? (
+        <Badge variant="secondary" className="max-w-44 truncate">
+          {count > 1 ? `${count} bookmarks` : bookmark.title || "Bookmark"}
+        </Badge>
+      ) : children}
+    </div>
+  )
+}
+
 interface BookmarkMoodboardViewProps {
+  /** Dashboard shares its drag context with sidebar folder targets. */
+  sortableInParent?: boolean
+  onTogglePin?: (bookmark: any) => void
   displayPreferences?: DisplayPreferences
   bookmarks: any[]
   activeColumnCount: number
@@ -549,6 +644,8 @@ interface BookmarkMoodboardViewProps {
 }
 
 export function BookmarkMoodboardView({
+  sortableInParent = false,
+  onTogglePin,
   displayPreferences,
   bookmarks,
   activeColumnCount,
@@ -570,71 +667,77 @@ export function BookmarkMoodboardView({
   onOpenDownload,
   onInspectBookmark,
 }: BookmarkMoodboardViewProps) {
-  return (
+  const canSort = !isTrashView && !!onReorder
+  const renderCard = (bookmark: any) => (
+    <MoodboardCard
+      nativeDrag={false}
+      onTogglePin={onTogglePin}
+      displayPreferences={displayPreferences}
+      bookmark={bookmark}
+      onSelectTag={onSelectTag}
+      onToggleFavorite={onToggleFavorite}
+      onToggleArchive={onToggleArchive}
+      onEditBookmark={onEditBookmark}
+      onDeleteBookmark={onDeleteBookmark}
+      onDuplicateBookmark={onDuplicateBookmark}
+      getHostname={getHostname}
+      getPastelColor={getPastelColor}
+      isSelected={selectedBookmarkIds.includes(bookmark.id)}
+      hasSelectedItems={selectedBookmarkIds.length > 0}
+      selectedBookmarkIds={selectedBookmarkIds}
+      onToggleSelect={() => onToggleSelect(bookmark.id)}
+      isTrashView={isTrashView}
+      onRestoreBookmark={onRestoreBookmark}
+      onPermanentDeleteBookmark={onPermanentDeleteBookmark}
+      onOpenActionSheet={onOpenActionSheet}
+      onOpenDownload={onOpenDownload}
+      onInspectBookmark={onInspectBookmark}
+    />
+  )
+  const content = (
+    <>
+      <SortableContent withoutSlot>
+        <Masonry columnCount={activeColumnCount} gap={16} linear virtualize={false}>
+          {bookmarks.map((bookmark) => (
+            <MasonryItem key={bookmark.id}>
+              <SortableItem
+                value={bookmark.id}
+                asHandle={canSort && !bookmark.isPinned}
+                disabled={!canSort || bookmark.isPinned}
+                aria-label={`Reorder ${bookmark.title || "bookmark"}`}
+                className="w-full rounded-md data-dragging:opacity-30 data-sort-over:ring-2 data-sort-over:ring-primary"
+              >
+                {renderCard(bookmark)}
+              </SortableItem>
+            </MasonryItem>
+          ))}
+        </Masonry>
+      </SortableContent>
+      <SortableOverlay dropAnimation={null}>
+        {({ value }) => {
+          const bookmark = bookmarks.find((item) => item.id === value)
+          return bookmark ? (
+            <MoodboardDragPreview
+              bookmark={bookmark}
+              count={selectedBookmarkIds.includes(bookmark.id) ? selectedBookmarkIds.length : 1}
+            >
+              {renderCard(bookmark)}
+            </MoodboardDragPreview>
+          ) : null
+        }}
+      </SortableOverlay>
+    </>
+  )
+  return sortableInParent ? content : (
     <Sortable
       value={bookmarks}
-      onValueChange={(newItems) => onReorder?.(newItems)}
+      onValueChange={onReorder}
       getItemValue={(item) => item.id}
       orientation="mixed"
-      nativeDrag
+      strategy={masonrySortingStrategy}
+      collisionDetection={bookmarkCollisionDetection}
     >
-      <SortableContent withoutSlot>
-        <div
-          className={cn(
-            "grid items-start gap-4",
-            activeColumnCount === 1
-              ? "grid-cols-1"
-              : activeColumnCount === 2
-                ? "grid-cols-2"
-                : activeColumnCount === 3
-                  ? "grid-cols-3"
-                  : "grid-cols-4"
-          )}
-        >
-          {Array.from({ length: activeColumnCount }).map((_, colIndex) => {
-            const colBookmarks = bookmarks.filter(
-              (_, idx) => idx % activeColumnCount === colIndex
-            )
-            return (
-              <div key={colIndex} className="flex flex-col gap-4">
-                {colBookmarks.map((bookmark: any) => (
-                  <SortableItem
-                    key={bookmark.id}
-                    value={bookmark.id}
-                    asHandle
-                    aria-label={`Reorder ${bookmark.title || "bookmark"}`}
-                    disabled={isTrashView || !onReorder}
-                    className="w-full data-dragging:relative data-dragging:z-10"
-                  >
-                    <MoodboardCard
-                      displayPreferences={displayPreferences}
-                      bookmark={bookmark}
-                      onSelectTag={onSelectTag}
-                      onToggleFavorite={onToggleFavorite}
-                      onToggleArchive={onToggleArchive}
-                      onEditBookmark={onEditBookmark}
-                      onDeleteBookmark={onDeleteBookmark}
-                      onDuplicateBookmark={onDuplicateBookmark}
-                      getHostname={getHostname}
-                      getPastelColor={getPastelColor}
-                      isSelected={selectedBookmarkIds.includes(bookmark.id)}
-                      hasSelectedItems={selectedBookmarkIds.length > 0}
-                      selectedBookmarkIds={selectedBookmarkIds}
-                      onToggleSelect={() => onToggleSelect(bookmark.id)}
-                      isTrashView={isTrashView}
-                      onRestoreBookmark={onRestoreBookmark}
-                      onPermanentDeleteBookmark={onPermanentDeleteBookmark}
-                      onOpenActionSheet={onOpenActionSheet}
-                      onOpenDownload={onOpenDownload}
-                      onInspectBookmark={onInspectBookmark}
-                    />
-                  </SortableItem>
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      </SortableContent>
+      {content}
     </Sortable>
   )
 }
