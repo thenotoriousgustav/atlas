@@ -371,7 +371,7 @@ function NoteCanvas({
           <ThemeToggle />
         </div>
       </header>
-      <div className="mx-auto max-w-3xl px-6 pt-12 pb-32 sm:px-12 sm:pt-20">
+      <div className="mx-auto max-w-5xl px-6 pt-12 pb-32 sm:px-12 sm:pt-20">
         {draft && (
           <div
             role="status"
@@ -414,7 +414,7 @@ function NoteCanvas({
             setTitle(event.target.value)
             update({ ...current.current, title: event.target.value })
           }}
-          className="mb-8 w-full border-0 bg-transparent p-0 text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/50 sm:text-4xl"
+          className="mb-8 w-full border-0 bg-transparent p-0 pl-8 text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/50 sm:text-4xl"
         />
         <BlockEditor editor={editor} />
         <TableHoverOverlay editor={editor} />

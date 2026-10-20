@@ -388,6 +388,26 @@
         ]
       }
     },
+    "/v1/bookmarks/export": {
+      "get": {
+        "operationId": "BookmarksController_exportBookmarks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Export user bookmarks in standard Netscape HTML format",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/health": {
       "get": {
         "operationId": "BookmarksController_getHealthSummary",

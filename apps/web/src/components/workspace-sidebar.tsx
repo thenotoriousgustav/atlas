@@ -41,12 +41,12 @@ export function WorkspaceSidebar({
   ...props
 }: WorkspaceSidebarProps) {
   return (
-    <aside
-      className={cn("space-y-6 text-brand-charcoal select-none", className)}
+    <div
+      className={cn("flex h-full flex-col justify-between text-brand-charcoal select-none", className)}
       {...props}
     >
       {children}
-    </aside>
+    </div>
   )
 }
 

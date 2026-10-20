@@ -771,6 +771,98 @@ export const useBookmarksControllerImport = <TError = unknown,
       return useMutation(getBookmarksControllerImportMutationOptions(options), queryClient);
     }
     /**
+ * @summary Export user bookmarks in standard Netscape HTML format
+ */
+export const bookmarksControllerExportBookmarks = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/export`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerExportBookmarksQueryKey = () => {
+    return [
+    `/v1/bookmarks/export`
+    ] as const;
+    }
+
+
+export const getBookmarksControllerExportBookmarksQueryOptions = <TData = Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBookmarksControllerExportBookmarksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>> = ({ signal }) => bookmarksControllerExportBookmarks(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BookmarksControllerExportBookmarksQueryResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>>
+export type BookmarksControllerExportBookmarksQueryError = unknown
+
+
+export function useBookmarksControllerExportBookmarks<TData = Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerExportBookmarks<TData = Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>,
+          TError,
+          Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBookmarksControllerExportBookmarks<TData = Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Export user bookmarks in standard Netscape HTML format
+ */
+
+export function useBookmarksControllerExportBookmarks<TData = Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExportBookmarks>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBookmarksControllerExportBookmarksQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * @summary Get bookmark health status count summary
  */
 export const bookmarksControllerGetHealthSummary = (

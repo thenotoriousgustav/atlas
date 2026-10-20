@@ -14,6 +14,7 @@ export {
   useBookmarksControllerGetDuplicates,
   useBookmarksControllerGetHealthSummary,
   useBookmarksControllerImport,
+  useBookmarksControllerExportBookmarks,
   useBookmarksControllerRemove,
   useBookmarksControllerReorder,
   useBookmarksControllerTriggerHealthCheck,

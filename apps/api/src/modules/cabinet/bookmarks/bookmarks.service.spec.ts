@@ -32,6 +32,7 @@ describe('BookmarksService - Trash Functionality', () => {
       },
       folder: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
       },
     };
 
@@ -334,6 +335,41 @@ describe('BookmarksService - Trash Functionality', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('exportBookmarks', () => {
+    it('exports root and folder bookmarks in Netscape HTML format', async () => {
+      prisma.folder.findMany.mockResolvedValue([
+        {
+          id: 'folder-1',
+          name: 'Design',
+          createdAt: new Date('2026-01-01T00:00:00Z'),
+          bookmarks: [
+            {
+              url: 'https://design.test',
+              title: 'Design System',
+              createdAt: new Date('2026-01-02T00:00:00Z'),
+              tags: [{ name: 'ui' }],
+            },
+          ],
+        },
+      ]);
+      prisma.bookmark.findMany.mockResolvedValue([
+        {
+          url: 'https://example.com',
+          title: 'Example',
+          createdAt: new Date('2026-01-01T00:00:00Z'),
+          tags: [],
+        },
+      ]);
+
+      const html = await service.exportBookmarks('user-1');
+      expect(html).toContain('<!DOCTYPE NETSCAPE-Bookmark-file-1>');
+      expect(html).toContain('Design</H3>');
+      expect(html).toContain('HREF="https://design.test"');
+      expect(html).toContain('TAGS="ui"');
+      expect(html).toContain('HREF="https://example.com"');
     });
   });
 

@@ -687,6 +687,57 @@ export class BookmarksService implements OnModuleInit {
     return { imported: importCount }
   }
 
+  async exportBookmarks(userId: string) {
+    const folders = await this.prisma.folder.findMany({
+      where: { userId, deletedAt: null },
+      include: {
+        bookmarks: {
+          where: { deletedAt: null },
+          include: { tags: true },
+          orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+        },
+      },
+      orderBy: { name: "asc" },
+    })
+
+    const rootBookmarks = await this.prisma.bookmark.findMany({
+      where: { userId, folderId: null, deletedAt: null },
+      include: { tags: true },
+      orderBy: [{ position: "asc" }, { createdAt: "desc" }],
+    })
+
+    const escapeHtml = (str: string) =>
+      str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+
+    let html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<!-- This is an automatically generated file. Do not edit! -->\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Cabinet Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n`
+
+    for (const b of rootBookmarks) {
+      if (!b.url) continue
+      const tags = b.tags?.map((t) => t.name).join(",")
+      const timestamp = Math.floor(b.createdAt.getTime() / 1000)
+      html += `    <DT><A HREF="${escapeHtml(b.url)}" ADD_DATE="${timestamp}"${tags ? ` TAGS="${escapeHtml(tags)}"` : ""}>${escapeHtml(b.title || b.url)}</A>\n`
+    }
+
+    for (const f of folders) {
+      const folderTime = Math.floor(f.createdAt.getTime() / 1000)
+      html += `    <DT><H3 ADD_DATE="${folderTime}">${escapeHtml(f.name)}</H3>\n    <DL><p>\n`
+      for (const b of f.bookmarks) {
+        if (!b.url) continue
+        const tags = b.tags?.map((t) => t.name).join(",")
+        const timestamp = Math.floor(b.createdAt.getTime() / 1000)
+        html += `        <DT><A HREF="${escapeHtml(b.url)}" ADD_DATE="${timestamp}"${tags ? ` TAGS="${escapeHtml(tags)}"` : ""}>${escapeHtml(b.title || b.url)}</A>\n`
+      }
+      html += `    </DL><p>\n`
+    }
+
+    html += `</DL><p>\n`
+    return html
+  }
+
   async scrapeUrl(url: string) {
     return this.metadataService.extract(url)
   }

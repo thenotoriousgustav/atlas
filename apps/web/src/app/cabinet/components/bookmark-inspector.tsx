@@ -40,6 +40,7 @@ interface BookmarkInspectorProps {
   onTogglePin?: (bookmark: any) => void
   onToggleFavorite: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
+  className?: string
 }
 
 export function BookmarkInspector({
@@ -52,6 +53,7 @@ export function BookmarkInspector({
   onToggleFavorite,
   onTogglePin,
   onToggleArchive,
+  className,
 }: BookmarkInspectorProps) {
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
@@ -107,7 +109,7 @@ export function BookmarkInspector({
   return (
     <aside
       aria-label="Bookmark inspector"
-      className="hidden w-80 shrink-0 flex-col border border-border bg-card text-card-foreground xl:flex"
+      className={cn("flex w-full min-w-0 flex-col border border-border bg-card text-card-foreground", className)}
     >
       {/* Top Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">

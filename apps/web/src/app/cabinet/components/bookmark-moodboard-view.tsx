@@ -30,6 +30,7 @@ import {
   DownloadSimple,
   VideoCamera,
   Clock,
+  FolderSimple,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -52,6 +53,7 @@ interface MoodboardCardProps {
   onTogglePin?: (bookmark: any) => void
   displayPreferences?: DisplayPreferences
   bookmark: any
+  folders?: any[]
   onSelectTag: (tagName: string) => void
   onToggleFavorite: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
@@ -86,11 +88,157 @@ function getProxiedImageUrl(imageUrl?: string | null): string {
   return `${apiBase}/v1/bookmarks/proxy-image?v=2&url=${encodeURIComponent(imageUrl)}`
 }
 
+type NoteDocNode = {
+  type?: string
+  text?: string
+  attrs?: Record<string, any>
+  content?: NoteDocNode[]
+}
+
+function getNodeText(node?: NoteDocNode): string {
+  if (!node) return ""
+  if (typeof node.text === "string") return node.text
+  if (!Array.isArray(node.content)) return ""
+  return node.content.map((child) => getNodeText(child)).join("")
+}
+
+function parseNoteBlocks(noteDocument: unknown): NoteDocNode[] {
+  if (!noteDocument) return []
+  try {
+    const parsed =
+      typeof noteDocument === "string" ? JSON.parse(noteDocument) : noteDocument
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray((parsed as any).content)
+    ) {
+      return (parsed as any).content as NoteDocNode[]
+    }
+  } catch {
+    return []
+  }
+  return []
+}
+
+function renderNoteBlock(node: NoteDocNode, index: number) {
+  const type = node.type
+
+  if (type === "heading") {
+    const level = Number(node.attrs?.level || 2)
+    const text = getNodeText(node).trim()
+    if (!text) return null
+    return (
+      <p
+        key={`heading-${index}`}
+        className={cn(
+          "line-clamp-1 font-semibold text-foreground",
+          level === 1 ? "text-sm" : level === 2 ? "text-[13px]" : "text-xs"
+        )}
+      >
+        {text}
+      </p>
+    )
+  }
+
+  if (type === "bulletList" || type === "orderedList") {
+    const items = (node.content || [])
+      .map((item) => getNodeText(item).trim())
+      .filter(Boolean)
+      .slice(0, 3)
+    if (!items.length) return null
+    const ListTag = type === "orderedList" ? "ol" : "ul"
+    return (
+      <ListTag
+        key={`list-${index}`}
+        className={cn(
+          "space-y-0.5 pl-4 text-xs text-foreground/90",
+          type === "orderedList" ? "list-decimal" : "list-disc"
+        )}
+      >
+        {items.map((item, itemIndex) => (
+          <li key={`list-item-${index}-${itemIndex}`} className="list-item">
+            <span className="block truncate">{item}</span>
+          </li>
+        ))}
+      </ListTag>
+    )
+  }
+
+  if (type === "taskList") {
+    const items = (node.content || [])
+      .map((item) => ({
+        text: getNodeText(item).trim(),
+        checked: Boolean(item.attrs?.checked),
+      }))
+      .filter((item) => item.text)
+      .slice(0, 3)
+
+    if (!items.length) return null
+    return (
+      <ul key={`tasks-${index}`} className="space-y-0.5 text-xs text-foreground/90">
+        {items.map((item, itemIndex) => (
+          <li key={`task-item-${index}-${itemIndex}`}>
+            <span className="block truncate">
+              {item.checked ? "☑" : "☐"} {item.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  if (type === "codeBlock") {
+    const text = getNodeText(node).trim()
+    if (!text) return null
+    return (
+      <pre
+        key={`code-${index}`}
+        className="line-clamp-2 rounded-xs bg-muted/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-foreground/90"
+      >
+        {text}
+      </pre>
+    )
+  }
+
+  const text = getNodeText(node).trim()
+  if (!text) return null
+
+  return (
+    <p key={`paragraph-${index}`} className="line-clamp-2 text-xs leading-relaxed text-foreground/90">
+      {text}
+    </p>
+  )
+}
+
+function NoteContentPreview({ bookmark }: { bookmark: any }) {
+  const blocks = React.useMemo(
+    () => parseNoteBlocks(bookmark.noteDocument).slice(0, 5),
+    [bookmark.noteDocument]
+  )
+
+  if (!blocks.length) {
+    return (
+      <p className="line-clamp-4 font-serif text-xs leading-relaxed text-foreground/90">
+        {bookmark.notes ||
+          bookmark.description ||
+          "Click to add note content..."}
+      </p>
+    )
+  }
+
+  return (
+    <div className="max-h-28 space-y-1 overflow-hidden">
+      {blocks.map((node, index) => renderNoteBlock(node, index))}
+    </div>
+  )
+}
+
 export function MoodboardCard({
   nativeDrag = true,
   onTogglePin,
   displayPreferences,
   bookmark,
+  folders = [],
   onSelectTag,
   onToggleFavorite,
   onToggleArchive,
@@ -111,11 +259,14 @@ export function MoodboardCard({
   onInspectBookmark,
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
+  const folderName = folders.find((folder) => folder.id === bookmark.folderId)?.name
   const preferences = displayPreferences ?? {
     showTitle: true,
     showDescription: true,
     showImage: true,
     showWebsite: true,
+    showFolder: true,
+    showDate: true,
   }
   const isNote = bookmark.type === "NOTE" || !bookmark.url
   const isVideo =
@@ -412,11 +563,10 @@ export function MoodboardCard({
                 <FileText className="size-3.5" />
                 <span>Personal Note</span>
               </div>
-              <p className="line-clamp-4 font-serif text-xs leading-relaxed text-foreground/90">
-                {bookmark.notes ||
-                  bookmark.description ||
-                  "Click to add note content..."}
-              </p>
+              <div className="max-w-full line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
+                {bookmark.title || "Untitled note"}
+              </div>
+              <NoteContentPreview bookmark={bookmark} />
             </div>
           </div>
         ) : preferences.showImage ? (
@@ -429,6 +579,10 @@ export function MoodboardCard({
                 e.preventDefault()
                 e.stopPropagation()
                 onToggleSelect()
+              } else if (onInspectBookmark) {
+                e.preventDefault()
+                e.stopPropagation()
+                onInspectBookmark(bookmark)
               }
             }}
             className="group/header relative block w-full overflow-hidden bg-muted/20"
@@ -533,6 +687,17 @@ export function MoodboardCard({
                 href={bookmark.url}
                 target="_blank"
                 rel="noreferrer"
+                onClick={(e) => {
+                  if (hasSelectedItems || e.shiftKey || e.metaKey || e.ctrlKey) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onToggleSelect()
+                  } else if (onInspectBookmark) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onInspectBookmark(bookmark)
+                  }
+                }}
                 className="group/link line-clamp-2 text-xs leading-snug font-medium text-foreground hover:underline"
               >
                 {bookmark.title || bookmark.url}
@@ -574,6 +739,21 @@ export function MoodboardCard({
           )}
         </div>
 
+        {(preferences.showFolder || preferences.showDate) && (
+          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+            {preferences.showFolder && (
+              <Badge variant="outline" className="max-w-full gap-1 rounded-sm px-1.5 py-0.5 font-mono text-[9px] font-normal text-muted-foreground">
+                <FolderSimple aria-hidden="true" />
+                <span className="truncate">{folderName || "Unfiled"}</span>
+              </Badge>
+            )}
+            {preferences.showDate && bookmark.createdAt && (
+              <Badge variant="outline" className="rounded-sm px-1.5 py-0.5 font-mono text-[9px] font-normal text-muted-foreground">
+                {new Date(bookmark.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </Badge>
+            )}
+          </div>
+        )}
         {bookmark.tags && bookmark.tags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 pt-0.5">
             {bookmark.tags.slice(0, 3).map((tag: any) => (
@@ -623,6 +803,7 @@ interface BookmarkMoodboardViewProps {
   onTogglePin?: (bookmark: any) => void
   displayPreferences?: DisplayPreferences
   bookmarks: any[]
+  folders?: any[]
   activeColumnCount: number
   selectedBookmarkIds: string[]
   onToggleSelect: (id: string) => void
@@ -648,6 +829,7 @@ export function BookmarkMoodboardView({
   onTogglePin,
   displayPreferences,
   bookmarks,
+  folders,
   activeColumnCount,
   selectedBookmarkIds,
   onToggleSelect,
@@ -674,6 +856,7 @@ export function BookmarkMoodboardView({
       onTogglePin={onTogglePin}
       displayPreferences={displayPreferences}
       bookmark={bookmark}
+      folders={folders}
       onSelectTag={onSelectTag}
       onToggleFavorite={onToggleFavorite}
       onToggleArchive={onToggleArchive}

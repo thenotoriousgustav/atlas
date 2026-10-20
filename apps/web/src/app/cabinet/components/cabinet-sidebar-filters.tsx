@@ -1,32 +1,16 @@
 import React from "react"
-import { Spinner } from "@/components/ui/spinner"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
+import { authClient } from "@/lib/auth-client"
+import type { DisplayPreferences } from "./display-preferences"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/components/ui/field"
 import { useForm } from "@tanstack/react-form"
 import { useQueryClient } from "@tanstack/react-query"
 import * as z from "zod"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select"
+import { FolderDialog } from "./folder-dialog"
+import { TagDialog } from "./tag-dialog"
 import {
   BookmarkSimple,
   Star,
@@ -44,6 +28,13 @@ import {
   FileText,
   LinkSimple,
   VideoCamera,
+  Gear,
+  CaretUpDown,
+  Sun,
+  Moon,
+  Desktop,
+  SignOut,
+  Sliders,
 } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { toast } from "@/components/ui/sonner"
@@ -57,11 +48,23 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
 interface SidebarFiltersProps {
+  user?: any
+  onLogout?: () => void
+  displayPreferences?: DisplayPreferences
+  onDisplayPreferencesChange?: (prefs: DisplayPreferences) => void
   selectedFolderId?: string
   onSelectFolder: (id: string | undefined) => void
   selectedTag?: string
@@ -108,6 +111,10 @@ const tagSchema = z.object({
 })
 
 export function CabinetSidebarFilters({
+  user: userProp,
+  onLogout: onLogoutProp,
+  displayPreferences,
+  onDisplayPreferencesChange,
   selectedFolderId,
   onSelectFolder,
   selectedTag,
@@ -145,6 +152,27 @@ export function CabinetSidebarFilters({
   viewSection = "all",
   onDropBookmarkToFolder,
 }: SidebarFiltersProps) {
+  const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  const { data: session } = authClient.useSession()
+  const currentUser = userProp !== undefined ? userProp : session?.user
+
+  const handleLogout = async () => {
+    if (onLogoutProp) {
+      onLogoutProp()
+      return
+    }
+    try {
+      const { error } = await authClient.signOut()
+      if (error) throw new Error(error.message || "Sign-out failed")
+      queryClient.clear()
+      toast.success("Logged out successfully")
+      router.replace("/login")
+    } catch {
+      toast.error("Sign-out failed. Try again.")
+    }
+  }
+
   const confirm = useConfirm()
   const queryClient = useQueryClient()
   const [isTagModalOpen, setIsTagModalOpen] = React.useState(false)
@@ -180,7 +208,8 @@ export function CabinetSidebarFilters({
   })
 
   return (
-    <WorkspaceSidebar data-bookmark-sidebar>
+    <WorkspaceSidebar data-bookmark-sidebar className="h-full">
+      <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4">
       {/* Quick Filters / Library Group */}
       {viewSection !== "folders" && (
         <>
@@ -382,183 +411,17 @@ export function CabinetSidebarFilters({
           <WorkspaceSidebarGroup
             title="Folders"
             action={
-              <Dialog open={isFolderModalOpen} onOpenChange={setIsFolderModalOpen}>
-                <DialogTrigger
-                  onClick={() => {
-                    resetFolderForm()
-                    setIsFolderModalOpen(true)
-                  }}
-                  className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
-                  title="Create folder"
-                >
-                  <FolderPlus className="h-3.5 w-3.5" />
-                </DialogTrigger>
-
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {folderToEdit ? "Edit Folder" : "New Folder"}
-                    </DialogTitle>
-                    <DialogDescription>
-                      Cabinet collection management
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      folderForm.handleSubmit()
-                    }}
-                    className="space-y-4"
-                  >
-                    <FieldGroup>
-                      <folderForm.Field
-                        name="name"
-                        children={(field: any) => {
-                          const isInvalid =
-                            field.state.meta.isTouched && !field.state.meta.isValid
-                          return (
-                            <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                Folder Name
-                              </FieldLabel>
-                              <Input
-                                id={field.name}
-                                name={field.name}
-                                value={field.state.value}
-                                onChange={(e) => field.handleChange(e.target.value)}
-                                onBlur={field.handleBlur}
-                                aria-invalid={isInvalid}
-                                placeholder="e.g. Design Inspiration"
-                              />
-                              {isInvalid && (
-                                <FieldError
-                                  errors={field.state.meta.errors.map((err: any) =>
-                                    typeof err === "string" ? { message: err } : err
-                                  )}
-                                />
-                              )}
-                            </Field>
-                          )
-                        }}
-                      />
-
-                      <folderForm.Field
-                        name="description"
-                        children={(field: any) => {
-                          const isInvalid =
-                            field.state.meta.isTouched && !field.state.meta.isValid
-                          return (
-                            <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                Description (optional)
-                              </FieldLabel>
-                              <Input
-                                id={field.name}
-                                name={field.name}
-                                value={field.state.value}
-                                onChange={(e) => field.handleChange(e.target.value)}
-                                onBlur={field.handleBlur}
-                                aria-invalid={isInvalid}
-                                placeholder="Short notes about this collection..."
-                              />
-                              {isInvalid && (
-                                <FieldError
-                                  errors={field.state.meta.errors.map((err: any) =>
-                                    typeof err === "string" ? { message: err } : err
-                                  )}
-                                />
-                              )}
-                            </Field>
-                          )
-                        }}
-                      />
-
-                      <folderForm.Field
-                        name="parentId"
-                        children={(field: any) => {
-                          const isInvalid =
-                            field.state.meta.isTouched && !field.state.meta.isValid
-                          return (
-                            <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                Parent Folder (optional)
-                              </FieldLabel>
-                              <Select
-                                value={field.state.value || ""}
-                                onValueChange={(val) =>
-                                  field.handleChange(val === "" ? null : val)
-                                }
-                              >
-                                <SelectTrigger
-                                  id={field.name}
-                                  className="rounded-none border-brand-border"
-                                >
-                                  <SelectValue placeholder="Root (No parent folder)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="">
-                                    Root (No parent folder)
-                                  </SelectItem>
-                                  {folders
-                                    .filter((f) =>
-                                      folderToEdit ? f.id !== folderToEdit.id : true
-                                    )
-                                    .map((f) => (
-                                      <SelectItem key={f.id} value={f.id}>
-                                        {f.name}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-                              {isInvalid && (
-                                <FieldError
-                                  errors={field.state.meta.errors.map((err: any) =>
-                                    typeof err === "string" ? { message: err } : err
-                                  )}
-                                />
-                              )}
-                            </Field>
-                          )
-                        }}
-                      />
-                    </FieldGroup>
-
-                    <div className="flex gap-2.5 pt-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsFolderModalOpen(false)}
-                        className="flex-1 text-xs uppercase"
-                      >
-                        Cancel
-                      </Button>
-                      <folderForm.Subscribe
-                        selector={(state: any) => [
-                          state.canSubmit,
-                          state.isSubmitting,
-                        ]}
-                        children={([canSubmit, isSubmitting]: any) => (
-                          <Button
-                            type="submit"
-                            disabled={!canSubmit || isSubmitting}
-                            className="flex-1 text-xs uppercase"
-                          >
-                            {isSubmitting ? (
-                              <Spinner className="h-3.5 w-3.5 animate-spin" />
-                            ) : folderToEdit ? (
-                              "Save Changes"
-                            ) : (
-                              "Save Folder"
-                            )}
-                          </Button>
-                        )}
-                      />
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <button
+                type="button"
+                onClick={() => {
+                  resetFolderForm()
+                  setIsFolderModalOpen(true)
+                }}
+                className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                title="Create folder"
+              >
+                <FolderPlus className="h-3.5 w-3.5" />
+              </button>
             }
           >
             <FolderTree
@@ -581,100 +444,31 @@ export function CabinetSidebarFilters({
             />
           </WorkspaceSidebarGroup>
 
+          {/* Folder Form Dialog */}
+          <FolderDialog
+            isOpen={isFolderModalOpen}
+            onOpenChange={setIsFolderModalOpen}
+            folderToEdit={folderToEdit}
+            folderForm={folderForm}
+            folders={folders}
+            onClose={() => setIsFolderModalOpen(false)}
+          />
+
           {/* Tags Group */}
           <WorkspaceSidebarGroup
             title="Tags"
             action={
-              <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
-                <DialogTrigger
-                  onClick={() => {
-                    tagForm.reset()
-                    setIsTagModalOpen(true)
-                  }}
-                  className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
-                  title="Create tag"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </DialogTrigger>
-
-                <DialogContent className="sm:max-w-xs">
-                  <DialogHeader>
-                    <DialogTitle>New Tag</DialogTitle>
-                    <DialogDescription>
-                      Create a tag label to organize your bookmarks
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      tagForm.handleSubmit()
-                    }}
-                    className="space-y-4"
-                  >
-                    <tagForm.Field
-                      name="name"
-                      children={(field: any) => {
-                        const isInvalid =
-                          field.state.meta.isTouched && !field.state.meta.isValid
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
-                            <Input
-                              id={field.name}
-                              name={field.name}
-                              value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              onBlur={field.handleBlur}
-                              aria-invalid={isInvalid}
-                              placeholder="e.g. design, ai, reading"
-                              autoFocus
-                            />
-                            {isInvalid && (
-                              <FieldError
-                                errors={field.state.meta.errors.map((err: any) =>
-                                  typeof err === "string" ? { message: err } : err
-                                )}
-                              />
-                            )}
-                          </Field>
-                        )
-                      }}
-                    />
-
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsTagModalOpen(false)}
-                        className="flex-1 text-xs uppercase"
-                      >
-                        Cancel
-                      </Button>
-                      <tagForm.Subscribe
-                        selector={(state: any) => [
-                          state.canSubmit,
-                          state.isSubmitting,
-                        ]}
-                        children={([canSubmit, isSubmitting]: any) => (
-                          <Button
-                            type="submit"
-                            disabled={!canSubmit || isSubmitting || isCreatingTag}
-                            className="flex-1 text-xs uppercase"
-                          >
-                            {isCreatingTag ? (
-                              <Spinner className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              "Create"
-                            )}
-                          </Button>
-                        )}
-                      />
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <button
+                type="button"
+                onClick={() => {
+                  tagForm.reset()
+                  setIsTagModalOpen(true)
+                }}
+                className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                title="Create tag"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             }
           >
             <div className="flex flex-wrap gap-1 px-2 pt-1">
@@ -741,6 +535,15 @@ export function CabinetSidebarFilters({
               )}
             </div>
           </WorkspaceSidebarGroup>
+
+          {/* Tag Form Dialog */}
+          <TagDialog
+            isOpen={isTagModalOpen}
+            onOpenChange={setIsTagModalOpen}
+            tagForm={tagForm}
+            isCreatingTag={isCreatingTag}
+            onClose={() => setIsTagModalOpen(false)}
+          />
         </>
       )}
 
@@ -763,6 +566,140 @@ export function CabinetSidebarFilters({
           </div>
         </WorkspaceSidebarGroup>
       )}
+      </div>
+
+      {/* User Account & Settings Footer */}
+      <div className="shrink-0 border-t border-brand-border pt-2 pb-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="group/user flex w-full items-center justify-between gap-2.5 rounded-none p-1.5 text-left transition-colors hover:bg-brand-charcoal/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="User account and settings"
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-none border border-brand-border bg-brand-charcoal/10 font-serif text-xs font-semibold text-brand-charcoal uppercase">
+                  {currentUser?.name?.[0]?.toUpperCase() ||
+                    currentUser?.email?.[0]?.toUpperCase() ||
+                    "U"}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-xs font-semibold leading-tight text-brand-charcoal">
+                    {currentUser?.name || "Cabinet User"}
+                  </span>
+                  <span className="truncate font-mono text-[10px] text-brand-muted">
+                    {currentUser?.email || "Signed in"}
+                  </span>
+                </div>
+              </div>
+              <CaretUpDown className="size-3.5 shrink-0 text-brand-muted group-hover/user:text-brand-charcoal" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="start"
+            sideOffset={8}
+            className="w-56 rounded-none"
+          >
+            <DropdownMenuGroup>
+              <div className="border-b border-border px-3 py-2">
+                <p className="truncate text-xs font-semibold text-foreground">
+                  {currentUser?.name || "Cabinet User"}
+                </p>
+                <p className="truncate font-mono text-[10px] text-muted-foreground">
+                  {currentUser?.email}
+                </p>
+              </div>
+
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/cabinet/settings"
+                  className="flex cursor-pointer items-center gap-2 text-xs"
+                >
+                  <Gear className="size-3.5" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex cursor-pointer items-center gap-2 text-xs">
+                  {theme === "dark" ? (
+                    <Moon className="size-3.5" />
+                  ) : theme === "light" ? (
+                    <Sun className="size-3.5" />
+                  ) : (
+                    <Desktop className="size-3.5" />
+                  )}
+                  <span>Theme</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-36 rounded-none">
+                  <DropdownMenuRadioGroup
+                    value={theme}
+                    onValueChange={setTheme}
+                  >
+                    <DropdownMenuRadioItem value="light" className="text-xs">
+                      <Sun className="mr-2 size-3.5" /> Light
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="dark" className="text-xs">
+                      <Moon className="mr-2 size-3.5" /> Dark
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="system" className="text-xs">
+                      <Desktop className="mr-2 size-3.5" /> System
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              {displayPreferences && onDisplayPreferencesChange && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="flex cursor-pointer items-center gap-2 text-xs">
+                    <Sliders className="size-3.5" />
+                    <span>Display details</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-44 rounded-none">
+                    {(
+                      [
+                        ["showTitle", "Title"],
+                        ["showDescription", "Description"],
+                        ["showImage", "Image"],
+                        ["showWebsite", "Website URL"],
+                        ["showFolder", "Folder"],
+                        ["showDate", "Date added"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <DropdownMenuCheckboxItem
+                        key={key}
+                        className="text-xs"
+                        checked={displayPreferences?.[key] ?? true}
+                        onCheckedChange={(checked) => {
+                          onDisplayPreferencesChange({
+                            ...displayPreferences,
+                            [key]: checked,
+                          })
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={handleLogout}
+                className="flex cursor-pointer items-center gap-2 text-xs"
+              >
+                <SignOut className="size-3.5" />
+                <span>Log Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </WorkspaceSidebar>
   )
 }

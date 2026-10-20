@@ -151,6 +151,18 @@ export class BookmarksController {
     return this.bookmarksService.importBookmarks(user.id, importBookmarksDto.htmlContent);
   }
 
+  @Get('export')
+  @ApiOperation({ summary: 'Export user bookmarks in standard Netscape HTML format' })
+  async exportBookmarks(@CurrentUser() user: any, @Res() res: Response) {
+    const html = await this.bookmarksService.exportBookmarks(user.id);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="cabinet-bookmarks.html"',
+    );
+    return res.send(html);
+  }
+
   @Get('health')
   @ApiOperation({ summary: 'Get bookmark health status count summary' })
   async getHealthSummary(@CurrentUser() user: any) {

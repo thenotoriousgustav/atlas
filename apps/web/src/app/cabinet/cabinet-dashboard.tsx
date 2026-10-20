@@ -27,6 +27,7 @@ import {
 import { authClient } from "@/lib/auth-client"
 import { useConfirm } from "@/hooks/use-confirm"
 import { toast } from "@/components/ui/sonner"
+import { cn } from "@/lib/utils"
 import { WorkspaceHeader } from "@/components/workspace-header"
 import { CabinetContainer } from "@/components/cabinet-container"
 import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
@@ -69,7 +70,6 @@ import {
 import { MobileBottomNav, type MobileTab } from "./components/mobile-bottom-nav"
 import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer"
 import { DownloadMediaDialog } from "./components/download-media-dialog"
-import { BookmarkInspector } from "./components/bookmark-inspector"
 import { CommandMenu } from "./components/command-menu"
 import {
   defaultDisplayPreferences,
@@ -108,10 +108,14 @@ export function CabinetDashboard() {
   const [mounted, setMounted] = useState(false)
 
   // Fetch Folders & Tags early
-  const { data: foldersData } = useFoldersControllerFindAll()
+  const { data: foldersData } = useFoldersControllerFindAll({
+    query: { enabled: !isMeLoading && !!user },
+  })
   const folders = (foldersData as any)?.data || []
 
-  const { data: tagsData } = useTagsControllerFindAll()
+  const { data: tagsData } = useTagsControllerFindAll({
+    query: { enabled: !isMeLoading && !!user },
+  })
   const tags = (tagsData as any)?.data || []
 
   // Modular filters & preferences
@@ -157,10 +161,25 @@ export function CabinetDashboard() {
   )
 
   const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([])
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false)
   const [downloadBookmark, setDownloadBookmark] = useState<any | null>(null)
-  const [inspectedBookmark, setInspectedBookmark] = useState<any | null>(null)
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("cabinet_sidebar_collapsed")
+    if (saved === "true") setIsSidebarCollapsed(true)
+  }, [])
+
+  const toggleSidebar = React.useCallback(() => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem("cabinet_sidebar_collapsed", String(next))
+      } catch {}
+      return next
+    })
+  }, [])
 
   const handleSelectMobileTab = (tab: MobileTab) => {
     rawHandleSelectMobileTab(tab, () => {
@@ -317,6 +336,7 @@ export function CabinetDashboard() {
     } as any,
     {
       query: {
+        enabled: !isMeLoading && !!user,
         initialPageParam: undefined,
         getNextPageParam: (lastPage: any) =>
           lastPage?.data?.nextCursor || undefined,
@@ -405,7 +425,9 @@ export function CabinetDashboard() {
   }, [bookmarks, optimisticOrder, sort])
 
   // Health and Duplicates Queries
-  const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary()
+  const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary({
+    query: { enabled: !isMeLoading && !!user },
+  })
   const healthSummary = (healthSummaryData as any)?.data || healthSummaryData
 
   const {
@@ -414,7 +436,7 @@ export function CabinetDashboard() {
     isError: isDuplicatesError,
     refetch: refetchDuplicates,
   } = useBookmarksControllerGetDuplicates({
-    query: { enabled: !!filterDuplicates },
+    query: { enabled: !isMeLoading && !!user && !!filterDuplicates },
   })
   const duplicateGroups = (duplicatesData as any)?.data || duplicatesData || []
 
@@ -595,6 +617,101 @@ export function CabinetDashboard() {
     bookmarkForm.setFieldValue("tags", [])
   }
 
+  // Productivity Keyboard Shortcuts (Linear / Superhuman style):
+  // N: new note, B: new bookmark, /: focus search, 1 & 2: switch view, ⌘B: toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (
+        !target ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable ||
+        target.closest("input, textarea, [contenteditable='true'], [role='dialog'], [role='alertdialog']")
+      ) {
+        return
+      }
+
+      if (
+        isBookmarkModalOpen ||
+        isFolderModalOpen ||
+        isMobileAddOpen ||
+        !!downloadBookmark
+      ) {
+        return
+      }
+
+      // ⌘B / Ctrl+B: Toggle Sidebar
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault()
+        toggleSidebar()
+        return
+      }
+
+      // Do not trigger single-key actions when meta, ctrl, or alt modifier keys are pressed
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        return
+      }
+
+      // N: Create New Note
+      if (e.key.toLowerCase() === "n") {
+        e.preventDefault()
+        resetBookmarkForm()
+        const params = new URLSearchParams({ new: "1" })
+        if (selectedFolderId) params.set("folder", selectedFolderId)
+        router.push(`/cabinet/notes/${crypto.randomUUID()}?${params}`)
+        return
+      }
+
+      // B: Add New Bookmark
+      if (e.key.toLowerCase() === "b") {
+        e.preventDefault()
+        resetBookmarkForm()
+        setIsBookmarkModalOpen(true)
+        return
+      }
+
+      // /: Focus Search input
+      if (e.key === "/") {
+        e.preventDefault()
+        const searchInput = document.getElementById("cabinet-search-input") as HTMLInputElement | null
+        if (searchInput) {
+          searchInput.focus()
+          searchInput.select()
+        }
+        return
+      }
+
+      // 1: Switch to List View
+      if (e.key === "1") {
+        e.preventDefault()
+        handleViewModeChange("list")
+        return
+      }
+
+      // 2: Switch to Moodboard (Grid) View
+      if (e.key === "2") {
+        e.preventDefault()
+        handleViewModeChange("moodboard")
+        return
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [
+    toggleSidebar,
+    router,
+    selectedFolderId,
+    resetBookmarkForm,
+    setIsBookmarkModalOpen,
+    handleViewModeChange,
+    isBookmarkModalOpen,
+    isFolderModalOpen,
+    isMobileAddOpen,
+    downloadBookmark,
+  ])
+
   const handleToggleSelectBookmark = (id: string) => {
     setSelectedBookmarkIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -774,14 +891,43 @@ export function CabinetDashboard() {
     >
     <div className="flex h-screen flex-col overflow-hidden bg-brand-canvas">
       {/* Pinned Top Workspace Nav Header */}
-      <div className="z-30 shrink-0 bg-brand-canvas pt-2.5">
+      <div className="z-30 shrink-0 bg-brand-canvas pt-2">
         <CabinetContainer>
           <WorkspaceHeader
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
             user={user}
             onLogout={handleLogout}
             displayPreferences={displayPreferences}
             onDisplayPreferencesChange={handleDisplayPreferencesChange}
-          />
+          >
+            <Toolbar
+              sort={sort}
+              onSortChange={(value) => {
+                setOptimisticOrder(null)
+                setSelectedBookmarkIds([])
+                bookmarkScrollRef.current?.scrollTo({ top: 0 })
+                handleSortChange(value)
+              }}
+              sortDisabled={!!filterDuplicates}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              isBookmarkModalOpen={isBookmarkModalOpen}
+              setIsBookmarkModalOpen={setIsBookmarkModalOpen}
+              bookmarkToEdit={bookmarkToEdit}
+              bookmarkForm={bookmarkForm}
+              folders={folders}
+              tags={tags}
+              resetBookmarkForm={resetBookmarkForm}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
+              columnCount={columnCount}
+              onColumnCountChange={handleColumnCountChange}
+              onOpenMobileFilters={() => setMobileDrawerMode("folders")}
+              activeFilterLabel={activeFilterLabel}
+              onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
+            />
+          </WorkspaceHeader>
         </CabinetContainer>
       </div>
 
@@ -790,8 +936,19 @@ export function CabinetDashboard() {
         <CabinetContainer className="h-full">
           <div className="flex h-full items-start gap-3 md:gap-4">
             {/* Desktop Left Pinned Sidebar */}
-            <aside className="hidden h-full w-60 shrink-0 overflow-y-auto pr-2 md:block">
+            <aside
+              className={cn(
+                "hidden h-full shrink-0 transition-all duration-200 ease-in-out md:block",
+                isSidebarCollapsed
+                  ? "w-0 -ml-3 md:-ml-4 overflow-hidden opacity-0 pointer-events-none"
+                  : "w-60 pr-1 opacity-100"
+              )}
+            >
               <CabinetSidebarFilters
+                user={user}
+                onLogout={handleLogout}
+                displayPreferences={displayPreferences}
+                onDisplayPreferencesChange={handleDisplayPreferencesChange}
                 selectedFolderId={selectedFolderId}
                 onSelectFolder={setSelectedFolderId}
                 selectedTag={selectedTag}
@@ -904,6 +1061,10 @@ export function CabinetDashboard() {
                 </DrawerHeader>
                 <div className="overflow-y-auto px-4 py-2">
                   <CabinetSidebarFilters
+                    user={user}
+                    onLogout={handleLogout}
+                    displayPreferences={displayPreferences}
+                    onDisplayPreferencesChange={handleDisplayPreferencesChange}
                     viewSection={mobileDrawerMode || "all"}
                     selectedFolderId={selectedFolderId}
                     onSelectFolder={setSelectedFolderId}
@@ -1001,33 +1162,6 @@ export function CabinetDashboard() {
             </Drawer>
 
             <section ref={bookmarkScrollRef} className="h-full min-w-0 flex-1 space-y-4 overflow-y-auto pr-0 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:space-y-6 sm:pr-2 md:pb-8">
-              <Toolbar
-                sort={sort}
-                onSortChange={(value) => {
-                  setOptimisticOrder(null)
-                  setSelectedBookmarkIds([])
-                  bookmarkScrollRef.current?.scrollTo({ top: 0 })
-                  handleSortChange(value)
-                }}
-                sortDisabled={!!filterDuplicates}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                isBookmarkModalOpen={isBookmarkModalOpen}
-                setIsBookmarkModalOpen={setIsBookmarkModalOpen}
-                bookmarkToEdit={bookmarkToEdit}
-                bookmarkForm={bookmarkForm}
-                folders={folders}
-                tags={tags}
-                resetBookmarkForm={resetBookmarkForm}
-                viewMode={viewMode}
-                onViewModeChange={handleViewModeChange}
-                columnCount={columnCount}
-                onColumnCountChange={handleColumnCountChange}
-                onOpenMobileFilters={() => setMobileDrawerMode("folders")}
-                activeFilterLabel={activeFilterLabel}
-                onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
-              />
-
               {selectedFolder && !filterTrash && (
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                   <h2 className="min-w-0 break-words text-lg font-medium">{selectedFolder.name}</h2>
@@ -1083,7 +1217,12 @@ export function CabinetDashboard() {
                 onPermanentDeleteBookmark={handlePermanentDeleteBookmark}
                 onEmptyTrash={handleEmptyTrash}
                 onOpenDownload={setDownloadBookmark}
-                onInspectBookmark={setInspectedBookmark}
+                availableTags={tags}
+                onUpdateBookmark={async (id, data) => {
+                  const result = await updateBookmarkMutation.mutateAsync({ id, data })
+                  invalidateAllQueries()
+                  return result
+                }}
               />
 
               {!filterDuplicates && hasNextPage && (
@@ -1104,22 +1243,6 @@ export function CabinetDashboard() {
               )}
             </section>
 
-            {/* Right Desktop Inspector Panel */}
-            <BookmarkInspector
-              bookmark={bookmarks.find((b: any) => b.id === inspectedBookmark?.id) || inspectedBookmark}
-              folders={folders}
-              availableTags={tags}
-              onClose={() => setInspectedBookmark(null)}
-              onUpdateBookmark={async (id, data) => {
-                const res = await updateBookmarkMutation.mutateAsync({ id, data })
-                invalidateAllQueries()
-                return res
-              }}
-              onDeleteBookmark={handleDeleteBookmark}
-              onToggleFavorite={toggleFavorite}
-              onTogglePin={togglePin}
-              onToggleArchive={toggleArchive}
-            />
           </div>
         </CabinetContainer>
       </div>

@@ -3,6 +3,8 @@ export interface DisplayPreferences {
   showDescription: boolean
   showImage: boolean
   showWebsite: boolean
+  showFolder: boolean
+  showDate: boolean
 }
 
 export const defaultDisplayPreferences: DisplayPreferences = {
@@ -10,4 +12,6 @@ export const defaultDisplayPreferences: DisplayPreferences = {
   showDescription: true,
   showImage: true,
   showWebsite: true,
+  showFolder: true,
+  showDate: true,
 }

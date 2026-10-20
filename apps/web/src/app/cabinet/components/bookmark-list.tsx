@@ -13,7 +13,10 @@ import { BookmarkSimple, Trash } from "@phosphor-icons/react"
 import { BookmarkListView } from "./bookmark-list-view"
 import { BookmarkMoodboardView, MoodboardCard } from "./bookmark-moodboard-view"
 import { BookmarkActionSheet } from "./bookmark-action-sheet"
+import { BookmarkWebview } from "./bookmark-webview"
+import { BookmarkInspector } from "./bookmark-inspector"
 import type { DisplayPreferences } from "./display-preferences"
+import { adjacentPreviewBookmark, moodboardColumnCount } from "@/lib/bookmark-view"
 
 interface BookmarkListProps {
   sortableInParent?: boolean
@@ -49,6 +52,8 @@ interface BookmarkListProps {
   onEmptyTrash?: () => void
   onOpenDownload?: (bookmark: any) => void
   onInspectBookmark?: (bookmark: any) => void
+  availableTags?: any[]
+  onUpdateBookmark?: (id: string, data: any) => Promise<any>
 }
 
 export function BookmarkList({
@@ -77,7 +82,7 @@ export function BookmarkList({
   duplicateGroups,
   onCleanDuplicates,
   totalBookmarks,
-  columnCount = 3,
+  columnCount = 4,
   onReorder,
   isTrashView,
   onRestoreBookmark,
@@ -85,27 +90,40 @@ export function BookmarkList({
   onEmptyTrash,
   onOpenDownload,
   onInspectBookmark,
+  availableTags = [],
+  onUpdateBookmark,
 }: BookmarkListProps) {
-  const [windowWidth, setWindowWidth] = React.useState<number | null>(null)
+  const [previewBookmark, setPreviewBookmark] = React.useState<any | null>(null)
+  const [showPreviewDetails, setShowPreviewDetails] = React.useState(true)
+  const openBookmark = (bookmark: any) => {
+    if (bookmark.type === "NOTE" || !bookmark.url) {
+      onEditBookmark(bookmark)
+    } else {
+      setPreviewBookmark(bookmark)
+    }
+  }
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = React.useState(0)
+  const previewBookmarks = isDuplicatesView
+    ? duplicateGroups?.flatMap((group) => group.bookmarks) ?? []
+    : bookmarks
+  const previousBookmark = previewBookmark && adjacentPreviewBookmark(previewBookmarks, previewBookmark.id, -1)
+  const nextBookmark = previewBookmark && adjacentPreviewBookmark(previewBookmarks, previewBookmark.id, 1)
   const [actionSheetBookmark, setActionSheetBookmark] = React.useState<
     any | null
   >(null)
 
   React.useEffect(() => {
-    setWindowWidth(window.innerWidth)
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth)
-    }
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    const container = containerRef.current
+    if (!container) return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setContainerWidth(entry.contentRect.width)
+    })
+    observer.observe(container)
+    return () => observer.disconnect()
   }, [])
 
-  const activeColumnCount = React.useMemo(() => {
-    if (!windowWidth) return 3
-    if (windowWidth < 640) return 1
-    if (windowWidth < 1024) return Math.min(columnCount, 2)
-    return columnCount
-  }, [columnCount, windowWidth])
+  const activeColumnCount = moodboardColumnCount(containerWidth, columnCount)
 
   const getHeaderTitle = () => {
     if (isTrashView) {
@@ -155,7 +173,7 @@ export function BookmarkList({
   }
 
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="min-w-0 space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="flex items-center gap-2 font-mono text-xs tracking-wider text-muted-foreground uppercase">
           {isTrashView ? (
@@ -286,13 +304,14 @@ export function BookmarkList({
                 </Badge>
               </div>
               {viewMode === "moodboard" ? (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${activeColumnCount}, minmax(0, 1fr))` }}>
                   {group.bookmarks.map((bookmark) => (
                     <MoodboardCard
                       onTogglePin={onTogglePin}
                       displayPreferences={displayPreferences}
                       key={bookmark.id}
                       bookmark={bookmark}
+                      folders={folders}
                       onSelectTag={onSelectTag}
                       onToggleFavorite={onToggleFavorite}
                       onToggleArchive={onToggleArchive}
@@ -301,6 +320,8 @@ export function BookmarkList({
                       onDuplicateBookmark={onDuplicateBookmark}
                       getHostname={getHostname}
                       getPastelColor={getPastelColor}
+                      onInspectBookmark={openBookmark}
+                      hasSelectedItems={selectedBookmarkIds.length > 0}
                       isSelected={selectedBookmarkIds.includes(bookmark.id)}
                       onToggleSelect={() => onToggleSelect(bookmark.id)}
                     />
@@ -311,6 +332,7 @@ export function BookmarkList({
                   onTogglePin={onTogglePin}
                   displayPreferences={displayPreferences}
                   bookmarks={group.bookmarks}
+                  onInspectBookmark={openBookmark}
                   selectedBookmarkIds={selectedBookmarkIds}
                   onToggleSelect={onToggleSelect}
                   onSelectTag={onSelectTag}
@@ -347,7 +369,7 @@ export function BookmarkList({
               onPermanentDeleteBookmark={onPermanentDeleteBookmark}
               onOpenActionSheet={setActionSheetBookmark}
               onOpenDownload={onOpenDownload}
-              onInspectBookmark={onInspectBookmark}
+              onInspectBookmark={openBookmark}
             />
           ) : (
             <BookmarkMoodboardView
@@ -355,6 +377,7 @@ export function BookmarkList({
               sortableInParent={sortableInParent}
               displayPreferences={displayPreferences}
               bookmarks={bookmarks}
+              folders={folders}
               activeColumnCount={activeColumnCount}
               selectedBookmarkIds={selectedBookmarkIds}
               onToggleSelect={onToggleSelect}
@@ -372,10 +395,36 @@ export function BookmarkList({
               onPermanentDeleteBookmark={onPermanentDeleteBookmark}
               onOpenActionSheet={setActionSheetBookmark}
               onOpenDownload={onOpenDownload}
-              onInspectBookmark={onInspectBookmark}
+              onInspectBookmark={openBookmark}
             />
           )}
         </div>
+      )}
+
+      {previewBookmark && (
+        <BookmarkWebview
+          key={previewBookmark.id}
+          bookmark={previewBookmark}
+          onClose={() => setPreviewBookmark(null)}
+          showDetails={showPreviewDetails}
+          onToggleDetails={() => setShowPreviewDetails((visible) => !visible)}
+          inspector={onUpdateBookmark ? (
+            <BookmarkInspector
+              bookmark={bookmarks.find((item) => item.id === previewBookmark.id) || previewBookmark}
+              folders={folders}
+              availableTags={availableTags}
+              onClose={() => setShowPreviewDetails(false)}
+              onUpdateBookmark={onUpdateBookmark}
+              onDeleteBookmark={onDeleteBookmark}
+              onToggleFavorite={onToggleFavorite}
+              onTogglePin={onTogglePin}
+              onToggleArchive={onToggleArchive}
+              className="h-full w-full border-0 lg:w-[22rem] lg:shrink-0"
+            />
+          ) : undefined}
+          onPrevious={previousBookmark ? () => setPreviewBookmark(previousBookmark) : undefined}
+          onNext={nextBookmark ? () => setPreviewBookmark(nextBookmark) : undefined}
+        />
       )}
 
       {/* Mobile Native Bottom Action Sheet for Bookmark Actions */}

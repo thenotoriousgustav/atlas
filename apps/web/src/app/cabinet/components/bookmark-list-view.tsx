@@ -86,6 +86,8 @@ export function BookmarkListView({
     showDescription: true,
     showImage: true,
     showWebsite: true,
+    showFolder: true,
+    showDate: true,
   }
   const handleCopyUrl = (url: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -219,8 +221,10 @@ export function BookmarkListView({
                           e.preventDefault()
                           e.stopPropagation()
                           onToggleSelect(bookmark.id)
-                        } else {
+                        } else if (onInspectBookmark) {
+                          e.preventDefault()
                           e.stopPropagation()
+                          onInspectBookmark(bookmark)
                         }
                       }}
                       className="truncate font-medium text-foreground hover:underline"
