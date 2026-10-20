@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common"
+import { Injectable, OnModuleInit, Logger } from "@nestjs/common"
 import { ConfigService } from "@nestjs/config"
 import { betterAuth, type BetterAuthOptions } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
@@ -6,10 +6,11 @@ import { fromNodeHeaders } from "better-auth/node"
 import { APIError } from "better-auth/api"
 import * as argon2 from "argon2"
 import type { IncomingHttpHeaders } from "node:http"
-import { PrismaService } from "../prisma/prisma.service"
+import { PrismaService } from "@/prisma/prisma.service"
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
+  private readonly logger = new Logger(AuthService.name)
   readonly auth: ReturnType<typeof betterAuth>
 
   constructor(
@@ -30,9 +31,13 @@ export class AuthService {
       secret,
       baseURL: config.get<string>("API_URL") || "http://localhost:4000",
       basePath: "/v1/auth",
-      trustedOrigins: [
-        config.get<string>("FRONTEND_URL") || "http://localhost:3000",
-      ],
+      trustedOrigins: Array.from(
+        new Set([
+          config.get<string>("FRONTEND_URL") || "http://localhost:3000",
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+        ])
+      ),
       database: prismaAdapter(prisma, { provider: "postgresql" }),
       user: {
         fields: { image: "avatar" },
@@ -46,12 +51,7 @@ export class AuthService {
         },
       },
       emailAndPassword: {
-        enabled: true,
-        disableSignUp: true,
-        password: {
-          hash: (password) => argon2.hash(password),
-          verify: ({ hash, password }) => argon2.verify(hash, password),
-        },
+        enabled: false,
       },
       socialProviders: {
         ...(githubClientId && githubClientSecret
@@ -126,5 +126,23 @@ export class AuthService {
       select: { id: true },
     })
     return user ? session : null
+  }
+
+  async onModuleInit() {
+    this.pruneExpiredSessions().catch((err) => {
+      this.logger.warn(`Failed to prune expired sessions on startup: ${err.message}`)
+    })
+  }
+
+  async pruneExpiredSessions() {
+    const result = await this.prisma.session.deleteMany({
+      where: {
+        expiresAt: { lt: new Date() },
+      },
+    })
+    if (result.count > 0) {
+      this.logger.log(`Pruned ${result.count} expired auth session(s)`)
+    }
+    return result
   }
 }

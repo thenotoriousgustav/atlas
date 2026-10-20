@@ -4,7 +4,7 @@ import { betterAuth } from "better-auth"
 import * as argon2 from "argon2"
 import { AuthService } from "./auth.service"
 import { AuthGuard } from "./guards/auth.guard"
-import { PrismaService } from "../prisma/prisma.service"
+import { PrismaService } from "@/prisma/prisma.service"
 
 jest.mock("better-auth", () => ({
   betterAuth: jest.fn(() => ({ api: { getSession: jest.fn() } })),
@@ -45,11 +45,10 @@ function setup() {
 describe("Better Auth configuration and session guard", () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it("keeps password sign-in and public OAuth signup without implicit account linking or passkeys", () => {
+  it("keeps pure OAuth sign-in and public signup without implicit account linking or passkeys", () => {
     const { options } = setup()
     expect(options.emailAndPassword).toMatchObject({
-      enabled: true,
-      disableSignUp: true,
+      enabled: false,
     })
     expect(options.socialProviders).toMatchObject({
       github: { requireEmailVerification: true },
@@ -68,19 +67,14 @@ describe("Better Auth configuration and session guard", () => {
       true
     )
     expect(options.plugins).toBeUndefined()
-    expect(options.trustedOrigins).toEqual(["https://app.cabinet.com"])
+    expect(options.trustedOrigins).toEqual([
+      "https://app.cabinet.com",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ])
     expect(options.advanced?.database?.generateId).toBe("uuid")
     expect(options.advanced?.disableOriginCheck).toBe(false)
     expect(options.advanced?.disableCSRFCheck).toBe(false)
-  })
-
-  it("verifies existing Argon2 hashes", async () => {
-    const { options } = setup()
-    const password = "existing-password"
-    const hash = await argon2.hash(password)
-    const verify = options.emailAndPassword!.password!.verify!
-    expect(await verify({ hash, password })).toBe(true)
-    expect(await verify({ hash, password: "wrong-password" })).toBe(false)
   })
 
   it("rejects unverified OAuth identities for signup, login, and explicit linking", async () => {
