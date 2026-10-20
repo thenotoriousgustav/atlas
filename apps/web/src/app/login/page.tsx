@@ -1,24 +1,20 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useQueryClient } from "@tanstack/react-query"
-import { GithubLogo, GoogleLogo, ArrowRight } from "@phosphor-icons/react"
+import { GithubLogo, GoogleLogo } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Separator } from "@/components/ui/separator"
 import { authClient } from "@/lib/auth-client"
+import { loginReturnPath } from "@/lib/login-redirect"
 
 export default function LoginPage() {
   const router = useRouter()
-  const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [isSigningIn, setIsSigningIn] = useState(false)
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session } = authClient.useSession()
 
   useEffect(() => {
-    if (session) router.replace("/cabinet")
+    if (session) router.replace(loginReturnPath(window.location.search))
   }, [session, router])
 
   useEffect(() => {
@@ -27,48 +23,17 @@ export default function LoginPage() {
       oauthError === "oauth_unavailable" ||
       oauthError === "provider_not_found"
     ) {
-      setError(
-        "This sign-in provider is not configured yet. Use email and password instead."
-      )
+      setError("This sign-in provider is not configured yet.")
     } else if (oauthError === "account_not_linked") {
       setError(
-        "This email already has an account. Sign in with your existing method before linking another provider."
+        "This email is already associated with another login provider. Sign in with your existing provider."
       )
     } else if (oauthError) {
       setError(
-        "Sign-in failed or was cancelled. Try again with a verified email, or use email and password."
+        "Sign-in failed or was cancelled. Try again with a verified email."
       )
     }
   }, [])
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (isSigningIn) return
-    setIsSigningIn(true)
-    setError(null)
-    const form = new FormData(event.currentTarget)
-    try {
-      const { error: signInError } = await authClient.signIn.email({
-        email: String(form.get("email")).trim(),
-        password: String(form.get("password")),
-      })
-      if (signInError)
-        throw new Error(
-          signInError.message ||
-            "Sign-in failed. Check your email and password."
-        )
-      queryClient.clear()
-      router.replace("/cabinet")
-    } catch (failure) {
-      setError(
-        failure instanceof Error
-          ? failure.message
-          : "Sign-in failed. Try again."
-      )
-    } finally {
-      setIsSigningIn(false)
-    }
-  }
 
   async function handleSocialSignIn(provider: "github" | "google") {
     if (isSigningIn) return
@@ -77,29 +42,35 @@ export default function LoginPage() {
     try {
       const { error: signInError } = await authClient.signIn.social({
         provider,
-        callbackURL: `${window.location.origin}/cabinet`,
-        errorCallbackURL: `${window.location.origin}/login`,
+        callbackURL: `${window.location.origin}${loginReturnPath(window.location.search)}`,
+        errorCallbackURL: `${window.location.origin}/login?next=${encodeURIComponent(loginReturnPath(window.location.search))}`,
       })
       if (signInError)
         throw new Error(signInError.message || "Sign-in failed. Try again.")
     } catch (failure) {
-      setError(
+      const message =
         failure instanceof Error
           ? failure.message
           : "Sign-in failed. Try again."
-      )
+      if (message.toLowerCase().includes("failed to fetch")) {
+        setError(
+          `Could not connect to the API server (${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}). Please ensure the backend server is running.`
+        )
+      } else {
+        setError(message)
+      }
     } finally {
       setIsSigningIn(false)
     }
   }
 
-  if (isPending || session) {
+  if (session) {
     return (
       <div
         className="flex min-h-[100dvh] items-center justify-center bg-brand-canvas text-sm text-brand-muted"
         role="status"
       >
-        Loading session...
+        Redirecting to Cabinet...
       </div>
     )
   }
@@ -169,53 +140,6 @@ export default function LoginPage() {
               automatically.
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="shrink-0 text-xs text-brand-muted">
-              Or use email
-            </span>
-            <Separator className="flex-1" />
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="email">Email address</FieldLabel>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="h-11 rounded-none"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  minLength={6}
-                  required
-                  className="h-11 rounded-none"
-                />
-              </Field>
-              <Button
-                type="submit"
-                disabled={isSigningIn}
-                className="h-11 w-full rounded-none"
-              >
-                {isSigningIn ? "Signing in..." : "Sign in"}
-                <ArrowRight data-icon="inline-end" />
-              </Button>
-            </FieldGroup>
-          </form>
-          <p className="text-xs leading-relaxed text-brand-muted">
-            Email sign-in is available for accounts with a password.
-          </p>
         </div>
       </section>
     </main>

@@ -729,7 +729,7 @@ export function CabinetSidebarFilters({
                           "flex h-full items-center justify-center border-l px-1.5 transition-colors",
                           isSelected
                             ? "border-white/20 hover:bg-white/10 hover:text-white"
-                            : "border-brand-border hover:bg-red-50 hover:text-red-600"
+                            : "border-brand-border hover:bg-destructive/10 hover:text-destructive"
                         )}
                         title="Delete tag"
                       >

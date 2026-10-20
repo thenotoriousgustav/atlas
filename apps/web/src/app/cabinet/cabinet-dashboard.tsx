@@ -33,6 +33,8 @@ import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
 import { Toolbar } from "./components/toolbar"
 import { ShareFolderDialog } from "./components/share-folder-dialog"
 import { BookmarkList } from "./components/bookmark-list"
+import { Sortable } from "@/components/ui/sortable"
+import { bookmarkCollisionDetection, masonrySortingStrategy } from "@/lib/bookmark-sortable"
 import { Archive, Trash, ArrowCounterClockwise } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -73,6 +75,9 @@ import {
   defaultDisplayPreferences,
   type DisplayPreferences,
 } from "./components/display-preferences"
+import { useCabinetFilters } from "./hooks/use-cabinet-filters"
+import { useBookmarkMutations } from "./hooks/use-bookmark-mutations"
+import { useClipboardPaste } from "./hooks/use-clipboard-paste"
 
 const folderSchema = z.object({
   name: z
@@ -102,139 +107,76 @@ export function CabinetDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
-  // Filters & State
-  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(
-    undefined
+  // Fetch Folders & Tags early
+  const { data: foldersData } = useFoldersControllerFindAll()
+  const folders = (foldersData as any)?.data || []
+
+  const { data: tagsData } = useTagsControllerFindAll()
+  const tags = (tagsData as any)?.data || []
+
+  // Modular filters & preferences
+  const {
+    selectedFolderId,
+    setSelectedFolderId,
+    filterFavorite,
+    setFilterFavorite,
+    filterArchived,
+    setFilterArchived,
+    selectedTag,
+    setSelectedTag,
+    searchQuery,
+    setSearchQuery,
+    searchDebounced,
+    viewMode,
+    handleViewModeChange,
+    sort,
+    handleSortChange,
+    filterBroken,
+    setFilterBroken,
+    filterDuplicates,
+    setFilterDuplicates,
+    filterTrash,
+    setFilterTrash,
+    columnCount,
+    handleColumnCountChange,
+    displayPreferences,
+    handleDisplayPreferencesChange,
+    mobileDrawerMode,
+    setMobileDrawerMode,
+    filterType,
+    setFilterType,
+    filterContentType,
+    setFilterContentType,
+    activeMobileTab,
+    handleSelectMobileTab: rawHandleSelectMobileTab,
+    activeFilterLabel,
+  } = useCabinetFilters(folders)
+
+  const selectedFolder = folders.find(
+    (folder: any) => folder.id === selectedFolderId
   )
-  const [filterFavorite, setFilterFavorite] = useState<boolean | undefined>(
-    undefined
-  )
-  const [filterArchived, setFilterArchived] = useState<boolean | undefined>(
-    false
-  ) // default active only
-  const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined)
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const [searchDebounced, setSearchDebounced] = useState<string>("")
-  const [viewMode, setViewMode] = useState<"list" | "moodboard">("list")
+
   const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([])
-  const [filterBroken, setFilterBroken] = useState<boolean | undefined>(
-    undefined
-  )
-  const [filterDuplicates, setFilterDuplicates] = useState<boolean | undefined>(
-    undefined
-  )
-  const [filterTrash, setFilterTrash] = useState<boolean | undefined>(undefined)
-  const [columnCount, setColumnCount] = useState<number>(3)
-  const [displayPreferences, setDisplayPreferences] =
-    useState<DisplayPreferences>(defaultDisplayPreferences)
-  const [mobileDrawerMode, setMobileDrawerMode] = useState<
-    "folders" | "library" | null
-  >(null)
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false)
   const [downloadBookmark, setDownloadBookmark] = useState<any | null>(null)
   const [inspectedBookmark, setInspectedBookmark] = useState<any | null>(null)
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
-  const [filterType, setFilterType] = useState<"BOOKMARK" | "NOTE" | undefined>(
-    undefined
-  )
-  const [filterContentType, setFilterContentType] = useState<
-    string | undefined
-  >(undefined)
-
-  const activeMobileTab = React.useMemo<MobileTab>(() => {
-    if (filterFavorite) return "favorites"
-    if (selectedFolderId) return "folders"
-    if (filterTrash || filterBroken || filterDuplicates || filterArchived)
-      return "library"
-    return "all"
-  }, [
-    filterFavorite,
-    selectedFolderId,
-    filterTrash,
-    filterBroken,
-    filterDuplicates,
-    filterArchived,
-  ])
 
   const handleSelectMobileTab = (tab: MobileTab) => {
-    if (tab === "all") {
-      setSelectedFolderId(undefined)
-      setSelectedTag(undefined)
-      setFilterFavorite(undefined)
-      setFilterArchived(false)
-      setFilterBroken(undefined)
-      setFilterDuplicates(undefined)
-      setFilterTrash(undefined)
-    } else if (tab === "favorites") {
-      setSelectedFolderId(undefined)
-      setSelectedTag(undefined)
-      setFilterFavorite(true)
-      setFilterArchived(undefined)
-      setFilterBroken(undefined)
-      setFilterDuplicates(undefined)
-      setFilterTrash(undefined)
-    } else if (tab === "folders") {
-      setMobileDrawerMode("folders")
-    } else if (tab === "library") {
-      setMobileDrawerMode("library")
-    } else if (tab === "add") {
+    rawHandleSelectMobileTab(tab, () => {
       resetBookmarkForm()
       setIsMobileAddOpen(true)
-    }
+    })
   }
 
-  // Load viewMode and columnCount from localStorage on mount
-  useEffect(() => {
-    const savedMode = localStorage.getItem("cabinet_view_mode")
-    if (savedMode === "list" || savedMode === "moodboard") {
-      setViewMode(savedMode as any)
-    }
-    const savedPreferences = localStorage.getItem("cabinet_display_preferences")
-    if (savedPreferences) {
-      try {
-        setDisplayPreferences({
-          ...defaultDisplayPreferences,
-          ...JSON.parse(savedPreferences),
-        })
-      } catch {
-        localStorage.removeItem("cabinet_display_preferences")
-      }
-    }
-    const savedCols = localStorage.getItem("cabinet_column_count")
-    if (savedCols) {
-      const parsed = parseInt(savedCols, 10)
-      if ([1, 2, 3, 4].includes(parsed)) {
-        setColumnCount(parsed)
-      }
-    }
-  }, [])
-
-  const handleDisplayPreferencesChange = (preferences: DisplayPreferences) => {
-    setDisplayPreferences(preferences)
-    localStorage.setItem(
-      "cabinet_display_preferences",
-      JSON.stringify(preferences)
-    )
-  }
-
-  const handleViewModeChange = (mode: "list" | "moodboard") => {
-    setViewMode(mode)
-    localStorage.setItem("cabinet_view_mode", mode)
-  }
-
-  const handleColumnCountChange = (count: number) => {
-    setColumnCount(count)
-    localStorage.setItem("cabinet_column_count", count.toString())
-  }
-
-  const invalidateAllQueries = () => {
+  const invalidateAllQueries = React.useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks"] })
     queryClient.invalidateQueries({ queryKey: ["infinite", "/v1/bookmarks"] })
     queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks/health"] })
     queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks/duplicates"] })
     queryClient.invalidateQueries({ queryKey: ["/v1/folders"] })
     queryClient.invalidateQueries({ queryKey: ["/v1/tags"] })
-  }
+  }, [queryClient])
 
   // Modals state
   const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false)
@@ -349,51 +291,11 @@ export function CabinetDashboard() {
     },
   })
 
-  // Debounce search
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setSearchDebounced(searchQuery)
-    }, 300)
-    return () => clearTimeout(handler)
-  }, [searchQuery])
-
-  // Fetch Folders, Bookmarks, Tags
-  const { data: foldersData } = useFoldersControllerFindAll()
-  const folders = (foldersData as any)?.data || []
-  const selectedFolder = folders.find((folder: any) => folder.id === selectedFolderId)
-
-  const { data: tagsData } = useTagsControllerFindAll()
-  const tags = (tagsData as any)?.data || []
-
-  const activeFilterLabel = React.useMemo(() => {
-    if (filterTrash) return "Trash"
-    if (filterType === "NOTE") return "Notes"
-    if (filterType === "BOOKMARK") return "Bookmarks"
-    if (filterContentType === "VIDEO") return "Videos & Media"
-    if (selectedFolderId) {
-      const folder = folders.find((f: any) => f.id === selectedFolderId)
-      return folder ? folder.name : "Folder"
-    }
-    if (selectedTag) return `#${selectedTag}`
-    if (filterFavorite) return "Favorites"
-    if (filterArchived) return "Archive"
-    if (filterBroken) return "Broken"
-    if (filterDuplicates) return "Duplicates"
-    return undefined
-  }, [
-    filterTrash,
-    selectedFolderId,
-    selectedTag,
-    filterFavorite,
-    filterArchived,
-    filterBroken,
-    filterDuplicates,
-    folders,
-  ])
-
   const {
     data: bookmarksInfiniteData,
     isLoading: isBookmarksLoading,
+    isError: isBookmarksError,
+    refetch: refetchBookmarks,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -410,6 +312,7 @@ export function CabinetDashboard() {
       contentType: filterTrash ? undefined : (filterContentType as any),
       search: searchDebounced || undefined,
       limit: 20,
+      sort,
       status: filterBroken ? "BROKEN" : undefined,
     } as any,
     {
@@ -465,8 +368,9 @@ export function CabinetDashboard() {
 
   const handleReorder = React.useCallback(
     (newOrder: any[]) => {
-      const newIds = newOrder.map((b: any) => b.id)
-      setOptimisticOrder(newIds)
+      if (sort !== "custom" || filterTrash) return
+      const newIds = newOrder.filter((b) => !b.isPinned).map((b) => b.id)
+      setOptimisticOrder(newOrder.map((b) => b.id))
       reorderMutation.mutate(
         { data: { ids: newIds } },
         {
@@ -483,11 +387,11 @@ export function CabinetDashboard() {
         }
       )
     },
-    [reorderMutation, queryClient]
+    [reorderMutation, queryClient, sort, filterTrash]
   )
 
   const filteredBookmarks = React.useMemo(() => {
-    if (!optimisticOrder || optimisticOrder.length === 0) return bookmarks
+    if (sort !== "custom" || !optimisticOrder || optimisticOrder.length === 0) return bookmarks
     const itemMap = new Map(bookmarks.map((b: any) => [b.id, b]))
     const ordered: any[] = []
     optimisticOrder.forEach((id) => {
@@ -498,7 +402,7 @@ export function CabinetDashboard() {
     })
     itemMap.forEach((item) => ordered.push(item))
     return ordered
-  }, [bookmarks, optimisticOrder])
+  }, [bookmarks, optimisticOrder, sort])
 
   // Health and Duplicates Queries
   const { data: healthSummaryData } = useBookmarksControllerGetHealthSummary()
@@ -507,6 +411,7 @@ export function CabinetDashboard() {
   const {
     data: duplicatesData,
     isLoading: isDuplicatesLoading,
+    isError: isDuplicatesError,
     refetch: refetchDuplicates,
   } = useBookmarksControllerGetDuplicates({
     query: { enabled: !!filterDuplicates },
@@ -544,87 +449,32 @@ export function CabinetDashboard() {
     }
   }, [user, isMeLoading, router])
 
-  // Quick save bookmark via Command/Ctrl + V shortcut
-  useEffect(() => {
-    const saveBookmarkFromUrl = async (rawText: string) => {
-      const text = rawText.trim()
-      if (!text) return false
-
-      let targetUrl = ""
-      try {
-        const urlObj = new URL(text)
-        if (urlObj.protocol === "http:" || urlObj.protocol === "https:") {
-          targetUrl = urlObj.toString()
-        }
-      } catch {
-        // Tolerant match for domain-like strings (e.g. www.google.com, github.com, etc)
-        if (/^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/.*)?$/i.test(text)) {
-          targetUrl = `https://${text}`
-        }
-      }
-
-      if (!targetUrl) {
-        return false
-      }
-
-      const toastId = toast.loading("Saving bookmark from clipboard...")
-
-      try {
-        const res = await createBookmarkMutation.mutateAsync({
-          data: {
-            url: targetUrl,
-            folderId: selectedFolderId || undefined,
-          },
-        })
-        invalidateAllQueries()
-        const savedTitle =
-          (res as any)?.data?.title || (res as any)?.title || targetUrl
-        toast.success(`Saved: ${savedTitle}`, { id: toastId })
-        return true
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to save bookmark from clipboard", {
-          id: toastId,
-        })
-        return false
-      }
-    }
-
-    // 1. Native paste event (fires on Cmd+V / Ctrl+V in most browsers)
-    const handlePaste = async (e: ClipboardEvent) => {
-      const activeTag = (document.activeElement?.tagName || "").toLowerCase()
-      const isEditable =
-        activeTag === "input" ||
-        activeTag === "textarea" ||
-        (document.activeElement as HTMLElement)?.isContentEditable
-
-      if (isEditable || isBookmarkModalOpen || isFolderModalOpen) {
-        return
-      }
-
-      const clipboardText =
-        e.clipboardData?.getData("text/plain") ||
-        e.clipboardData?.getData("text") ||
-        ""
-
-      if (!clipboardText) return
-
-      const saved = await saveBookmarkFromUrl(clipboardText)
-      if (saved) {
-        e.preventDefault()
-      }
-    }
-
-    window.addEventListener("paste", handlePaste)
-    return () => {
-      window.removeEventListener("paste", handlePaste)
-    }
-  }, [
+  useClipboardPaste({
     createBookmarkMutation,
     invalidateAllQueries,
-    isBookmarkModalOpen,
-    isFolderModalOpen,
     selectedFolderId,
-  ])
+    isModalOpen: isBookmarkModalOpen || isFolderModalOpen || !!bookmarkToEdit,
+  })
+
+  const {
+    toggleFavorite,
+    togglePin,
+    toggleArchive,
+    handleDeleteBookmark,
+    handleRestoreBookmark,
+    handlePermanentDeleteBookmark,
+    handleDuplicateBookmark,
+    handleEmptyTrash,
+    handleBulkRestore,
+    handleBulkPermanentDelete,
+  } = useBookmarkMutations({
+    updateBookmarkMutation,
+    createBookmarkMutation,
+    removeBookmarkMutation,
+    invalidateAllQueries,
+    selectedBookmarkIds,
+    setSelectedBookmarkIds,
+  })
 
   const handleLogout = async () => {
     try {
@@ -722,108 +572,6 @@ export function CabinetDashboard() {
     setIsBookmarkModalOpen(true)
   }
 
-  const handleDeleteBookmark = async (id: string) => {
-    const isConfirmed = await confirm({
-      title: "Move to Trash",
-      description:
-        "Are you sure you want to move this bookmark to Trash? You can restore it anytime.",
-      actionLabel: "Move to Trash",
-      variant: "destructive",
-    })
-    if (isConfirmed) {
-      try {
-        await removeBookmarkMutation.mutateAsync({ id })
-        invalidateAllQueries()
-        toast.success("Bookmark moved to Trash")
-      } catch {
-        toast.error("Failed to move bookmark to Trash")
-      }
-    }
-  }
-
-  // Trash handlers
-  const handleRestoreBookmark = async (id: string) => {
-    try {
-      await AXIOS_INSTANCE.post(`/v1/bookmarks/${id}/restore`)
-      invalidateAllQueries()
-      toast.success("Bookmark restored")
-    } catch {
-      toast.error("Failed to restore bookmark")
-    }
-  }
-
-  const handlePermanentDeleteBookmark = async (id: string) => {
-    const isConfirmed = await confirm({
-      title: "Permanently Delete Bookmark",
-      description:
-        "This will permanently delete this bookmark. This action cannot be undone.",
-      actionLabel: "Delete Permanently",
-      variant: "destructive",
-    })
-    if (!isConfirmed) return
-    try {
-      await AXIOS_INSTANCE.delete(`/v1/bookmarks/${id}/permanent`)
-      invalidateAllQueries()
-      toast.success("Bookmark permanently deleted")
-    } catch {
-      toast.error("Failed to permanently delete bookmark")
-    }
-  }
-
-  const handleEmptyTrash = async () => {
-    const isConfirmed = await confirm({
-      title: "Empty Trash?",
-      description:
-        "Are you sure you want to permanently delete all bookmarks in Trash? This action cannot be undone.",
-      actionLabel: "Empty Trash",
-      variant: "destructive",
-    })
-    if (!isConfirmed) return
-    try {
-      await AXIOS_INSTANCE.delete("/v1/bookmarks/trash/empty")
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-      toast.success("Trash emptied")
-    } catch {
-      toast.error("Failed to empty trash")
-    }
-  }
-
-  const handleBulkRestore = async () => {
-    if (selectedBookmarkIds.length === 0) return
-    try {
-      await AXIOS_INSTANCE.post("/v1/bookmarks/bulk/restore", {
-        ids: selectedBookmarkIds,
-      })
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-      toast.success("Selected bookmarks restored")
-    } catch {
-      toast.error("Failed to restore some bookmarks")
-    }
-  }
-
-  const handleBulkPermanentDelete = async () => {
-    if (selectedBookmarkIds.length === 0) return
-    const isConfirmed = await confirm({
-      title: "Permanently Delete Selected Bookmarks",
-      description: `Are you sure you want to permanently delete ${selectedBookmarkIds.length} selected bookmarks? This action cannot be undone.`,
-      actionLabel: "Delete Permanently",
-      variant: "destructive",
-    })
-    if (!isConfirmed) return
-    try {
-      await AXIOS_INSTANCE.post("/v1/bookmarks/bulk/permanent-delete", {
-        ids: selectedBookmarkIds,
-      })
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-      toast.success("Selected bookmarks permanently deleted")
-    } catch {
-      toast.error("Failed to delete some bookmarks")
-    }
-  }
-
   const handleDeleteTag = async (id: string) => {
     try {
       await removeTagMutation.mutateAsync({ id })
@@ -834,53 +582,6 @@ export function CabinetDashboard() {
       }
     } catch {
       toast.error("Failed to delete tag")
-    }
-  }
-
-  const toggleFavorite = async (bookmark: any) => {
-    try {
-      await updateBookmarkMutation.mutateAsync({
-        id: bookmark.id,
-        data: {
-          isFavorite: !bookmark.isFavorite,
-        },
-      })
-      invalidateAllQueries()
-    } catch {
-      toast.error("Failed to update favorite status")
-    }
-  }
-
-  const toggleArchive = async (bookmark: any) => {
-    try {
-      await updateBookmarkMutation.mutateAsync({
-        id: bookmark.id,
-        data: {
-          isArchived: !bookmark.isArchived,
-        },
-      })
-      invalidateAllQueries()
-    } catch {
-      toast.error("Failed to update archive status")
-    }
-  }
-
-  const handleDuplicateBookmark = async (bookmark: any) => {
-    try {
-      await createBookmarkMutation.mutateAsync({
-        data: {
-          type: bookmark.type,
-          noteDocument: bookmark.noteDocument || undefined,
-          url: bookmark.url || undefined,
-          title: bookmark.title ? `${bookmark.title} (Copy)` : undefined,
-          description: bookmark.description || undefined,
-          folderId: bookmark.folderId || undefined,
-          tags: bookmark.tags?.map((t: any) => t.name) || [],
-        },
-      })
-      invalidateAllQueries()
-    } catch {
-      toast.error("Failed to duplicate bookmark")
     }
   }
 
@@ -1045,16 +746,32 @@ export function CabinetDashboard() {
   // Rendering Loader
   if (!mounted || isLoading || !user) {
     return (
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center space-y-4 bg-brand-canvas p-8 font-mono text-xs text-brand-muted">
-        <div className="h-1 w-12 animate-pulse rounded-none bg-[#EAEAEA]" />
-        <div className="animate-pulse tracking-widest uppercase">
-          Initializing session...
-        </div>
+      <div
+        className="flex min-h-[100dvh] items-center justify-center bg-brand-canvas text-sm text-brand-muted"
+        role="status"
+      >
+        Loading Cabinet...
       </div>
     )
   }
 
   return (
+    <Sortable
+      value={filteredBookmarks}
+      getItemValue={(bookmark) => bookmark.id}
+      onValueChange={handleReorder}
+      orientation="mixed"
+      strategy={masonrySortingStrategy}
+      collisionDetection={bookmarkCollisionDetection}
+      onDragEnd={({ active, over }) => {
+        const folderId = over?.data.current?.folderId
+        if (!filterTrash && folderId) {
+          const id = String(active.id)
+          const ids = selectedBookmarkIds.includes(id) ? selectedBookmarkIds : [id]
+          void handleDropBookmarkToFolder(folderId, ids)
+        }
+      }}
+    >
     <div className="flex h-screen flex-col overflow-hidden bg-brand-canvas">
       {/* Pinned Top Workspace Nav Header */}
       <div className="z-30 shrink-0 bg-brand-canvas pt-2.5">
@@ -1285,6 +1002,14 @@ export function CabinetDashboard() {
 
             <section ref={bookmarkScrollRef} className="h-full min-w-0 flex-1 space-y-4 overflow-y-auto pr-0 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:space-y-6 sm:pr-2 md:pb-8">
               <Toolbar
+                sort={sort}
+                onSortChange={(value) => {
+                  setOptimisticOrder(null)
+                  setSelectedBookmarkIds([])
+                  bookmarkScrollRef.current?.scrollTo({ top: 0 })
+                  handleSortChange(value)
+                }}
+                sortDisabled={!!filterDuplicates}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 isBookmarkModalOpen={isBookmarkModalOpen}
@@ -1312,11 +1037,16 @@ export function CabinetDashboard() {
 
               {/* Bookmarks Grid / List */}
               <BookmarkList
+                sortableInParent
                 displayPreferences={displayPreferences}
                 bookmarks={filteredBookmarks}
                 isBookmarksLoading={
                   filterDuplicates ? isDuplicatesLoading : isBookmarksLoading
                 }
+                isBookmarksError={filterDuplicates ? isDuplicatesError : isBookmarksError && !isFetchNextPageError}
+                onRetryBookmarks={() => {
+                  void (filterDuplicates ? refetchDuplicates() : refetchBookmarks())
+                }}
                 totalBookmarks={
                   (bookmarksInfiniteData as any)?.pages?.[0]?.data
                     ?.totalCount || 0
@@ -1339,6 +1069,7 @@ export function CabinetDashboard() {
                   setFilterTrash(undefined)
                 }}
                 onToggleFavorite={toggleFavorite}
+                onTogglePin={togglePin}
                 onToggleArchive={toggleArchive}
                 onEditBookmark={handleEditBookmark}
                 onDeleteBookmark={handleDeleteBookmark}
@@ -1346,7 +1077,7 @@ export function CabinetDashboard() {
                 isDuplicatesView={filterDuplicates}
                 duplicateGroups={duplicateGroups}
                 onCleanDuplicates={handleCleanDuplicates}
-                onReorder={handleReorder}
+                onReorder={sort === "custom" && !filterTrash ? handleReorder : undefined}
                 isTrashView={filterTrash}
                 onRestoreBookmark={handleRestoreBookmark}
                 onPermanentDeleteBookmark={handlePermanentDeleteBookmark}
@@ -1375,7 +1106,7 @@ export function CabinetDashboard() {
 
             {/* Right Desktop Inspector Panel */}
             <BookmarkInspector
-              bookmark={inspectedBookmark}
+              bookmark={bookmarks.find((b: any) => b.id === inspectedBookmark?.id) || inspectedBookmark}
               folders={folders}
               availableTags={tags}
               onClose={() => setInspectedBookmark(null)}
@@ -1386,6 +1117,7 @@ export function CabinetDashboard() {
               }}
               onDeleteBookmark={handleDeleteBookmark}
               onToggleFavorite={toggleFavorite}
+              onTogglePin={togglePin}
               onToggleArchive={toggleArchive}
             />
           </div>
@@ -1587,5 +1319,6 @@ export function CabinetDashboard() {
         onClose={() => setDownloadBookmark(null)}
       />
     </div>
+    </Sortable>
   )
 }

@@ -16,9 +16,12 @@ import { BookmarkActionSheet } from "./bookmark-action-sheet"
 import type { DisplayPreferences } from "./display-preferences"
 
 interface BookmarkListProps {
+  sortableInParent?: boolean
   displayPreferences: DisplayPreferences
   bookmarks: any[]
   isBookmarksLoading: boolean
+  isBookmarksError?: boolean
+  onRetryBookmarks?: () => void
   selectedFolderId?: string
   selectedTag?: string
   filterFavorite?: boolean
@@ -28,6 +31,7 @@ interface BookmarkListProps {
   selectedBookmarkIds: string[]
   onToggleSelect: (id: string) => void
   onSelectTag: (tagName: string) => void
+  onTogglePin?: (bookmark: any) => void
   onToggleFavorite: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
   onEditBookmark: (bookmark: any) => void
@@ -48,9 +52,12 @@ interface BookmarkListProps {
 }
 
 export function BookmarkList({
+  sortableInParent = false,
   displayPreferences,
   bookmarks,
   isBookmarksLoading,
+  isBookmarksError = false,
+  onRetryBookmarks,
   selectedFolderId,
   selectedTag,
   filterFavorite,
@@ -61,6 +68,7 @@ export function BookmarkList({
   onToggleSelect,
   onSelectTag,
   onToggleFavorite,
+  onTogglePin,
   onToggleArchive,
   onEditBookmark,
   onDeleteBookmark,
@@ -171,6 +179,8 @@ export function BookmarkList({
           <Badge variant="secondary" className="h-5 px-1.5 py-0 font-mono text-[9px] tabular-nums font-normal">
             {isBookmarksLoading
               ? "..."
+              : isBookmarksError
+                ? "Unavailable"
               : isDuplicatesView
                 ? `${duplicateGroups?.length || 0} Groups`
                 : `${totalBookmarks !== undefined ? totalBookmarks : bookmarks.length} Items`}
@@ -220,6 +230,16 @@ export function BookmarkList({
             )}
           </Skeleton>
         </div>
+      ) : isBookmarksError ? (
+        <Empty role="alert" className="rounded-none border border-brand-border bg-white p-10">
+          <EmptyHeader>
+            <EmptyTitle>Could not load bookmarks</EmptyTitle>
+            <EmptyDescription>
+              Your bookmarks could not be loaded. Please try again.
+            </EmptyDescription>
+          </EmptyHeader>
+          {onRetryBookmarks && <Button variant="outline" onClick={onRetryBookmarks}>Try again</Button>}
+        </Empty>
       ) : bookmarks.length === 0 ? (
         <Empty className="rounded-none border border-brand-border bg-white p-10">
           <EmptyHeader>
@@ -243,7 +263,7 @@ export function BookmarkList({
               variant="outline"
               size="sm"
               onClick={onCleanDuplicates}
-              className="h-8 font-mono text-[10px] uppercase hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              className="h-8 font-mono text-[10px] uppercase hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
             >
               Auto-Clean Duplicates
             </Button>
@@ -269,6 +289,7 @@ export function BookmarkList({
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {group.bookmarks.map((bookmark) => (
                     <MoodboardCard
+                      onTogglePin={onTogglePin}
                       displayPreferences={displayPreferences}
                       key={bookmark.id}
                       bookmark={bookmark}
@@ -287,6 +308,7 @@ export function BookmarkList({
                 </div>
               ) : (
                 <BookmarkListView
+                  onTogglePin={onTogglePin}
                   displayPreferences={displayPreferences}
                   bookmarks={group.bookmarks}
                   selectedBookmarkIds={selectedBookmarkIds}
@@ -307,6 +329,7 @@ export function BookmarkList({
         <div>
           {viewMode === "list" ? (
             <BookmarkListView
+              onTogglePin={onTogglePin}
               displayPreferences={displayPreferences}
               bookmarks={bookmarks}
               selectedBookmarkIds={selectedBookmarkIds}
@@ -328,6 +351,8 @@ export function BookmarkList({
             />
           ) : (
             <BookmarkMoodboardView
+              onTogglePin={onTogglePin}
+              sortableInParent={sortableInParent}
               displayPreferences={displayPreferences}
               bookmarks={bookmarks}
               activeColumnCount={activeColumnCount}
@@ -355,9 +380,10 @@ export function BookmarkList({
 
       {/* Mobile Native Bottom Action Sheet for Bookmark Actions */}
       <BookmarkActionSheet
+        onTogglePin={onTogglePin}
         open={!!actionSheetBookmark}
         onOpenChange={(open) => !open && setActionSheetBookmark(null)}
-        bookmark={actionSheetBookmark}
+        bookmark={bookmarks.find((b) => b.id === actionSheetBookmark?.id) || actionSheetBookmark}
         onEditBookmark={onEditBookmark}
         onDuplicateBookmark={onDuplicateBookmark}
         onToggleArchive={onToggleArchive}

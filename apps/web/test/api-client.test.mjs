@@ -44,34 +44,34 @@ test("web adapter uses cookies without refreshing or retrying expired sessions",
   assert.ok(results.every((result) => result.status === "rejected"))
 })
 
-test("password sign-in uses the Better Auth endpoint and credentials", async () => {
+test("social sign-in uses the Better Auth endpoint and credentials", async () => {
   let requests = 0
   globalThis.fetch = async (url, options) => {
     requests++
-    assert.equal(String(url), "http://localhost:4000/v1/auth/sign-in/email")
+    assert.equal(String(url), "http://localhost:4000/v1/auth/sign-in/social")
     assert.equal(options.credentials, "include")
     assert.deepEqual(JSON.parse(options.body), {
-      email: "user@example.com",
-      password: "wrong-password",
+      provider: "github",
+      callbackURL: "http://localhost:3000/cabinet",
     })
     return new Response(
       JSON.stringify({
-        code: "INVALID_EMAIL_OR_PASSWORD",
-        message: "Invalid email or password",
+        url: "https://github.com/login/oauth/authorize?test",
+        redirect: false,
       }),
       {
-        status: 401,
+        status: 200,
         headers: { "Content-Type": "application/json" },
       }
     )
   }
   const { authClient } = await import("../src/lib/auth-client.ts")
-  const { error } = await authClient.signIn.email({
-    email: "user@example.com",
-    password: "wrong-password",
+  const data = await authClient.signIn.social({
+    provider: "github",
+    callbackURL: "http://localhost:3000/cabinet",
   })
-  assert.equal(error.code, "INVALID_EMAIL_OR_PASSWORD")
   assert.equal(requests, 1)
+  assert.equal(data.data.url, "https://github.com/login/oauth/authorize?test")
 })
 
 test("shared media download returns data without using the DOM", async () => {
