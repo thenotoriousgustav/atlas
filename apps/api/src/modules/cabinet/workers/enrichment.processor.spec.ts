@@ -1,7 +1,7 @@
 import { MetadataStatus } from '@prisma/client';
 import { Job } from 'bullmq';
-import { PrismaService } from '../../../prisma/prisma.service';
-import { MetadataService } from '../services/metadata.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { MetadataService } from '@/modules/cabinet/services/metadata.service';
 import { EnrichmentJobData, EnrichmentProcessor } from './enrichment.processor';
 
 describe('EnrichmentProcessor', () => {
@@ -12,7 +12,6 @@ describe('EnrichmentProcessor', () => {
         findUnique: jest.fn().mockResolvedValue({ id: 'bm-1', title: 'Old title' }),
         update: jest.fn().mockResolvedValue({}),
       },
-      bookmarkArticle: { upsert: jest.fn() },
     };
     const metadataService = {
       extract: jest.fn().mockResolvedValue({
@@ -33,11 +32,11 @@ describe('EnrichmentProcessor', () => {
     } as Job<EnrichmentJobData>);
 
     expect(metadataService.extract).toHaveBeenCalledWith(url);
-    expect(prisma.bookmarkArticle.upsert).not.toHaveBeenCalled();
     expect(prisma.bookmark.update).toHaveBeenLastCalledWith({
       where: { id: 'bm-1' },
       data: {
         title: 'Post title',
+        sortTitle: 'post title',
         description: 'Post description',
         imageUrl: 'https://example.com/image.jpg',
         faviconUrl: undefined,

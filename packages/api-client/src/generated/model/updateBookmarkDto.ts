@@ -20,6 +20,8 @@ export interface UpdateBookmarkDto {
   folderId?: string;
   /** List of tags */
   tags?: string[];
+  /** Keep bookmark pinned above unpinned items */
+  isPinned?: boolean;
   /** Is bookmarked as favorite */
   isFavorite?: boolean;
   /** Is bookmarked archived */

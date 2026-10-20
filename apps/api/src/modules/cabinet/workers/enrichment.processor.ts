@@ -2,8 +2,9 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { MetadataStatus } from '@prisma/client';
 import { Job } from 'bullmq';
-import { PrismaService } from '../../../prisma/prisma.service';
-import { MetadataService } from '../services/metadata.service';
+import { bookmarkSortFields } from '@/modules/cabinet/bookmarks/bookmark-order';
+import { PrismaService } from '@/prisma/prisma.service';
+import { MetadataService } from '@/modules/cabinet/services/metadata.service';
 
 export interface EnrichmentJobData {
   bookmarkId: string;
@@ -47,6 +48,7 @@ export class EnrichmentProcessor extends WorkerHost {
         where: { id: bookmarkId },
         data: {
           title: extracted.title || bookmark.title,
+          ...bookmarkSortFields({ title: extracted.title || bookmark.title }),
           description: extracted.description || bookmark.description,
           imageUrl: extracted.imageUrl || bookmark.imageUrl,
           faviconUrl: extracted.faviconUrl || bookmark.faviconUrl,

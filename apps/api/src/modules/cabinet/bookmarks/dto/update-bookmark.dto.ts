@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  ValidateIf,
 } from "class-validator"
 import { BookmarkType } from "@prisma/client"
 
@@ -58,6 +59,11 @@ export class UpdateBookmarkDto {
   @IsString({ each: true })
   @IsOptional()
   tags?: string[]
+
+  @ApiPropertyOptional({ description: "Keep bookmark pinned above unpinned items" })
+  @IsBoolean()
+  @ValidateIf((_object, value) => value !== undefined)
+  isPinned?: boolean
 
   @ApiPropertyOptional({
     example: true,

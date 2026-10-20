@@ -5,6 +5,7 @@
  * API for Cabinet bookmarks, notes, and saved reading
  * OpenAPI spec version: 1.0
  */
+import type { BookmarksControllerFindAllSort } from './bookmarksControllerFindAllSort.js';
 import type { BookmarksControllerFindAllType } from './bookmarksControllerFindAllType.js';
 
 export type BookmarksControllerFindAllParams = {
@@ -19,4 +20,5 @@ search?: string;
 cursor?: string;
 limit?: number;
 status?: string;
+sort?: BookmarksControllerFindAllSort;
 };

@@ -34,6 +34,10 @@ import type {
   BookmarksControllerFindAllParams,
   BookmarksControllerProxyImageParams,
   BookmarksControllerScrapeParams,
+  BulkActionDto,
+  BulkArchiveDto,
+  BulkMoveDto,
+  BulkTagsDto,
   CreateBookmarkDto,
   DownloadMediaDto,
   ImportBookmarksDto,
@@ -703,98 +707,6 @@ export function useBookmarksControllerFindAll<TData = Awaited<ReturnType<typeof 
 
 
 /**
- * @summary Export bookmarks as HTML file
- */
-export const bookmarksControllerExport = (
-
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-
-
-      return customInstance<void>(
-      {url: `/v1/bookmarks/export`, method: 'GET', signal
-    },
-      options);
-    }
-
-
-
-
-export const getBookmarksControllerExportQueryKey = () => {
-    return [
-    `/v1/bookmarks/export`
-    ] as const;
-    }
-
-
-export const getBookmarksControllerExportQueryOptions = <TData = Awaited<ReturnType<typeof bookmarksControllerExport>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExport>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getBookmarksControllerExportQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof bookmarksControllerExport>>> = ({ signal }) => bookmarksControllerExport(requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type BookmarksControllerExportQueryResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerExport>>>
-export type BookmarksControllerExportQueryError = unknown
-
-
-export function useBookmarksControllerExport<TData = Awaited<ReturnType<typeof bookmarksControllerExport>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExport>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof bookmarksControllerExport>>,
-          TError,
-          Awaited<ReturnType<typeof bookmarksControllerExport>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useBookmarksControllerExport<TData = Awaited<ReturnType<typeof bookmarksControllerExport>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExport>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof bookmarksControllerExport>>,
-          TError,
-          Awaited<ReturnType<typeof bookmarksControllerExport>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useBookmarksControllerExport<TData = Awaited<ReturnType<typeof bookmarksControllerExport>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExport>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Export bookmarks as HTML file
- */
-
-export function useBookmarksControllerExport<TData = Awaited<ReturnType<typeof bookmarksControllerExport>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof bookmarksControllerExport>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getBookmarksControllerExportQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
  * @summary Import bookmarks from HTML file
  */
 export const bookmarksControllerImport = (
@@ -1353,6 +1265,262 @@ export const useBookmarksControllerBulkRestore = <TError = unknown,
         TContext
       > => {
       return useMutation(getBookmarksControllerBulkRestoreMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Move multiple bookmarks to trash
+ */
+export const bookmarksControllerBulkTrash = (
+    bulkActionDto: BulkActionDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/bulk/trash`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: bulkActionDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerBulkTrashMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkTrash>>, TError,{data: BulkActionDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkTrash>>, TError,{data: BulkActionDto}, TContext> => {
+
+const mutationKey = ['bookmarksControllerBulkTrash'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarksControllerBulkTrash>>, {data: BulkActionDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bookmarksControllerBulkTrash(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarksControllerBulkTrashMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerBulkTrash>>>
+    export type BookmarksControllerBulkTrashMutationBody = BulkActionDto
+    export type BookmarksControllerBulkTrashMutationError = unknown
+
+    /**
+ * @summary Move multiple bookmarks to trash
+ */
+export const useBookmarksControllerBulkTrash = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkTrash>>, TError,{data: BulkActionDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarksControllerBulkTrash>>,
+        TError,
+        {data: BulkActionDto},
+        TContext
+      > => {
+      return useMutation(getBookmarksControllerBulkTrashMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Archive or unarchive multiple bookmarks
+ */
+export const bookmarksControllerBulkArchive = (
+    bulkArchiveDto: BulkArchiveDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/bulk/archive`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: bulkArchiveDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerBulkArchiveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkArchive>>, TError,{data: BulkArchiveDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkArchive>>, TError,{data: BulkArchiveDto}, TContext> => {
+
+const mutationKey = ['bookmarksControllerBulkArchive'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarksControllerBulkArchive>>, {data: BulkArchiveDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bookmarksControllerBulkArchive(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarksControllerBulkArchiveMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerBulkArchive>>>
+    export type BookmarksControllerBulkArchiveMutationBody = BulkArchiveDto
+    export type BookmarksControllerBulkArchiveMutationError = unknown
+
+    /**
+ * @summary Archive or unarchive multiple bookmarks
+ */
+export const useBookmarksControllerBulkArchive = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkArchive>>, TError,{data: BulkArchiveDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarksControllerBulkArchive>>,
+        TError,
+        {data: BulkArchiveDto},
+        TContext
+      > => {
+      return useMutation(getBookmarksControllerBulkArchiveMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Move multiple bookmarks to a folder
+ */
+export const bookmarksControllerBulkMove = (
+    bulkMoveDto: BulkMoveDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/bulk/move`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: bulkMoveDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerBulkMoveMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkMove>>, TError,{data: BulkMoveDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkMove>>, TError,{data: BulkMoveDto}, TContext> => {
+
+const mutationKey = ['bookmarksControllerBulkMove'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarksControllerBulkMove>>, {data: BulkMoveDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bookmarksControllerBulkMove(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarksControllerBulkMoveMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerBulkMove>>>
+    export type BookmarksControllerBulkMoveMutationBody = BulkMoveDto
+    export type BookmarksControllerBulkMoveMutationError = unknown
+
+    /**
+ * @summary Move multiple bookmarks to a folder
+ */
+export const useBookmarksControllerBulkMove = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkMove>>, TError,{data: BulkMoveDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarksControllerBulkMove>>,
+        TError,
+        {data: BulkMoveDto},
+        TContext
+      > => {
+      return useMutation(getBookmarksControllerBulkMoveMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Add tags to multiple bookmarks
+ */
+export const bookmarksControllerBulkAddTags = (
+    bulkTagsDto: BulkTagsDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/bookmarks/bulk/tags`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: bulkTagsDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getBookmarksControllerBulkAddTagsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkAddTags>>, TError,{data: BulkTagsDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkAddTags>>, TError,{data: BulkTagsDto}, TContext> => {
+
+const mutationKey = ['bookmarksControllerBulkAddTags'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarksControllerBulkAddTags>>, {data: BulkTagsDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bookmarksControllerBulkAddTags(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarksControllerBulkAddTagsMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarksControllerBulkAddTags>>>
+    export type BookmarksControllerBulkAddTagsMutationBody = BulkTagsDto
+    export type BookmarksControllerBulkAddTagsMutationError = unknown
+
+    /**
+ * @summary Add tags to multiple bookmarks
+ */
+export const useBookmarksControllerBulkAddTags = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarksControllerBulkAddTags>>, TError,{data: BulkTagsDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarksControllerBulkAddTags>>,
+        TError,
+        {data: BulkTagsDto},
+        TContext
+      > => {
+      return useMutation(getBookmarksControllerBulkAddTagsMutationOptions(options), queryClient);
     }
     /**
  * @summary Permanently delete multiple bookmarks

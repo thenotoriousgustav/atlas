@@ -6,6 +6,7 @@ import {
   Patch,
   Put,
   ParseUUIDPipe,
+  ParseEnumPipe,
   Param,
   Delete,
   Query,
@@ -14,16 +15,23 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery, ApiCookieAuth } from '@nestjs/swagger';
-import { AuthGuard } from '../../../auth/guards/auth.guard';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Public } from '../../../common/decorators/public.decorator';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
 import { BookmarksService } from './bookmarks.service';
+import { BookmarkSort } from './bookmark-order';
 import { CreateBookmarkDto } from './dto/create-bookmark.dto';
 import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
 import { ImportBookmarksDto } from './dto/import-bookmarks.dto';
 import { ReorderBookmarksDto } from './dto/reorder-bookmarks.dto';
-import { DownloadMediaDto } from '../dto/download-media.dto';
+import { DownloadMediaDto } from '@/modules/cabinet/dto/download-media.dto';
 import { SaveNoteDto } from './dto/save-note.dto';
+import {
+  BulkActionDto,
+  BulkArchiveDto,
+  BulkMoveDto,
+  BulkTagsDto,
+} from './dto/bulk-action.dto';
 import { BookmarkType, BookmarkContentType } from '@prisma/client';
 
 @ApiTags('bookmarks')
@@ -96,6 +104,7 @@ export class BookmarksController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'cursor', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'sort', required: false, enum: BookmarkSort, default: BookmarkSort.Custom })
   @ApiQuery({ name: 'status', required: false })
   async findAll(
     @CurrentUser() user: any,
@@ -110,6 +119,7 @@ export class BookmarksController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: string,
+    @Query('sort', new ParseEnumPipe(BookmarkSort, { optional: true })) sort?: BookmarkSort,
   ) {
     const parseBool = (val?: string) => {
       if (val === 'true') return true;
@@ -126,8 +136,9 @@ export class BookmarksController {
       tag,
       search,
       cursor,
-      limit: limit ? parseInt(limit, 10) : undefined,
+      limit: limit === undefined ? undefined : Number(limit),
       status,
+      sort,
     });
   }
 
@@ -186,6 +197,54 @@ export class BookmarksController {
     @Body() body: { ids: string[] },
   ) {
     return this.bookmarksService.bulkRestore(user.id, body.ids || []);
+  }
+
+  @Post('bulk/trash')
+  @ApiOperation({ summary: 'Move multiple bookmarks to trash' })
+  async bulkTrash(
+    @CurrentUser() user: any,
+    @Body() dto: BulkActionDto,
+  ) {
+    return this.bookmarksService.bulkTrash(user.id, dto.ids || []);
+  }
+
+  @Post('bulk/archive')
+  @ApiOperation({ summary: 'Archive or unarchive multiple bookmarks' })
+  async bulkArchive(
+    @CurrentUser() user: any,
+    @Body() dto: BulkArchiveDto,
+  ) {
+    return this.bookmarksService.bulkArchive(
+      user.id,
+      dto.ids || [],
+      dto.isArchived ?? true
+    );
+  }
+
+  @Post('bulk/move')
+  @ApiOperation({ summary: 'Move multiple bookmarks to a folder' })
+  async bulkMove(
+    @CurrentUser() user: any,
+    @Body() dto: BulkMoveDto,
+  ) {
+    return this.bookmarksService.bulkMove(
+      user.id,
+      dto.ids || [],
+      dto.folderId
+    );
+  }
+
+  @Post('bulk/tags')
+  @ApiOperation({ summary: 'Add tags to multiple bookmarks' })
+  async bulkAddTags(
+    @CurrentUser() user: any,
+    @Body() dto: BulkTagsDto,
+  ) {
+    return this.bookmarksService.bulkAddTags(
+      user.id,
+      dto.ids || [],
+      dto.tags || []
+    );
   }
 
   @Post('bulk/permanent-delete')

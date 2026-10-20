@@ -14,6 +14,7 @@ import {
   PencilSimple,
   Copy,
   Archive,
+  PushPin,
   Trash,
   ArrowCounterClockwise,
   DownloadSimple,
@@ -26,6 +27,7 @@ interface BookmarkActionSheetProps {
   bookmark: any | null
   onEditBookmark: (bookmark: any) => void
   onDuplicateBookmark: (bookmark: any) => void
+  onTogglePin?: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
   onDeleteBookmark: (id: string) => void
   isTrashView?: boolean
@@ -41,6 +43,7 @@ export function BookmarkActionSheet({
   onEditBookmark,
   onDuplicateBookmark,
   onToggleArchive,
+  onTogglePin,
   onDeleteBookmark,
   isTrashView,
   onRestoreBookmark,
@@ -165,9 +168,9 @@ export function BookmarkActionSheet({
                   onPermanentDeleteBookmark?.(bookmark.id)
                   onOpenChange(false)
                 }}
-                className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 active:bg-red-100/50"
+                className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
               >
-                <Trash className="size-4 text-red-600" />
+                <Trash className="size-4 text-destructive" />
                 <span>Delete Permanently</span>
               </button>
             </>
@@ -199,6 +202,15 @@ export function BookmarkActionSheet({
                 <span>Duplicate</span>
               </button>
 
+              {onTogglePin && (
+                <button type="button"
+                  onClick={() => { onTogglePin(bookmark); onOpenChange(false) }}
+                  className="flex w-full items-center gap-3 rounded-none px-4 py-3 text-left text-sm hover:bg-muted"
+                >
+                  <PushPin className="size-4" weight={bookmark.isPinned ? "fill" : "regular"} />
+                  <span>{bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}</span>
+                </button>
+              )}
               {/* Archive / Unarchive */}
               <button
                 type="button"
@@ -221,9 +233,9 @@ export function BookmarkActionSheet({
                   onDeleteBookmark(bookmark.id)
                   onOpenChange(false)
                 }}
-                className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 active:bg-red-100/50"
+                className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
               >
-                <Trash className="size-4 text-red-600" />
+                <Trash className="size-4 text-destructive" />
                 <span>Move to Trash</span>
               </button>
             </>

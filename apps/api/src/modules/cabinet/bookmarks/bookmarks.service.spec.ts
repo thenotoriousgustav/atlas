@@ -1,13 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BookmarksService } from './bookmarks.service';
-import { PrismaService } from '../../../prisma/prisma.service';
-import { MetadataService } from '../services/metadata.service';
-import { LinkCheckerService } from '../services/link-checker.service';
-import { CabinetMediaService } from '../services/cabinet-media.service';
+import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from './bookmark-order';
+import { UpdateBookmarkDto } from './dto/update-bookmark.dto';
+import { validate } from 'class-validator';
+import { PrismaService } from '@/prisma/prisma.service';
+import { MetadataService } from '@/modules/cabinet/services/metadata.service';
+import { LinkCheckerService } from '@/modules/cabinet/services/link-checker.service';
+import { CabinetMediaService } from '@/modules/cabinet/services/cabinet-media.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import axios from 'axios';
 import type { Response } from 'express';
-import { CRAWLER_USER_AGENTS } from '../providers/metadata/metadata-provider.interface';
+import { CRAWLER_USER_AGENTS } from '@/modules/cabinet/providers/metadata/metadata-provider.interface';
 
 describe('BookmarksService - Trash Functionality', () => {
   let service: BookmarksService;
@@ -73,9 +76,18 @@ describe('BookmarksService - Trash Functionality', () => {
       }));
       expect(prisma.bookmark.updateMany.mock.calls.map(([args]) => args)).toEqual(
         ['b', 'hidden', 'a', 'unloaded'].map((id, position) => ({
-          where: { id, userId: 'user-1' }, data: { position },
+          where: { id, userId: 'user-1', isPinned: false }, data: { position },
         })),
       );
+    });
+
+    it('keeps pinned slots locked while reordering unpinned bookmarks', async () => {
+      prisma.bookmark.findMany.mockResolvedValue([{ id: 'a' }, { id: 'pin', isPinned: true }, { id: 'b' }]);
+      await service.reorder('user-1', ['b', 'a']);
+      expect(prisma.bookmark.updateMany.mock.calls.map(([args]) => [args.where.id, args.data.position])).toEqual([['b', 0], ['a', 2]]);
+      prisma.bookmark.updateMany.mockClear();
+      await expect(service.reorder('user-1', ['pin', 'a'])).rejects.toThrow('Invalid bookmark order');
+      expect(prisma.bookmark.updateMany).not.toHaveBeenCalled();
     });
 
     it.each([['a', 'a'], ['a', 'another-users-bookmark']])(
@@ -86,6 +98,61 @@ describe('BookmarksService - Trash Functionality', () => {
     );
   });
 
+  describe('smart sorting and pinning', () => {
+    it.each(Object.values(BookmarkSort))('sorts %s in the database before paginating, with pinned items first', async (sort) => {
+      prisma.bookmark.findMany.mockResolvedValue([{ id: 'one' }, { id: 'two' }, { id: 'three' }]);
+      prisma.bookmark.count.mockResolvedValue(3);
+      const result = await service.findAll('user-1', { sort, limit: 2, folderId: 'folder-1' });
+      expect(prisma.bookmark.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        orderBy: bookmarkOrderBy(sort), take: 3, where: expect.objectContaining({ userId: 'user-1', folderId: 'folder-1' }),
+      }));
+      expect(bookmarkOrderBy(sort)[0]).toEqual({ isPinned: 'desc' });
+      expect(bookmarkOrderBy(sort).at(-1)).toEqual({ id: 'asc' });
+      expect(result).toEqual({ data: [{ id: 'one' }, { id: 'two' }], nextCursor: 'two', totalCount: 3 });
+      prisma.bookmark.count.mockClear();
+      await service.findAll('user-1', { sort, limit: 2, cursor: 'two' });
+      expect(prisma.bookmark.findMany).toHaveBeenLastCalledWith(expect.objectContaining({ orderBy: bookmarkOrderBy(sort), cursor: { id: 'two' }, skip: 1 }));
+      expect(prisma.bookmark.count).not.toHaveBeenCalled();
+    });
+
+    it('accepts only boolean pin values at the API boundary', async () => {
+      for (const isPinned of ['true', 'false', 1, null]) {
+        const errors = await validate(Object.assign(new UpdateBookmarkDto(), { isPinned }));
+        expect(errors.some((error) => error.property === 'isPinned')).toBe(true);
+      }
+      for (const isPinned of [true, false, undefined]) {
+        expect(await validate(Object.assign(new UpdateBookmarkDto(), { isPinned }))).toHaveLength(0);
+      }
+    });
+
+    it('rejects unknown sorting and invalid page sizes', async () => {
+      await expect(service.findAll('u', { sort: 'invalid' as BookmarkSort })).rejects.toThrow('Invalid bookmark sort');
+      for (const limit of [0, -1, 1.5, NaN, 101]) {
+        await expect(service.findAll('u', { limit })).rejects.toThrow('Limit must be');
+      }
+      expect(prisma.bookmark.findMany).not.toHaveBeenCalled();
+    });
+
+    it('persists pin/unpin only for an active bookmark owned by the user', async () => {
+      prisma.bookmark.findFirst.mockResolvedValue({ id: 'a' });
+      for (const isPinned of [true, false]) {
+        await service.update('user-1', 'a', { isPinned });
+        expect(prisma.bookmark.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ isPinned }) }));
+      }
+      prisma.bookmark.findFirst.mockResolvedValue(null);
+      prisma.bookmark.update.mockClear();
+      await expect(service.update('user-2', 'a', { isPinned: true })).rejects.toThrow('Bookmark not found');
+      expect(prisma.bookmark.update).not.toHaveBeenCalled();
+    });
+
+    it('normalizes title and hostname without including paths, credentials, www or port', () => {
+      expect(bookmarkSortFields({ title: 'Zebra API', url: 'https://user:pass@WWW.Example.com:443/a?q=b' }))
+        .toEqual({ sortTitle: 'zebra api', sortDomain: 'example.com' });
+      expect(bookmarkSortFields({ title: 'Note', url: null })).toEqual({ sortTitle: 'note', sortDomain: null });
+      expect(bookmarkSortFields({})).toEqual({ sortTitle: undefined, sortDomain: undefined });
+    });
+  });
+
   describe('image previews', () => {
     afterEach(() => jest.restoreAllMocks());
 
@@ -94,12 +161,16 @@ describe('BookmarksService - Trash Functionality', () => {
       ['https://images.example.com/photo.jpg', false],
       ['https://share.redd.it.example.com/photo.jpg', false],
     ])('requests the appropriate image variant for %s', async (url, isRedditShare) => {
+      const dns = require('node:dns/promises');
+      jest.spyOn(dns, 'lookup').mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
       const pipe = jest.fn();
       const get = jest.spyOn(axios, 'get').mockResolvedValue({
         headers: { 'content-type': 'image/jpeg', 'content-length': '123' },
         data: { pipe },
       });
-      const res = { setHeader: jest.fn() } as unknown as Response;
+      const send = jest.fn();
+      const status = jest.fn().mockReturnValue({ send });
+      const res = { setHeader: jest.fn(), status, send } as unknown as Response;
 
       await service.proxyImage(url, res);
 
@@ -111,6 +182,26 @@ describe('BookmarksService - Trash Functionality', () => {
       expect(options.headers!.Referer).toBe(new URL(url).origin);
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
       expect(pipe).toHaveBeenCalledWith(res);
+    });
+
+    it.each([
+      'http://127.0.0.1:4000/api',
+      'http://localhost/secret.png',
+      'http://169.254.169.254/latest/meta-data',
+      'http://10.0.0.1/admin.png',
+      'http://postgres:5432/db',
+      'file:///etc/passwd',
+    ])('blocks SSRF attempt to internal target %s with HTTP 400', async (disallowedUrl) => {
+      const get = jest.spyOn(axios, 'get');
+      const send = jest.fn();
+      const status = jest.fn().mockReturnValue({ send });
+      const res = { setHeader: jest.fn(), status, send } as unknown as Response;
+
+      await service.proxyImage(disallowedUrl, res);
+
+      expect(status).toHaveBeenCalledWith(400);
+      expect(send).toHaveBeenCalledWith(expect.stringContaining('Invalid or disallowed image URL'));
+      expect(get).not.toHaveBeenCalled();
     });
   });
 
@@ -124,7 +215,7 @@ describe('BookmarksService - Trash Functionality', () => {
       expect(prisma.bookmark.upsert).toHaveBeenCalledWith(expect.objectContaining({
         where: { id: 'note-1', userId: 'user-1', type: 'NOTE', deletedAt: null },
         create: expect.objectContaining({ id: 'note-1', userId: 'user-1', type: 'NOTE', ...snapshot }),
-        update: snapshot,
+        update: { ...snapshot, sortTitle: 'my note' },
       }));
     });
 
@@ -132,7 +223,7 @@ describe('BookmarksService - Trash Functionality', () => {
       prisma.bookmark.findFirst.mockResolvedValue({ id: 'note-1', userId: 'user-1', type: 'NOTE', folderId: 'folder-1' });
       await service.saveNote('user-1', 'note-1', snapshot);
       const update = prisma.bookmark.upsert.mock.calls[0][0].update;
-      expect(update).toEqual(snapshot);
+      expect(update).toEqual({ ...snapshot, sortTitle: 'my note' });
       expect(update.folderId).toBeUndefined();
       expect(update.tags).toBeUndefined();
     });
@@ -163,7 +254,7 @@ describe('BookmarksService - Trash Functionality', () => {
       prisma.bookmark.upsert.mockRejectedValue({ code: 'P2002' });
       await service.saveNote('user-1', 'note-1', snapshot);
       expect(prisma.bookmark.update).toHaveBeenCalledWith(expect.objectContaining({
-        where: { id: 'note-1', userId: 'user-1', type: 'NOTE', deletedAt: null }, data: snapshot,
+        where: { id: 'note-1', userId: 'user-1', type: 'NOTE', deletedAt: null }, data: { ...snapshot, sortTitle: 'my note' },
       }));
     });
   });
@@ -324,6 +415,70 @@ describe('BookmarksService - Trash Functionality', () => {
       expect(prisma.bookmark.delete).toHaveBeenCalledWith({
         where: { id: 'bm-1' },
       });
+    });
+  });
+
+  describe('bulkTrash', () => {
+    it('should soft delete multiple bookmarks via updateMany', async () => {
+      prisma.bookmark.updateMany.mockResolvedValue({ count: 3 });
+
+      const result = await service.bulkTrash('user-1', ['id-1', 'id-2', 'id-3']);
+
+      expect(prisma.bookmark.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['id-1', 'id-2', 'id-3'] },
+          userId: 'user-1',
+          deletedAt: null,
+        },
+        data: {
+          deletedAt: expect.any(Date),
+        },
+      });
+      expect(result.trashed).toBe(3);
+    });
+  });
+
+  describe('bulkArchive', () => {
+    it('should archive multiple bookmarks', async () => {
+      prisma.bookmark.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkArchive('user-1', ['id-1', 'id-2'], true);
+
+      expect(prisma.bookmark.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['id-1', 'id-2'] },
+          userId: 'user-1',
+          deletedAt: null,
+        },
+        data: {
+          isArchived: true,
+        },
+      });
+      expect(result.updated).toBe(2);
+    });
+  });
+
+  describe('bulkMove', () => {
+    it('should move multiple bookmarks to target folder', async () => {
+      prisma.folder.findFirst.mockResolvedValue({ id: 'folder-1', userId: 'user-1' });
+      prisma.bookmark.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkMove('user-1', ['id-1', 'id-2'], 'folder-1');
+
+      expect(prisma.folder.findFirst).toHaveBeenCalledWith({
+        where: { id: 'folder-1', userId: 'user-1', deletedAt: null },
+      });
+      expect(prisma.bookmark.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['id-1', 'id-2'] },
+          userId: 'user-1',
+          deletedAt: null,
+        },
+        data: {
+          folderId: 'folder-1',
+        },
+      });
+      expect(result.moved).toBe(2);
     });
   });
 

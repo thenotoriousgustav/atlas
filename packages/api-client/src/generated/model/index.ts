@@ -8,9 +8,14 @@
 
 export * from './bookmarksControllerExtractMediaParams.js';
 export * from './bookmarksControllerFindAllParams.js';
+export * from './bookmarksControllerFindAllSort.js';
 export * from './bookmarksControllerFindAllType.js';
 export * from './bookmarksControllerProxyImageParams.js';
 export * from './bookmarksControllerScrapeParams.js';
+export * from './bulkActionDto.js';
+export * from './bulkArchiveDto.js';
+export * from './bulkMoveDto.js';
+export * from './bulkTagsDto.js';
 export * from './createBookmarkDto.js';
 export * from './createBookmarkDtoNoteDocument.js';
 export * from './createBookmarkDtoType.js';

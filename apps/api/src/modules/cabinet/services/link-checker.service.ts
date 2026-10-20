@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { bookmarkSortFields } from '@/modules/cabinet/bookmarks/bookmark-order';
 
 @Injectable()
 export class LinkCheckerService implements OnModuleInit {
@@ -52,7 +53,8 @@ export class LinkCheckerService implements OnModuleInit {
         await this.prisma.bookmark.update({
           where: { id: bookmark.id },
           data: {
-            url: redirectLocation,
+            url: new URL(redirectLocation, bookmark.url).href,
+            ...bookmarkSortFields({ url: new URL(redirectLocation, bookmark.url).href }),
             status: 'REDIRECTED',
             statusCode: response.status,
             lastChecked: new Date(),

@@ -5,6 +5,7 @@ import {
   X,
   ArrowSquareOut,
   Star,
+  PushPin,
   Archive,
   Trash,
   FolderSimple,
@@ -12,6 +13,7 @@ import {
   LinkSimple,
   CalendarBlank,
   FileText,
+  Clock,
 } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,6 +37,7 @@ interface BookmarkInspectorProps {
   onClose: () => void
   onUpdateBookmark: (id: string, data: any) => Promise<any>
   onDeleteBookmark: (id: string) => void
+  onTogglePin?: (bookmark: any) => void
   onToggleFavorite: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
 }
@@ -47,6 +50,7 @@ export function BookmarkInspector({
   onUpdateBookmark,
   onDeleteBookmark,
   onToggleFavorite,
+  onTogglePin,
   onToggleArchive,
 }: BookmarkInspectorProps) {
   const [title, setTitle] = React.useState("")
@@ -55,6 +59,9 @@ export function BookmarkInspector({
   const [folderId, setFolderId] = React.useState<string>("none")
   const [tags, setTags] = React.useState<string[]>([])
   const [isSaving, setIsSaving] = React.useState(false)
+  const [inspectorImageStatus, setInspectorImageStatus] = React.useState<
+    "loading" | "ready" | "error"
+  >("loading")
 
   React.useEffect(() => {
     if (bookmark) {
@@ -63,6 +70,7 @@ export function BookmarkInspector({
       setNotes(bookmark.notes || "")
       setFolderId(bookmark.folderId || "none")
       setTags((bookmark.tags || []).map((t: any) => (typeof t === "string" ? t : t.name)))
+      setInspectorImageStatus(bookmark.imageUrl ? "loading" : "error")
     }
   }, [bookmark])
 
@@ -107,6 +115,15 @@ export function BookmarkInspector({
           {isNote ? "Note Details" : "Bookmark Inspector"}
         </span>
         <div className="flex items-center gap-1">
+          {onTogglePin && (
+            <Button variant="ghost" size="icon-xs" onClick={() => onTogglePin(bookmark)}
+              title={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
+              aria-label={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
+              aria-pressed={!!bookmark.isPinned}
+            >
+              <PushPin weight={bookmark.isPinned ? "fill" : "regular"} />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon-xs"
@@ -142,10 +159,29 @@ export function BookmarkInspector({
         {/* Preview Image if available */}
         {bookmark.imageUrl && !isNote && (
           <div className="relative aspect-[16/10] w-full overflow-hidden border border-border bg-muted/20">
+            {inspectorImageStatus === "loading" && (
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center bg-muted/40 text-muted-foreground animate-pulse"
+                role="status"
+              >
+                <Clock
+                  className="size-5 text-muted-foreground animate-spin"
+                  style={{ animationDuration: "3s" }}
+                />
+                <span className="mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/70">
+                  Loading thumbnail...
+                </span>
+              </div>
+            )}
             <img
               src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/v1/bookmarks/proxy-image?v=2&url=${encodeURIComponent(bookmark.imageUrl)}`}
               alt={bookmark.title || hostname}
-              className="size-full object-contain p-1"
+              onLoad={() => setInspectorImageStatus("ready")}
+              onError={() => setInspectorImageStatus("error")}
+              className={cn(
+                "size-full object-contain p-1 transition-opacity",
+                inspectorImageStatus === "ready" ? "opacity-100" : "hidden"
+              )}
             />
           </div>
         )}
@@ -272,7 +308,7 @@ export function BookmarkInspector({
           variant="ghost"
           size="sm"
           onClick={() => onDeleteBookmark(bookmark.id)}
-          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash data-icon="inline-start" /> Delete
         </Button>

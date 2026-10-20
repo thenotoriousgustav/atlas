@@ -325,6 +325,21 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "custom",
+                "newest",
+                "oldest",
+                "title",
+                "domain"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -518,6 +533,126 @@
           }
         ],
         "summary": "Restore multiple soft-deleted bookmarks",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/bulk/trash": {
+      "post": {
+        "operationId": "BookmarksController_bulkTrash",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Move multiple bookmarks to trash",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/bulk/archive": {
+      "post": {
+        "operationId": "BookmarksController_bulkArchive",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkArchiveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Archive or unarchive multiple bookmarks",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/bulk/move": {
+      "post": {
+        "operationId": "BookmarksController_bulkMove",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkMoveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Move multiple bookmarks to a folder",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
+    "/v1/bookmarks/bulk/tags": {
+      "post": {
+        "operationId": "BookmarksController_bulkAddTags",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkTagsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add tags to multiple bookmarks",
         "tags": [
           "bookmarks"
         ]
@@ -815,6 +950,35 @@
           }
         ],
         "summary": "View a shared collection of bookmarks without signing in",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
+    "/v1/folders/shared/{token}/copy": {
+      "post": {
+        "operationId": "FoldersController_copyShared",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Copy public bookmarks into a new private collection for the signed-in user",
         "tags": [
           "folders"
         ]
@@ -1226,6 +1390,84 @@
           "ids"
         ]
       },
+      "BulkActionDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Array of bookmark IDs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "BulkArchiveDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Array of bookmark IDs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isArchived": {
+            "type": "boolean",
+            "description": "Archive status",
+            "default": true
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "BulkMoveDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Array of bookmark IDs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "folderId": {
+            "type": "string",
+            "description": "Target folder ID (null for root)",
+            "nullable": true
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "BulkTagsDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Array of bookmark IDs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "description": "Tags to add to the selected bookmarks",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids",
+          "tags"
+        ]
+      },
       "UpdateBookmarkDto": {
         "type": "object",
         "properties": {
@@ -1267,6 +1509,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "isPinned": {
+            "type": "boolean",
+            "description": "Keep bookmark pinned above unpinned items"
           },
           "isFavorite": {
             "type": "boolean",

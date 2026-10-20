@@ -16,6 +16,8 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import {
   Tooltip,
@@ -37,6 +39,7 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import {
+  SortAscending,
   MagnifyingGlass,
   Plus,
   SquaresFour,
@@ -77,7 +80,12 @@ import {
   TagsInputItem,
 } from "@/components/ui/tags-input"
 
+import { bookmarkSortOptions, isBookmarkSort, type BookmarkSort } from "@/lib/bookmark-order"
+
 interface ToolbarProps {
+  sort?: BookmarkSort
+  onSortChange?: (sort: BookmarkSort) => void
+  sortDisabled?: boolean
   searchQuery: string
   onSearchChange: (value: string) => void
   isBookmarkModalOpen: boolean
@@ -97,6 +105,9 @@ interface ToolbarProps {
 }
 
 export function Toolbar({
+  sort = "custom",
+  onSortChange,
+  sortDisabled = false,
   searchQuery,
   onSearchChange,
   isBookmarkModalOpen,
@@ -217,9 +228,9 @@ export function Toolbar({
         </div>
       </div>
 
-      <div className="flex w-full flex-col gap-2.5 sm:flex-1 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex w-full min-w-0 flex-col gap-2.5 sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         {/* Search Input */}
-        <InputGroup className="h-9 w-full sm:max-w-md">
+        <InputGroup className="h-9 w-full sm:min-w-40 sm:max-w-md sm:flex-1">
           <InputGroupInput
             type="text"
             placeholder="Search titles, descriptions, URLs... (⌘K)"
@@ -242,6 +253,27 @@ export function Toolbar({
             </InputGroupAddon>
           )}
         </InputGroup>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="h-9 max-w-full shrink-0" disabled={sortDisabled} aria-label="Sort bookmarks">
+              <SortAscending data-icon="inline-start" />
+              <span className="truncate">{bookmarkSortOptions.find((option) => option.value === sort)?.label}</span>
+              <CaretDown data-icon="inline-end" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuRadioGroup value={sort} onValueChange={(value) => {
+              if (isBookmarkSort(value)) onSortChange?.(value)
+            }}>
+              {bookmarkSortOptions.map((option) => (
+                <DropdownMenuRadioItem key={option.value} value={option.value}>
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* View Mode & Column Toggles for Desktop */}
         <div className="hidden items-center justify-between gap-2 sm:justify-start md:flex">

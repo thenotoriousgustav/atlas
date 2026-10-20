@@ -16,15 +16,17 @@ import {
 } from "@prisma/client"
 import { Response } from "express"
 import axios from "axios"
-import { PrismaService } from "../../../prisma/prisma.service"
-import { MetadataService } from "../services/metadata.service"
-import { LinkCheckerService } from "../services/link-checker.service"
-import { CabinetMediaService } from "../services/cabinet-media.service"
+import { PrismaService } from "@/prisma/prisma.service"
+import { MetadataService } from "@/modules/cabinet/services/metadata.service"
+import { LinkCheckerService } from "@/modules/cabinet/services/link-checker.service"
+import { CabinetMediaService } from "@/modules/cabinet/services/cabinet-media.service"
 import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
-import { DownloadMediaDto } from "../dto/download-media.dto"
+import { DownloadMediaDto } from "@/modules/cabinet/dto/download-media.dto"
 import { SaveNoteDto } from "./dto/save-note.dto"
-import { CRAWLER_USER_AGENTS } from "../providers/metadata/metadata-provider.interface"
+import { CRAWLER_USER_AGENTS } from "@/modules/cabinet/providers/metadata/metadata-provider.interface"
+import { validatePublicUrl } from "@/common/utils/ssrf"
+import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from "./bookmark-order"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -101,6 +103,10 @@ export class BookmarksService implements OnModuleInit {
           createBookmarkDto.title ||
           extracted.title ||
           (isNote ? "Untitled Note" : "Untitled"),
+        ...bookmarkSortFields({
+          title: createBookmarkDto.title || extracted.title || (isNote ? "Untitled Note" : "Untitled"),
+          url: createBookmarkDto.url || null,
+        }),
         description:
           createBookmarkDto.description || extracted.description || null,
         notes: null,
@@ -166,6 +172,7 @@ export class BookmarksService implements OnModuleInit {
     }
     const data = {
       title: dto.title?.trim() || "Untitled note",
+      ...bookmarkSortFields({ title: dto.title?.trim() || "Untitled note" }),
       notes: dto.notes ?? "",
       noteDocument: dto.noteDocument,
     }
@@ -244,8 +251,15 @@ export class BookmarksService implements OnModuleInit {
       status?: string
       type?: BookmarkType
       contentType?: BookmarkContentType
+      sort?: BookmarkSort
     }
   ) {
+    if (filters.sort !== undefined && !Object.values(BookmarkSort).includes(filters.sort)) {
+      throw new BadRequestException("Invalid bookmark sort")
+    }
+    if (filters.limit !== undefined && (!Number.isInteger(filters.limit) || filters.limit < 1 || filters.limit > 100)) {
+      throw new BadRequestException("Limit must be an integer between 1 and 100")
+    }
     // ponytail: single where condition handles both active items and trash
     const where: any = {
       userId,
@@ -304,7 +318,7 @@ export class BookmarksService implements OnModuleInit {
         tags: true,
         folder: true,
       },
-      orderBy: [{ position: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+      orderBy: bookmarkOrderBy(filters.sort),
     }
 
     if (take !== undefined) {
@@ -315,8 +329,12 @@ export class BookmarksService implements OnModuleInit {
       }
     }
 
-    const items = await this.prisma.bookmark.findMany(findParams)
-    const totalCount = await this.prisma.bookmark.count({ where })
+    const itemsPromise = this.prisma.bookmark.findMany(findParams)
+    const countPromise = filters.cursor
+      ? Promise.resolve(undefined)
+      : this.prisma.bookmark.count({ where })
+
+    const [items, totalCount] = await Promise.all([itemsPromise, countPromise])
 
     let nextCursor: string | null = null
     let slicedItems = items
@@ -387,6 +405,8 @@ export class BookmarksService implements OnModuleInit {
         url: updateBookmarkDto.url,
         title: updateBookmarkDto.title,
         description: updateBookmarkDto.description,
+        ...bookmarkSortFields(updateBookmarkDto),
+        isPinned: updateBookmarkDto.isPinned,
         isFavorite: updateBookmarkDto.isFavorite,
         isArchived: updateBookmarkDto.isArchived,
         folderId:
@@ -464,6 +484,96 @@ export class BookmarksService implements OnModuleInit {
       },
     })
     return { restored: result.count }
+  }
+
+  // ponytail: bulk soft delete via updateMany
+  async bulkTrash(userId: string, ids: string[]) {
+    const result = await this.prisma.bookmark.updateMany({
+      where: {
+        id: { in: ids },
+        userId,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    })
+    return { trashed: result.count }
+  }
+
+  // ponytail: bulk archive via updateMany
+  async bulkArchive(userId: string, ids: string[], isArchived = true) {
+    const result = await this.prisma.bookmark.updateMany({
+      where: {
+        id: { in: ids },
+        userId,
+        deletedAt: null,
+      },
+      data: {
+        isArchived,
+      },
+    })
+    return { updated: result.count }
+  }
+
+  // ponytail: bulk move folder via updateMany
+  async bulkMove(userId: string, ids: string[], folderId?: string | null) {
+    if (folderId) {
+      const folder = await this.prisma.folder.findFirst({
+        where: { id: folderId, userId, deletedAt: null },
+      })
+      if (!folder) throw new NotFoundException("Folder not found")
+    }
+    const result = await this.prisma.bookmark.updateMany({
+      where: {
+        id: { in: ids },
+        userId,
+        deletedAt: null,
+      },
+      data: {
+        folderId: folderId || null,
+      },
+    })
+    return { moved: result.count }
+  }
+
+  // ponytail: bulk add tags to bookmarks
+  async bulkAddTags(userId: string, ids: string[], tagNames: string[]) {
+    const cleanTags = tagNames
+      .map((t) => t.replace(/^#/, "").trim().toLowerCase())
+      .filter(Boolean)
+    if (cleanTags.length === 0 || ids.length === 0) return { updated: 0 }
+
+    const userBookmarks = await this.prisma.bookmark.findMany({
+      where: { id: { in: ids }, userId, deletedAt: null },
+      select: { id: true },
+    })
+    const validIds = userBookmarks.map((b) => b.id)
+    if (validIds.length === 0) return { updated: 0 }
+
+    const tags = await Promise.all(
+      cleanTags.map((name) =>
+        this.prisma.tag.upsert({
+          where: { name_userId: { name, userId } },
+          create: { name, userId },
+          update: {},
+        })
+      )
+    )
+
+    await Promise.all(
+      tags.map((tag) =>
+        this.prisma.tag.update({
+          where: { id: tag.id },
+          data: {
+            bookmarks: {
+              connect: validIds.map((id) => ({ id })),
+            },
+          },
+        })
+      )
+    )
+    return { updated: validIds.length }
   }
 
   // ponytail: hard delete single bookmark from database
@@ -546,6 +656,7 @@ export class BookmarksService implements OnModuleInit {
           data: {
             url,
             title,
+            ...bookmarkSortFields({ title, url }),
             userId,
             folderId: currentFolderId,
             metadataStatus: MetadataStatus.PENDING,
@@ -757,11 +868,11 @@ export class BookmarksService implements OnModuleInit {
     await this.prisma.$transaction(async (tx) => {
       const bookmarks = await tx.bookmark.findMany({
         where: { userId, deletedAt: null },
-        select: { id: true },
+        select: { id: true, isPinned: true },
         orderBy: [{ position: "asc" }, { createdAt: "desc" }, { id: "asc" }],
       })
       const moved = new Set(ids)
-      const owned = new Set(bookmarks.map((bookmark) => bookmark.id))
+      const owned = new Set(bookmarks.filter((bookmark) => !bookmark.isPinned).map((bookmark) => bookmark.id))
       if (moved.size !== ids.length || ids.some((id) => !owned.has(id))) {
         throw new BadRequestException("Invalid bookmark order")
       }
@@ -770,8 +881,8 @@ export class BookmarksService implements OnModuleInit {
       // ponytail: renumber the library; use sparse ranks if library size makes this costly.
       let next = 0
       await Promise.all(bookmarks.map((bookmark, position) =>
-        tx.bookmark.updateMany({
-          where: { id: moved.has(bookmark.id) ? ids[next++] : bookmark.id, userId },
+        bookmark.isPinned ? undefined : tx.bookmark.updateMany({
+          where: { id: moved.has(bookmark.id) ? ids[next++] : bookmark.id, userId, isPinned: false },
           data: { position },
         })
       ))
@@ -780,29 +891,33 @@ export class BookmarksService implements OnModuleInit {
   }
 
   async proxyImage(imageUrl: string, res: Response) {
-    if (
-      !imageUrl ||
-      (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://"))
-    ) {
-      return res.status(400).send("Invalid or non-HTTP image URL")
+    let parsedUrl: URL
+    try {
+      parsedUrl = await validatePublicUrl(imageUrl)
+    } catch (err: any) {
+      return res
+        .status(400)
+        .send(`Invalid or disallowed image URL: ${err.message}`)
     }
 
     try {
-      const imageHost = new URL(imageUrl)
-      const response = await axios.get(imageUrl, {
+      const response = await axios.get(parsedUrl.href, {
         responseType: "stream",
         timeout: 10000,
         headers: {
           // Reddit's share endpoint returns a generic logo to desktop browsers.
           "User-Agent":
-            imageHost.hostname === "share.redd.it"
+            parsedUrl.hostname === "share.redd.it"
               ? CRAWLER_USER_AGENTS.WHATSAPP
               : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
           Accept:
             "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-          Referer: imageHost.origin,
+          Referer: parsedUrl.origin,
         },
         maxRedirects: 5,
+        beforeRedirect: async (options) => {
+          await validatePublicUrl(options.href)
+        },
         validateStatus: (status) => status >= 200 && status < 400,
       })
 
