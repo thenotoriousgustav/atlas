@@ -2,15 +2,15 @@
 
 import type { ChainedCommands } from "@tiptap/core"
 import {
-  MoreHorizontal,
-  MoreVertical,
+  DotsThree as MoreHorizontal,
+  DotsThreeVertical as MoreVertical,
   Plus,
-  Trash2,
+  Trash as Trash2,
   ArrowRight,
   ArrowLeft,
   ArrowUp,
   ArrowDown,
-} from "lucide-react"
+} from "@phosphor-icons/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { useToolbar, useToolbarEditor } from "../core/context"

@@ -1,12 +1,13 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 
 export type SlashMenuProps = React.HTMLAttributes<HTMLDivElement>
 
 const SlashMenu = React.forwardRef<HTMLDivElement, SlashMenuProps>(
-  ({ className = "", ...props }, ref) => (
+  ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={`block-editor-slash-menu ${className}`.trim()}
+      className={cn("block-editor-slash-menu", className)}
       {...props}
     />
   )

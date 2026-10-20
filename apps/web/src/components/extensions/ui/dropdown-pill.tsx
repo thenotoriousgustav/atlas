@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useCallback, useState } from "react"
+import { cn } from "@/lib/utils"
 
 export interface DropdownPillHandlers {
   onFocus: (event: React.FocusEvent<HTMLDivElement>) => void
@@ -50,9 +51,7 @@ const useDropdownPill = (
   const pill = (
     <div
       aria-hidden="true"
-      className={["ext-dropdown-pill", rect ? "ext-dropdown-pill--visible" : ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn("ext-dropdown-pill", rect && "ext-dropdown-pill--visible")}
       style={
         rect
           ? {

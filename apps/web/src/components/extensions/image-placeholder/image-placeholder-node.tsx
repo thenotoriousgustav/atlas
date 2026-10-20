@@ -2,7 +2,7 @@
 
 import type { NodeViewProps } from "@tiptap/react"
 import { NodeViewWrapper } from "@tiptap/react"
-import { Image, Link, Upload } from "lucide-react"
+import { Image, LinkSimple as Link, UploadSimple as Upload } from "@phosphor-icons/react"
 import type { DragEvent, FormEvent } from "react"
 import { useCallback, useId, useState } from "react"
 
@@ -13,6 +13,7 @@ import { Input } from "../ui/input"
 import { Popover } from "../ui/popover"
 import { PopoverContent } from "../ui/popover-content"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
+import { cn } from "@/lib/utils"
 
 const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
   e.preventDefault()
@@ -136,20 +137,16 @@ export const ImagePlaceholderNode = ({
     }
   ).join(",")
 
-  const triggerClass = [
+  const triggerClass = cn(
     "ext-image-placeholder-trigger",
-    selected ? "ext-image-placeholder-trigger--selected" : "",
-  ]
-    .filter(Boolean)
-    .join(" ")
+    selected && "ext-image-placeholder-trigger--selected"
+  )
 
-  const uploadZoneClass = [
+  const uploadZoneClass = cn(
     "ext-image-upload-zone",
-    isDragActive ? "ext-image-upload-zone--dragging" : "",
-    isDragReject ? "ext-image-upload-zone--reject" : "",
-  ]
-    .filter(Boolean)
-    .join(" ")
+    isDragActive && "ext-image-upload-zone--dragging",
+    isDragReject && "ext-image-upload-zone--reject"
+  )
 
   return (
     <NodeViewWrapper className="ext-image-placeholder">

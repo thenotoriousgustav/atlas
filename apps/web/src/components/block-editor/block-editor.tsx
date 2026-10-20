@@ -7,7 +7,7 @@ import { useCallback, useRef } from "react"
 import { BottomBar } from "./bottom-bar"
 import { BubbleMenu } from "./bubble-menu"
 import { BlockEditorProvider, useBlockEditorContext } from "./context"
-import { cn } from "./lib/utils"
+import { cn } from "@/lib/utils"
 import type { BlockEditorProps } from "./types"
 
 const computePositionConfig = {

@@ -10,14 +10,14 @@ import {
   useRef,
 } from "react"
 
-import { DEFAULT_ICONS } from "../../icons"
+import { DEFAULT_ICONS } from "@/components/block-editor/icons"
 import {
   SlashMenu,
   SlashMenuList,
   SlashMenuItem,
   SlashMenuSearch,
   SlashMenuSearchInput,
-} from "../../ui"
+} from "@/components/block-editor/ui"
 import type { SlashCommandSuggestionItem } from "./slash-command"
 
 export type SuggestionListProps = SuggestionProps<

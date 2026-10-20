@@ -1,13 +1,14 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 
 export type DropdownOverlayProps = React.HTMLAttributes<HTMLDivElement>
 
 const DropdownOverlay = React.forwardRef<HTMLDivElement, DropdownOverlayProps>(
-  ({ className = "", ...props }, ref) => (
+  ({ className, ...props }, ref) => (
     <div
       ref={ref}
       role="presentation"
-      className={`block-editor-bubble-overlay ${className}`.trim()}
+      className={cn("block-editor-bubble-overlay", className)}
       {...props}
     />
   )

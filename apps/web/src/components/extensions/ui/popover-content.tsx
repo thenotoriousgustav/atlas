@@ -1,17 +1,17 @@
 import * as React from "react"
-
+import { cn } from "@/lib/utils"
 import { useDropdownPill } from "./dropdown-pill"
 
 export type PopoverContentProps = React.HTMLAttributes<HTMLDivElement>
 
 const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
-  ({ className = "", onMouseLeave, ...props }, ref) => {
+  ({ className, onMouseLeave, ...props }, ref) => {
     const { handlers, pill } = useDropdownPill(onMouseLeave)
 
     return (
       <div
         ref={ref}
-        className={`ext-popover-content ${className}`.trim()}
+        className={cn("ext-popover-content", className)}
         {...handlers}
         {...props}
       >

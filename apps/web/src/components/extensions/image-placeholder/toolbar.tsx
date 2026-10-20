@@ -1,11 +1,12 @@
 "use client"
 
-import { Image } from "lucide-react"
+import { Image } from "@phosphor-icons/react"
 
 import { useToolbar, useToolbarEditor } from "../core/context"
 import { useEditorState } from "../core/editor-state"
 import type { ToolbarComponentProps } from "../core/types"
 import { Button } from "../ui/button"
+import { cn } from "@/lib/utils"
 
 export const ImagePlaceholderToolbar = ({
   className,
@@ -27,7 +28,7 @@ export const ImagePlaceholderToolbar = ({
   return (
     <Button
       aria-label={labels.image}
-      className={["ext-btn--icon-sm", className].filter(Boolean).join(" ")}
+      className={cn("ext-btn--icon-sm", className)}
       disabled={disabled}
       title={labels.image}
       onClick={() => {

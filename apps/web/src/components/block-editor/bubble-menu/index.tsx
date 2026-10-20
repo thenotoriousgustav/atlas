@@ -5,6 +5,7 @@ import { useState, useCallback } from "react"
 
 import { DEFAULT_ICONS } from "../icons"
 import { BubbleButton, BubbleSeparator } from "../ui"
+import { cn } from "@/lib/utils"
 import { TextAlignSelector } from "./align-selector"
 import { ColorSelector } from "./color-selector"
 import { LanguageSelector } from "./language-selector"
@@ -88,7 +89,10 @@ export const BubbleMenu = ({ editor }: BubbleMenuProps) => {
               }}
             >
               <span
-                className={`block-editor-copy-icon${copied ? "block-editor-copy-icon--copied" : ""}`}
+                className={cn(
+                  "block-editor-copy-icon",
+                  copied && "block-editor-copy-icon--copied"
+                )}
               >
                 {copied ? DEFAULT_ICONS.checkIcon : DEFAULT_ICONS.copyIcon}
               </span>

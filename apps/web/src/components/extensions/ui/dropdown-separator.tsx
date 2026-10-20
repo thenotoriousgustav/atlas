@@ -1,14 +1,15 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 
 export type DropdownMenuSeparatorProps = React.HTMLAttributes<HTMLDivElement>
 
 const DropdownMenuSeparator = React.forwardRef<
   HTMLDivElement,
   DropdownMenuSeparatorProps
->(({ className = "", ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`ext-dropdown-separator ${className}`.trim()}
+    className={cn("ext-dropdown-separator", className)}
     {...props}
   />
 ))

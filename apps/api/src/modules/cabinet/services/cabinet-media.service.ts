@@ -8,7 +8,7 @@ import { spawn } from "child_process"
 import * as path from "path"
 import * as fs from "fs"
 import { Response } from "express"
-import { DownloadMediaDto } from "../dto/download-media.dto"
+import { DownloadMediaDto } from "@/modules/cabinet/dto/download-media.dto"
 
 export interface ExtractedMediaFormat {
   formatId: string

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
-import { AuthGuard } from '../../../auth/guards/auth.guard';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { TagsService } from './tags.service';
 
 @ApiTags('tags')

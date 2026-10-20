@@ -5,6 +5,7 @@ import {
   CRAWLER_USER_AGENTS,
   decodeHtmlEntities,
 } from "./metadata-provider.interface"
+import { validatePublicUrl } from "@/common/utils/ssrf"
 
 @Injectable()
 export class GenericMetadataProvider implements MetadataProvider {
@@ -22,6 +23,7 @@ export class GenericMetadataProvider implements MetadataProvider {
 
   async extract(url: string, _urlObj?: URL): Promise<ExtractedMetadata | null> {
     try {
+      await validatePublicUrl(url)
       const html = await this.fetchHtml(url)
       if (!html) return { title: this.getDomain(url) }
 

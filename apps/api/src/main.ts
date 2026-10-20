@@ -37,7 +37,8 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       const frontendOrigin = new URL(process.env.FRONTEND_URL || 'http://localhost:3000').origin;
-      callback(null, !origin || origin === frontendOrigin);
+      const allowed = new Set([frontendOrigin, 'http://localhost:3000', 'http://127.0.0.1:3000']);
+      callback(null, !origin || allowed.has(origin));
     },
     credentials: true,
   });

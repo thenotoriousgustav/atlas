@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 
 export type SlashMenuSearchInputProps =
   React.InputHTMLAttributes<HTMLInputElement>
@@ -6,11 +7,11 @@ export type SlashMenuSearchInputProps =
 const SlashMenuSearchInput = React.forwardRef<
   HTMLInputElement,
   SlashMenuSearchInputProps
->(({ className = "", ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <input
     ref={ref}
     type="text"
-    className={`block-editor-slash-menu-search-input ${className}`.trim()}
+    className={cn("block-editor-slash-menu-search-input", className)}
     {...props}
   />
 ))

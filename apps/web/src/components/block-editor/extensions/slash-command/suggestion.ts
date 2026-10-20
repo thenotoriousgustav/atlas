@@ -5,8 +5,8 @@ import { ReactRenderer } from "@tiptap/react"
 import type { SuggestionOptions } from "@tiptap/suggestion"
 import { createElement } from "react"
 
-import { DEFAULT_ICONS, HeadingIcon } from "../../icons"
-import { chainFocus } from "../../lib/commands"
+import { DEFAULT_ICONS, HeadingIcon } from "@/components/block-editor/icons"
+import { chainFocus } from "@/components/block-editor/lib/commands"
 import type { SlashCommandSuggestionItem } from "./slash-command"
 import SuggestionList from "./suggestion-list"
 import type {

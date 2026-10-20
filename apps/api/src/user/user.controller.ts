@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
 
 @ApiTags('users')

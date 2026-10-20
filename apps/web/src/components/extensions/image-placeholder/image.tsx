@@ -8,14 +8,14 @@ import {
 } from "@tiptap/react"
 import type { NodeViewProps } from "@tiptap/react"
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
+  TextAlignCenter as AlignCenter,
+  TextAlignLeft as AlignLeft,
+  TextAlignRight as AlignRight,
   Copy,
-  Maximize2,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react"
+  ArrowsOut as Maximize2,
+  DotsThree as MoreHorizontal,
+  Trash as Trash2,
+} from "@phosphor-icons/react"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
@@ -25,6 +25,7 @@ import { DropdownMenuItem } from "../ui/dropdown-item"
 import { DropdownMenu } from "../ui/dropdown-menu"
 import { DropdownMenuSeparator } from "../ui/dropdown-separator"
 import { Separator } from "../ui/separator"
+import { cn } from "@/lib/utils"
 
 const ResizableImageNode = ({
   node,
@@ -169,16 +170,14 @@ const ResizableImageNode = ({
       .run()
   }
 
-  const viewClass = [
+  const viewClass = cn(
     "ext-image-view",
-    node.attrs.align === "left" ? "ext-image-view--left" : "",
-    node.attrs.align === "center" ? "ext-image-view--center" : "",
-    node.attrs.align === "right" ? "ext-image-view--right" : "",
-    selected ? "ext-image-view--selected" : "",
-    resizing ? "ext-image-view--resizing" : "",
-  ]
-    .filter(Boolean)
-    .join(" ")
+    node.attrs.align === "left" && "ext-image-view--left",
+    node.attrs.align === "center" && "ext-image-view--center",
+    node.attrs.align === "right" && "ext-image-view--right",
+    selected && "ext-image-view--selected",
+    resizing && "ext-image-view--resizing"
+  )
 
   return (
     <>

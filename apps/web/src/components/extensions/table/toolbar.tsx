@@ -1,6 +1,6 @@
 "use client"
 import type { ChainedCommands, Editor } from "@tiptap/core"
-import { CheckIcon, Grid3x3 as GridIcon } from "lucide-react"
+import { Check as CheckIcon, SquaresFour as GridIcon } from "@phosphor-icons/react"
 import { useRef, useState } from "react"
 
 import { useToolbar, useToolbarEditor } from "../core/context"
@@ -12,6 +12,7 @@ import { DropdownMenuItem } from "../ui/dropdown-item"
 import { Popover } from "../ui/popover"
 import { PopoverContent } from "../ui/popover-content"
 import { Separator } from "../ui/separator"
+import { cn } from "@/lib/utils"
 
 const GRID_INIT_SIZE = 6
 const GRID_MAX_SIZE = 10
@@ -228,7 +229,7 @@ export const TableToolbar = ({
         <Button
           aria-label={labels.insertTable}
           active={state.inTable}
-          className={["ext-btn--icon-sm", className].filter(Boolean).join(" ")}
+          className={cn("ext-btn--icon-sm", className)}
           disabled={state.disabled}
           title={labels.insertTable}
         >
@@ -331,14 +332,12 @@ export const TableToolbar = ({
                 <div className="ext-table-grid-row" key={`table-row-${row}`}>
                   {createRange(gridSize.cols).map((col) => (
                     <div
-                      className={[
+                      className={cn(
                         "ext-table-grid-cell",
                         col <= selected.cols &&
                           row <= selected.rows &&
-                          "ext-table-grid-cell--selected",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
+                          "ext-table-grid-cell--selected"
+                      )}
                       data-cols={col}
                       data-rows={row}
                       data-table-grid-cell

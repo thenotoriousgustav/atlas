@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react"
-import { Plus } from "lucide-react"
+import { Plus } from "@phosphor-icons/react"
 import { useEffect, useRef } from "react"
 
 import { TextAlignSelector } from "./bubble-menu/align-selector"

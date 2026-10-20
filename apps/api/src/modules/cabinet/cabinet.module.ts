@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
-import { PrismaModule } from '../../prisma/prisma.module';
+import { PrismaModule } from '@/prisma/prisma.module';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { FoldersModule } from './folders/folders.module';
 import { TagsModule } from './tags/tags.module';
@@ -20,6 +20,15 @@ import { TagsModule } from './tags/tags.module';
           retryStrategy: (times: number) => {
             // ponytail: quiet retry interval when local Redis is offline without throwing AggregateError
             return Math.min(times * 5000, 60000);
+          },
+        },
+        defaultJobOptions: {
+          removeOnComplete: 100,
+          removeOnFail: 500,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
           },
         },
       }),

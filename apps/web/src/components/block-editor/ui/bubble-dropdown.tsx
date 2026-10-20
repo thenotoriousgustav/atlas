@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useCallback, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
 
 export interface BubbleDropdownProps extends React.HTMLAttributes<HTMLDivElement> {
   align?: "default" | "align" | "language"
@@ -61,10 +62,6 @@ const BubbleDropdown = React.forwardRef<HTMLDivElement, BubbleDropdownProps>(
       [onMouseLeave]
     )
 
-    const cls = ["block-editor-bubble-dropdown", alignClass[align], className]
-      .filter(Boolean)
-      .join(" ")
-
     return (
       <div
         ref={(node) => {
@@ -75,7 +72,7 @@ const BubbleDropdown = React.forwardRef<HTMLDivElement, BubbleDropdownProps>(
             ref.current = node
           }
         }}
-        className={cls}
+        className={cn("block-editor-bubble-dropdown", alignClass[align], className)}
         onFocus={handleFocus}
         onMouseLeave={handleMouseLeave}
         onMouseOver={handleMouseOver}
@@ -83,12 +80,10 @@ const BubbleDropdown = React.forwardRef<HTMLDivElement, BubbleDropdownProps>(
       >
         <div
           aria-hidden="true"
-          className={[
+          className={cn(
             "block-editor-bubble-dropdown-pill",
-            pill ? "block-editor-bubble-dropdown-pill--visible" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
+            pill && "block-editor-bubble-dropdown-pill--visible"
+          )}
           style={
             pill
               ? {

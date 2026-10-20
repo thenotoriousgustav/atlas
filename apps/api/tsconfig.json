@@ -1,6 +1,10 @@
 {
   "extends": "@cabinet/typescript-config/nestjs.json",
   "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "./dist",
@@ -8,5 +12,9 @@
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["src/**/*", "prisma/**/*", "test/**/*"]
+  "include": [
+    "src/**/*",
+    "prisma/**/*",
+    "test/**/*"
+  ]
 }

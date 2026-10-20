@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 
 export interface ColorSwatchProps {
   color: string
@@ -28,15 +29,13 @@ const ColorSwatch = React.forwardRef<HTMLButtonElement, ColorSwatchProps>(
         aria-pressed={active}
         aria-label={label}
         title={label}
-        className={[
+        className={cn(
           "block-editor-color-swatch",
           variant === "text"
             ? "block-editor-color-swatch--text"
             : "block-editor-color-swatch--highlight",
-          active ? "block-editor-color-swatch--active" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
+          active && "block-editor-color-swatch--active"
+        )}
         style={
           {
             "--swatch-check": checkColor,

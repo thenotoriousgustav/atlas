@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean
@@ -8,7 +9,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      className = "",
+      className,
       active = false,
       danger = false,
       type = "button",
@@ -16,20 +17,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const cls = [
-      "ext-btn",
-      active ? "ext-btn--active" : "",
-      danger ? "ext-btn--danger" : "",
-      className,
-    ]
-      .filter(Boolean)
-      .join(" ")
-
     return (
       <button
         ref={ref}
         type={type}
-        className={cls}
+        className={cn(
+          "ext-btn",
+          active && "ext-btn--active",
+          danger && "ext-btn--danger",
+          className
+        )}
         data-state={active ? "on" : "off"}
         aria-pressed={active}
         {...props}

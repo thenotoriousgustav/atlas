@@ -1,10 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common"
 import {
   ExtractedMetadata,
-} from "../providers/metadata/metadata-provider.interface"
-import { GenericMetadataProvider } from "../providers/metadata/generic.metadata-provider"
+} from "@/modules/cabinet/providers/metadata/metadata-provider.interface"
+import { GenericMetadataProvider } from "@/modules/cabinet/providers/metadata/generic.metadata-provider"
 
-export type { ExtractedMetadata } from "../providers/metadata/metadata-provider.interface"
+export type { ExtractedMetadata } from "@/modules/cabinet/providers/metadata/metadata-provider.interface"
 
 @Injectable()
 export class MetadataService {
