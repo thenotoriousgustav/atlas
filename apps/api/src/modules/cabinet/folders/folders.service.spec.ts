@@ -1,5 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { FoldersService } from './folders.service';
+import { FoldersController } from './folders.controller';
+import { IS_PUBLIC_KEY } from '@/common/decorators/public.decorator';
+
+jest.mock('@/auth/guards/auth.guard', () => ({ AuthGuard: class AuthGuard {} }));
 
 describe('FoldersService - shared collections', () => {
   let service: FoldersService;
@@ -9,12 +13,14 @@ describe('FoldersService - shared collections', () => {
     prisma = {
       folder: {
         findFirst: jest.fn(),
+        create: jest.fn().mockResolvedValue({ id: 'copy-folder' }),
         findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
       bookmark: {
         findMany: jest.fn().mockResolvedValue([]),
+        createMany: jest.fn(),
         updateMany: jest.fn(),
       },
       $transaction: jest.fn((fn) => fn(prisma)),
@@ -84,8 +90,47 @@ describe('FoldersService - shared collections', () => {
         isArchived: false,
       },
       select: { id: true, url: true, title: true, description: true, imageUrl: true },
-      orderBy: [{ position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
+      orderBy: [{ isPinned: 'desc' }, { position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
     });
+  });
+
+  it('requires authentication for copy while leaving the view public', () => {
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, FoldersController.prototype.findShared)).toBe(true);
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, FoldersController.prototype.copyShared)).not.toBe(true);
+  });
+
+  it('copies only public bookmark fields into a private folder owned by the requester', async () => {
+    prisma.folder.findFirst.mockResolvedValue({ id: 'source', userId: 'owner', name: 'Design' });
+    prisma.bookmark.findMany.mockResolvedValue([
+      { id: 'one', url: 'https://www.example.com/one', title: 'One', description: 'Public', imageUrl: null, notes: 'secret', tags: ['private'], isPinned: true },
+      { id: 'two', url: 'https://example.com/two', title: 'Two', description: null, imageUrl: 'https://example.com/two.png' },
+      { id: 'unsafe', url: 'javascript:alert(1)', title: 'Unsafe' },
+    ]);
+    await expect(service.copyShared('requester', 'a'.repeat(64))).resolves.toEqual({ folderId: 'copy-folder', copied: 2 });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.folder.create).toHaveBeenCalledWith({ data: { name: 'Design (Copy)', userId: 'requester' }, select: { id: true } });
+    expect(prisma.bookmark.findMany.mock.calls[0][0].where).toMatchObject({ userId: 'owner', folderId: 'source', type: 'BOOKMARK', deletedAt: null, isArchived: false });
+    expect(prisma.bookmark.createMany).toHaveBeenCalledWith({ data: [
+      { userId: 'requester', folderId: 'copy-folder', url: 'https://www.example.com/one', title: 'One', description: 'Public', imageUrl: null, sortTitle: 'one', sortDomain: 'example.com', position: 0, metadataStatus: 'COMPLETED' },
+      { userId: 'requester', folderId: 'copy-folder', url: 'https://example.com/two', title: 'Two', description: null, imageUrl: 'https://example.com/two.png', sortTitle: 'two', sortDomain: 'example.com', position: 1, metadataStatus: 'COMPLETED' },
+    ] });
+  });
+
+  it('rejects invalid, deleted, or revoked collections without creating anything', async () => {
+    await expect(service.copyShared('user', 'bad')).rejects.toThrow(NotFoundException);
+    prisma.folder.findFirst.mockResolvedValue(null);
+    await expect(service.copyShared('user', 'a'.repeat(64))).rejects.toThrow(NotFoundException);
+    expect(prisma.folder.create).not.toHaveBeenCalled();
+    expect(prisma.bookmark.createMany).not.toHaveBeenCalled();
+  });
+
+  it('supports an empty collection and propagates write errors to roll back the transaction', async () => {
+    prisma.folder.findFirst.mockResolvedValue({ id: 'source', userId: 'owner', name: 'Empty' });
+    await expect(service.copyShared('user', 'a'.repeat(64))).resolves.toEqual({ folderId: 'copy-folder', copied: 0 });
+    expect(prisma.bookmark.createMany).not.toHaveBeenCalled();
+    prisma.bookmark.findMany.mockResolvedValue([{ url: 'https://example.com', title: 'Example' }]);
+    prisma.bookmark.createMany.mockRejectedValue(new Error('write failed'));
+    await expect(service.copyShared('user', 'a'.repeat(64))).rejects.toThrow('write failed');
   });
 
   it('rejects malformed or unknown share tokens and clears tokens on delete', async () => {

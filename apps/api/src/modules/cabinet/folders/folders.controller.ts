@@ -12,9 +12,9 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
-import { AuthGuard } from '../../../auth/guards/auth.guard';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { Public } from '../../../common/decorators/public.decorator';
+import { AuthGuard } from '@/auth/guards/auth.guard';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
 import { FoldersService } from './folders.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -48,6 +48,13 @@ export class FoldersController {
   @ApiOperation({ summary: 'View a shared collection of bookmarks without signing in' })
   async findShared(@Param('token') token: string) {
     return this.foldersService.findShared(token);
+  }
+
+  @Post('shared/:token/copy')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Copy public bookmarks into a new private collection for the signed-in user' })
+  async copyShared(@CurrentUser() user: any, @Param('token') token: string) {
+    return this.foldersService.copyShared(user.id, token);
   }
 
   @Get(':id/share')

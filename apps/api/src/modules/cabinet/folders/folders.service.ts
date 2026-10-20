@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
+import { MetadataStatus, type Prisma } from '@prisma/client';
+import { bookmarkSortFields } from '@/modules/cabinet/bookmarks/bookmark-order';
 
 @Injectable()
 export class FoldersService {
@@ -101,18 +103,18 @@ export class FoldersService {
     return { shareToken: null };
   }
 
-  async findShared(token: string) {
+  async findShared(token: string, db: Prisma.TransactionClient = this.prisma) {
     if (!/^[a-f0-9]{64}$/.test(token)) {
       throw new NotFoundException('Collection not found');
     }
-    const folder = await this.prisma.folder.findFirst({
+    const folder = await db.folder.findFirst({
       where: { shareToken: token, deletedAt: null },
       select: { id: true, userId: true, name: true },
     });
     if (!folder) throw new NotFoundException('Collection not found');
 
     // Explicit allowlist: never serialize private notes, tags, metadata, or owner data.
-    const bookmarks = await this.prisma.bookmark.findMany({
+    const bookmarks = await db.bookmark.findMany({
       where: {
         folderId: folder.id,
         userId: folder.userId,
@@ -122,9 +124,42 @@ export class FoldersService {
         isArchived: false,
       },
       select: { id: true, url: true, title: true, description: true, imageUrl: true },
-      orderBy: [{ position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
+      orderBy: [{ isPinned: 'desc' }, { position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
     });
     return { name: folder.name, bookmarks };
+  }
+
+  async copyShared(userId: string, token: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // Read the current public allowlist, not private folder contents or client-supplied data.
+      const collection = await this.findShared(token, tx);
+      const bookmarks = collection.bookmarks.filter((bookmark) => {
+        try {
+          const url = new URL(bookmark.url || '');
+          return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch { return false; }
+      });
+      const folder = await tx.folder.create({
+        data: { name: `${collection.name} (Copy)`, userId },
+        select: { id: true },
+      });
+      if (bookmarks.length) {
+        await tx.bookmark.createMany({
+          data: bookmarks.map((bookmark, position) => ({
+            userId,
+            folderId: folder.id,
+            url: bookmark.url,
+            title: bookmark.title,
+            description: bookmark.description,
+            imageUrl: bookmark.imageUrl,
+            ...bookmarkSortFields({ title: bookmark.title, url: bookmark.url }),
+            position,
+            metadataStatus: MetadataStatus.COMPLETED,
+          })),
+        });
+      }
+      return { folderId: folder.id, copied: bookmarks.length };
+    });
   }
 
   async update(userId: string, id: string, updateFolderDto: UpdateFolderDto) {

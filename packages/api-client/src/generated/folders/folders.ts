@@ -208,6 +208,376 @@ export function useFoldersControllerFindAll<TData = Awaited<ReturnType<typeof fo
 
 
 /**
+ * @summary View a shared collection of bookmarks without signing in
+ */
+export const foldersControllerFindShared = (
+    token: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/shared/${token}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerFindSharedQueryKey = (token: string,) => {
+    return [
+    `/v1/folders/shared/${token}`
+    ] as const;
+    }
+
+
+export const getFoldersControllerFindSharedQueryOptions = <TData = Awaited<ReturnType<typeof foldersControllerFindShared>>, TError = unknown>(token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerFindShared>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFoldersControllerFindSharedQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof foldersControllerFindShared>>> = ({ signal }) => foldersControllerFindShared(token, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof foldersControllerFindShared>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FoldersControllerFindSharedQueryResult = NonNullable<Awaited<ReturnType<typeof foldersControllerFindShared>>>
+export type FoldersControllerFindSharedQueryError = unknown
+
+
+export function useFoldersControllerFindShared<TData = Awaited<ReturnType<typeof foldersControllerFindShared>>, TError = unknown>(
+ token: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerFindShared>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof foldersControllerFindShared>>,
+          TError,
+          Awaited<ReturnType<typeof foldersControllerFindShared>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFoldersControllerFindShared<TData = Awaited<ReturnType<typeof foldersControllerFindShared>>, TError = unknown>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerFindShared>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof foldersControllerFindShared>>,
+          TError,
+          Awaited<ReturnType<typeof foldersControllerFindShared>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFoldersControllerFindShared<TData = Awaited<ReturnType<typeof foldersControllerFindShared>>, TError = unknown>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerFindShared>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary View a shared collection of bookmarks without signing in
+ */
+
+export function useFoldersControllerFindShared<TData = Awaited<ReturnType<typeof foldersControllerFindShared>>, TError = unknown>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerFindShared>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFoldersControllerFindSharedQueryOptions(token,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Copy public bookmarks into a new private collection for the signed-in user
+ */
+export const foldersControllerCopyShared = (
+    token: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/shared/${token}/copy`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerCopySharedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerCopyShared>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerCopyShared>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['foldersControllerCopyShared'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerCopyShared>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  foldersControllerCopyShared(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerCopySharedMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerCopyShared>>>
+
+    export type FoldersControllerCopySharedMutationError = unknown
+
+    /**
+ * @summary Copy public bookmarks into a new private collection for the signed-in user
+ */
+export const useFoldersControllerCopyShared = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerCopyShared>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerCopyShared>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerCopySharedMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Get folder sharing status (owner only)
+ */
+export const foldersControllerGetShare = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/share`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerGetShareQueryKey = (id: string,) => {
+    return [
+    `/v1/folders/${id}/share`
+    ] as const;
+    }
+
+
+export const getFoldersControllerGetShareQueryOptions = <TData = Awaited<ReturnType<typeof foldersControllerGetShare>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetShare>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFoldersControllerGetShareQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof foldersControllerGetShare>>> = ({ signal }) => foldersControllerGetShare(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetShare>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FoldersControllerGetShareQueryResult = NonNullable<Awaited<ReturnType<typeof foldersControllerGetShare>>>
+export type FoldersControllerGetShareQueryError = unknown
+
+
+export function useFoldersControllerGetShare<TData = Awaited<ReturnType<typeof foldersControllerGetShare>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetShare>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof foldersControllerGetShare>>,
+          TError,
+          Awaited<ReturnType<typeof foldersControllerGetShare>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFoldersControllerGetShare<TData = Awaited<ReturnType<typeof foldersControllerGetShare>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetShare>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof foldersControllerGetShare>>,
+          TError,
+          Awaited<ReturnType<typeof foldersControllerGetShare>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFoldersControllerGetShare<TData = Awaited<ReturnType<typeof foldersControllerGetShare>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetShare>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get folder sharing status (owner only)
+ */
+
+export function useFoldersControllerGetShare<TData = Awaited<ReturnType<typeof foldersControllerGetShare>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetShare>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFoldersControllerGetShareQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Enable a public collection link (owner only)
+ */
+export const foldersControllerEnableShare = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/share`, method: 'PUT', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerEnableShareMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerEnableShare>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerEnableShare>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['foldersControllerEnableShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerEnableShare>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  foldersControllerEnableShare(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerEnableShareMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerEnableShare>>>
+
+    export type FoldersControllerEnableShareMutationError = unknown
+
+    /**
+ * @summary Enable a public collection link (owner only)
+ */
+export const useFoldersControllerEnableShare = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerEnableShare>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerEnableShare>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerEnableShareMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Revoke a public collection link (owner only)
+ */
+export const foldersControllerDisableShare = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/share`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerDisableShareMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerDisableShare>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerDisableShare>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['foldersControllerDisableShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerDisableShare>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  foldersControllerDisableShare(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerDisableShareMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerDisableShare>>>
+
+    export type FoldersControllerDisableShareMutationError = unknown
+
+    /**
+ * @summary Revoke a public collection link (owner only)
+ */
+export const useFoldersControllerDisableShare = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerDisableShare>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerDisableShare>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerDisableShareMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Get folder details by ID
  */
 export const foldersControllerFindOne = (
