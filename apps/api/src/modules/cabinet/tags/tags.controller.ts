@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@/auth/guards/auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -21,6 +21,24 @@ export class TagsController {
   @ApiOperation({ summary: 'Get all active tags with bookmarks count' })
   async findAll(@CurrentUser() user: any) {
     return this.tagsService.findAll(user.id);
+  }
+
+  @Delete('unused')
+  @ApiOperation({ summary: 'Delete tags that no active item uses' })
+  async removeUnused(@CurrentUser() user: any) {
+    return this.tagsService.removeUnused(user.id);
+  }
+
+  @Post(':id/merge')
+  @ApiOperation({ summary: 'Merge a tag into another tag' })
+  async merge(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: { targetId: string }) {
+    return this.tagsService.merge(user.id, id, dto?.targetId);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Rename a tag' })
+  async rename(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: { name: string }) {
+    return this.tagsService.rename(user.id, id, dto?.name);
   }
 
   @Delete(':id')

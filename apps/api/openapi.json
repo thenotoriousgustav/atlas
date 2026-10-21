@@ -143,6 +143,35 @@
         ]
       }
     },
+    "/v1/bookmarks/embeddable": {
+      "get": {
+        "operationId": "BookmarksController_embeddable",
+        "parameters": [
+          {
+            "name": "url",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Check whether a website allows being shown in an iframe",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/media/extract": {
       "get": {
         "operationId": "BookmarksController_extractMedia",
@@ -1369,7 +1398,83 @@
         ]
       }
     },
+    "/v1/tags/unused": {
+      "delete": {
+        "operationId": "TagsController_removeUnused",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Delete tags that no active item uses",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
+    "/v1/tags/{id}/merge": {
+      "post": {
+        "operationId": "TagsController_merge",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Merge a tag into another tag",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
     "/v1/tags/{id}": {
+      "patch": {
+        "operationId": "TagsController_rename",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Rename a tag",
+        "tags": [
+          "tags"
+        ]
+      },
       "delete": {
         "operationId": "TagsController_remove",
         "parameters": [
@@ -1443,6 +1548,13 @@
           "notes": {
             "type": "string",
             "description": "Plain-text preview of the note"
+          },
+          "tags": {
+            "description": "Replaces the note tags when provided",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "noteDocument": {
             "type": "object",
