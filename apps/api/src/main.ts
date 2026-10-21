@@ -45,6 +45,8 @@ async function bootstrap() {
 
   // Better Auth reads the raw body before the other API routes parse it.
   app.getHttpAdapter().getInstance().all('/v1/auth/{*path}', toNodeHandler(app.get(AuthService).auth));
+  // Drawings carry their embedded images, so their autosave route takes larger bodies.
+  app.use(/^\/v1\/bookmarks\/[^/]+\/drawing$/, json({ limit: '15mb' }));
   app.use(json({ limit: '2mb' }));
   app.use(urlencoded({ extended: true }));
 

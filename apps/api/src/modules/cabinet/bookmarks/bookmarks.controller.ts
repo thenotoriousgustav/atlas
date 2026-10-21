@@ -26,6 +26,7 @@ import { ImportBookmarksDto } from './dto/import-bookmarks.dto';
 import { ReorderBookmarksDto } from './dto/reorder-bookmarks.dto';
 import { DownloadMediaDto } from '@/modules/cabinet/dto/download-media.dto';
 import { SaveNoteDto } from './dto/save-note.dto';
+import { SaveDrawingDto } from './dto/save-drawing.dto';
 import {
   BulkActionDto,
   BulkArchiveDto,
@@ -49,6 +50,16 @@ export class BookmarksController {
     @Body() dto: SaveNoteDto,
   ) {
     return this.bookmarksService.saveNote(user.id, id, dto);
+  }
+
+  @Put(':id/drawing')
+  @ApiOperation({ summary: 'Create or autosave a drawing using a stable ID' })
+  async saveDrawing(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SaveDrawingDto,
+  ) {
+    return this.bookmarksService.saveDrawing(user.id, id, dto);
   }
 
   @Public()

@@ -77,6 +77,8 @@ model Folder {
   id          String    @id @default(uuid()) @db.Uuid
   shareToken  String?   @unique @db.VarChar(64)
   inviteTokenHash String? @unique @db.VarChar(64)
+  /// Role granted to people who join through the invitation link.
+  inviteRole  FolderRole @default(CONTRIBUTOR)
   name        String
   description String?
   parentId    String?   @db.Uuid
@@ -97,6 +99,7 @@ model Folder {
 model FolderMember {
   folderId String @db.Uuid
   userId String @db.Uuid
+  role FolderRole @default(CONTRIBUTOR)
   createdAt DateTime @default(now())
   folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -114,6 +117,8 @@ model Bookmark {
   description    String?
   notes          String?              @db.Text
   noteDocument   Json?
+  /// Excalidraw scene of a DRAWING item: elements, a small app state, and embedded files.
+  drawing        Json?
   imageUrl       String?
   faviconUrl     String?
   siteName       String?
@@ -147,9 +152,19 @@ model Bookmark {
   @@map("bookmarks")
 }
 
+/// What a folder member may do. The folder owner always has full access.
+/// VIEWER sees items; CONTRIBUTOR also adds items and manages their own;
+/// EDITOR also edits the content of, and trashes, anyone's links in the folder.
+enum FolderRole {
+  VIEWER
+  CONTRIBUTOR
+  EDITOR
+}
+
 enum BookmarkType {
   BOOKMARK
   NOTE
+  DRAWING
 }
 
 enum BookmarkContentType {

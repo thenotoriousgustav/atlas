@@ -58,7 +58,7 @@ describe('FoldersService - shared collections', () => {
   it('returns only allowlisted public bookmark fields for active direct bookmarks', async () => {
     const token = 'a'.repeat(64);
     prisma.folder.findFirst.mockResolvedValue({ id: 'folder-1', userId: 'user-1', name: 'Refs' });
-    prisma.bookmark.findMany.mockResolvedValue([
+    const links = [
       {
         id: 'bookmark-1',
         url: 'https://example.com',
@@ -66,10 +66,17 @@ describe('FoldersService - shared collections', () => {
         description: 'Public description',
         imageUrl: 'https://example.com/og.png',
       },
-    ]);
+    ];
+    prisma.bookmark.findMany.mockImplementation(({ where }: any) =>
+      Promise.resolve(where.type === 'NOTE' ? [{ id: 'note-1', title: 'Plan', notes: 'Shared text' }]
+        : where.type === 'DRAWING' ? [{ id: 'd-1', title: 'Flow', imageUrl: 'data:image/png;base64,AAAA' }, { id: 'd-2', title: 'Raw', imageUrl: 'https://tracker.example/x.png' }]
+        : links));
 
     await expect(service.findShared(token)).resolves.toEqual({
       name: 'Refs',
+      notes: [{ id: 'note-1', title: 'Plan', text: 'Shared text' }],
+      // Only an embedded preview is served; any other address is dropped.
+      drawings: [{ id: 'd-1', title: 'Flow', preview: 'data:image/png;base64,AAAA' }, { id: 'd-2', title: 'Raw', preview: null }],
       bookmarks: [
         {
           id: 'bookmark-1',
@@ -92,6 +99,12 @@ describe('FoldersService - shared collections', () => {
       select: { id: true, url: true, title: true, description: true, imageUrl: true },
       orderBy: [{ isPinned: 'desc' }, { position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
     });
+    // Notes share their title and text only: no document, tags, or personal fields.
+    expect(prisma.bookmark.findMany).toHaveBeenCalledWith({
+      where: { folderId: 'folder-1', userId: 'user-1', type: 'NOTE', deletedAt: null, isArchived: false },
+      select: { id: true, title: true, notes: true },
+      orderBy: [{ isPinned: 'desc' }, { position: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
+    });
   });
 
   it('requires authentication for copy while leaving the view public', () => {
@@ -101,19 +114,52 @@ describe('FoldersService - shared collections', () => {
 
   it('copies only public bookmark fields into a private folder owned by the requester', async () => {
     prisma.folder.findFirst.mockResolvedValue({ id: 'source', userId: 'owner', name: 'Design' });
-    prisma.bookmark.findMany.mockResolvedValue([
+    const links = [
       { id: 'one', url: 'https://www.example.com/one', title: 'One', description: 'Public', imageUrl: null, notes: 'secret', tags: ['private'], isPinned: true },
       { id: 'two', url: 'https://example.com/two', title: 'Two', description: null, imageUrl: 'https://example.com/two.png' },
       { id: 'unsafe', url: 'javascript:alert(1)', title: 'Unsafe' },
-    ]);
+    ];
+    prisma.bookmark.findMany.mockImplementation(({ where }: any) => Promise.resolve(where.type === 'BOOKMARK' ? links : []));
     await expect(service.copyShared('requester', 'a'.repeat(64))).resolves.toEqual({ folderId: 'copy-folder', copied: 2 });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.folder.create).toHaveBeenCalledWith({ data: { name: 'Design (Copy)', userId: 'requester' }, select: { id: true } });
-    expect(prisma.bookmark.findMany.mock.calls[0][0].where).toMatchObject({ userId: 'owner', folderId: 'source', type: 'BOOKMARK', deletedAt: null, isArchived: false });
+    expect(prisma.bookmark.findMany.mock.calls[1][0].where).toMatchObject({ userId: 'owner', folderId: 'source', type: 'BOOKMARK', deletedAt: null, isArchived: false });
     expect(prisma.bookmark.createMany).toHaveBeenCalledWith({ data: [
       { userId: 'requester', folderId: 'copy-folder', url: 'https://www.example.com/one', title: 'One', description: 'Public', imageUrl: null, sortTitle: 'one', sortDomain: 'example.com', position: 0, metadataStatus: 'COMPLETED' },
       { userId: 'requester', folderId: 'copy-folder', url: 'https://example.com/two', title: 'Two', description: null, imageUrl: 'https://example.com/two.png', sortTitle: 'two', sortDomain: 'example.com', position: 1, metadataStatus: 'COMPLETED' },
     ] });
+  });
+
+  it('copies shared notes as notes with a plain document built from their text', async () => {
+    prisma.folder.findFirst.mockResolvedValue({ id: 'source', userId: 'owner', name: 'Design' });
+    prisma.bookmark.findMany.mockImplementation(({ where }: any) =>
+      Promise.resolve(where.type === 'NOTE' ? [{ id: 'n', title: 'Plan', notes: 'First\n\nSecond' }] : []));
+    await expect(service.copyShared('requester', 'a'.repeat(64))).resolves.toEqual({ folderId: 'copy-folder', copied: 1 });
+    expect(prisma.bookmark.createMany).toHaveBeenCalledWith({ data: [expect.objectContaining({
+      userId: 'requester', folderId: 'copy-folder', type: 'NOTE', title: 'Plan', notes: 'First\n\nSecond',
+      noteDocument: { type: 'doc', content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
+        { type: 'paragraph' },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Second' }] },
+      ] },
+    })] });
+  });
+
+  it('copies shared drawings with their scene and preview', async () => {
+    prisma.folder.findFirst.mockResolvedValue({ id: 'source', userId: 'owner', name: 'Design' });
+    const scene = { elements: [{ id: 'e1', type: 'rectangle' }], appState: {}, files: {} };
+    prisma.bookmark.findMany.mockImplementation(({ where, select }: any) => Promise.resolve(
+      where.type !== 'DRAWING' ? []
+        : select.drawing ? [{ title: 'Flow', drawing: scene, imageUrl: 'data:image/png;base64,AAAA' }]
+        : [{ id: 'd-1', title: 'Flow', imageUrl: 'data:image/png;base64,AAAA' }]));
+    await expect(service.copyShared('requester', 'a'.repeat(64))).resolves.toEqual({ folderId: 'copy-folder', copied: 1 });
+    expect(prisma.bookmark.findMany).toHaveBeenLastCalledWith({
+      where: { id: { in: ['d-1'] }, type: 'DRAWING', deletedAt: null },
+      select: { title: true, drawing: true, imageUrl: true },
+    });
+    expect(prisma.bookmark.createMany).toHaveBeenCalledWith({ data: [expect.objectContaining({
+      userId: 'requester', folderId: 'copy-folder', type: 'DRAWING', title: 'Flow', drawing: scene, imageUrl: 'data:image/png;base64,AAAA',
+    })] });
   });
 
   it('rejects invalid, deleted, or revoked collections without creating anything', async () => {

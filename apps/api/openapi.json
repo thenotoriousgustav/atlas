@@ -85,6 +85,45 @@
         ]
       }
     },
+    "/v1/bookmarks/{id}/drawing": {
+      "put": {
+        "operationId": "BookmarksController_saveDrawing",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDrawingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create or autosave a drawing using a stable ID",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/proxy-image": {
       "get": {
         "operationId": "BookmarksController_proxyImage",
@@ -278,7 +317,8 @@
             "schema": {
               "enum": [
                 "BOOKMARK",
-                "NOTE"
+                "NOTE",
+                "DRAWING"
               ],
               "type": "string"
             }
@@ -1104,6 +1144,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1115,6 +1165,43 @@
           }
         ],
         "summary": "Create or rotate a collaboration invitation (owner only)",
+        "tags": [
+          "folders"
+        ]
+      },
+      "patch": {
+        "operationId": "FoldersController_updateInviteRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Change the role the invitation link grants (owner only)",
         "tags": [
           "folders"
         ]
@@ -1147,7 +1234,91 @@
         ]
       }
     },
+    "/v1/folders/{id}/members": {
+      "post": {
+        "operationId": "FoldersController_addMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Give an existing account access by email (owner only)",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
     "/v1/folders/{id}/members/{memberId}": {
+      "patch": {
+        "operationId": "FoldersController_updateMemberRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Change a member's role (owner only)",
+        "tags": [
+          "folders"
+        ]
+      },
       "delete": {
         "operationId": "FoldersController_removeMember",
         "parameters": [
@@ -1566,6 +1737,38 @@
           "noteDocument"
         ]
       },
+      "SaveDrawingDto": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "Destination folder; null moves the drawing to Unfiled"
+          },
+          "title": {
+            "type": "string",
+            "description": "Drawing title"
+          },
+          "tags": {
+            "description": "Replaces the drawing tags when provided",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scene": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Excalidraw scene: { elements, appState, files }"
+          },
+          "preview": {
+            "type": "string",
+            "description": "Small image of the drawing for cards, as a data URL; an empty string clears it"
+          }
+        },
+        "required": [
+          "scene"
+        ]
+      },
       "DownloadMediaDto": {
         "type": "object",
         "properties": {
@@ -1608,7 +1811,8 @@
             "type": "string",
             "enum": [
               "BOOKMARK",
-              "NOTE"
+              "NOTE",
+              "DRAWING"
             ],
             "default": "BOOKMARK",
             "description": "Item type: BOOKMARK or NOTE"
@@ -1763,7 +1967,8 @@
             "type": "string",
             "enum": [
               "BOOKMARK",
-              "NOTE"
+              "NOTE",
+              "DRAWING"
             ],
             "description": "Item type: BOOKMARK or NOTE"
           },
@@ -1835,6 +2040,58 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "InvitationDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "VIEWER",
+              "CONTRIBUTOR",
+              "EDITOR"
+            ],
+            "description": "Role granted to people who join with the link"
+          }
+        }
+      },
+      "MemberRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "VIEWER",
+              "CONTRIBUTOR",
+              "EDITOR"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "AddMemberDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "VIEWER",
+              "CONTRIBUTOR",
+              "EDITOR"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "example": "friend@example.com",
+            "description": "Email of an existing Cabinet account"
+          }
+        },
+        "required": [
+          "role",
+          "email"
         ]
       },
       "UpdateFolderDto": {

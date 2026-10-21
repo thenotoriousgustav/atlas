@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Inject,
   forwardRef,
   Logger,
@@ -24,10 +25,11 @@ import { CreateBookmarkDto } from "./dto/create-bookmark.dto"
 import { UpdateBookmarkDto } from "./dto/update-bookmark.dto"
 import { DownloadMediaDto } from "@/modules/cabinet/dto/download-media.dto"
 import { SaveNoteDto } from "./dto/save-note.dto"
+import { SaveDrawingDto } from "./dto/save-drawing.dto"
 import { CRAWLER_USER_AGENTS } from "@/modules/cabinet/providers/metadata/metadata-provider.interface"
 import { validatePublicUrl } from "@/common/utils/ssrf"
 import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from "./bookmark-order"
-import { accessibleFolder, folderSummary } from "../folders/folder-access"
+import { accessibleFolder, editableBookmark, editableFolder, folderSummary, shareableNoteFields, viewableBookmark, writableFolder } from "../folders/folder-access"
 import { frameBlockedByHeaders } from "./embed-policy"
 
 @Injectable()
@@ -90,7 +92,7 @@ export class BookmarksService implements OnModuleInit {
     // 3. Check folder ownership if folderId is specified
     if (createBookmarkDto.folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: createBookmarkDto.folderId, ...accessibleFolder(userId) },
+        where: { id: createBookmarkDto.folderId, ...writableFolder(userId) },
       })
       if (!folder) {
         throw new NotFoundException("Target folder not found")
@@ -158,17 +160,26 @@ export class BookmarksService implements OnModuleInit {
     }
     const where = { id, userId, type: BookmarkType.NOTE, deletedAt: null }
     const existing = await this.prisma.bookmark.findFirst({ where: { id } })
-    if (
-      existing &&
-      (existing.userId !== userId ||
-        existing.type !== BookmarkType.NOTE ||
-        existing.deletedAt)
-    ) {
+    if (existing && (existing.type !== BookmarkType.NOTE || existing.deletedAt)) {
       throw new NotFoundException("Note not found")
+    }
+    if (existing && existing.userId !== userId) {
+      // Editors of a shared folder change a note's title and content; its folder and tags stay with the author.
+      const editable = existing.folderId
+        ? await this.prisma.folder.findFirst({ where: { id: existing.folderId, ...editableFolder(userId) }, select: { id: true } })
+        : null
+      if (!editable) throw new NotFoundException("Note not found")
+      const title = dto.title?.trim() || "Untitled note"
+      const updated = await this.prisma.bookmark.update({
+        where: { id },
+        data: { title, ...bookmarkSortFields({ title }), notes: dto.notes ?? "", noteDocument: dto.noteDocument },
+        include: { tags: true, folder: { select: folderSummary } },
+      })
+      return { ...updated, tags: [], canEdit: false, access: "editor" as const }
     }
     if (dto.folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: dto.folderId, ...accessibleFolder(userId) },
+        where: { id: dto.folderId, ...writableFolder(userId) },
       })
       if (!folder) throw new NotFoundException("Folder not found")
     }
@@ -218,6 +229,83 @@ export class BookmarksService implements OnModuleInit {
         data: { ...data, tags: tags && { set: [], ...tags } },
         include,
       })
+    }
+  }
+
+  /**
+   * Creates or autosaves a drawing under a stable client-generated id, like a note.
+   * Editors of a shared folder change its title and scene; its folder and tags stay with the author.
+   */
+  async saveDrawing(userId: string, id: string, dto: SaveDrawingDto) {
+    const scene = dto.scene
+    if (!scene || !Array.isArray(scene.elements)) {
+      throw new BadRequestException("Invalid drawing")
+    }
+    const drawing = {
+      elements: scene.elements,
+      appState: scene.appState && typeof scene.appState === "object" ? scene.appState : {},
+      files: scene.files && typeof scene.files === "object" ? scene.files : {},
+    }
+    const title = dto.title?.trim() || "Untitled drawing"
+    const content = {
+      title,
+      ...bookmarkSortFields({ title }),
+      drawing,
+      // An empty preview means the canvas was cleared.
+      ...(dto.preview !== undefined ? { imageUrl: dto.preview || null } : {}),
+    }
+    const select = { omit: { drawing: true }, include: { tags: true, folder: { select: folderSummary } } } as const
+
+    const existing = await this.prisma.bookmark.findFirst({ where: { id }, select: { userId: true, type: true, deletedAt: true, folderId: true } })
+    if (existing && (existing.type !== BookmarkType.DRAWING || existing.deletedAt)) {
+      throw new NotFoundException("Drawing not found")
+    }
+    if (existing && existing.userId !== userId) {
+      const editable = existing.folderId
+        ? await this.prisma.folder.findFirst({ where: { id: existing.folderId, ...editableFolder(userId) }, select: { id: true } })
+        : null
+      if (!editable) throw new NotFoundException("Drawing not found")
+      const updated = await this.prisma.bookmark.update({ where: { id }, data: content, ...select })
+      return { ...updated, tags: [], canEdit: false, access: "editor" as const }
+    }
+
+    if (dto.folderId) {
+      const folder = await this.prisma.folder.findFirst({ where: { id: dto.folderId, ...writableFolder(userId) } })
+      if (!folder) throw new NotFoundException("Folder not found")
+    }
+    const tagNames = dto.tags?.map((name) => name.replace(/^#/, "").trim().toLowerCase()).filter(Boolean)
+    const tags = tagNames
+      ? {
+          connectOrCreate: [...new Set(tagNames)].map((name) => ({
+            where: { name_userId: { name, userId } },
+            create: { name, userId },
+          })),
+        }
+      : undefined
+    const owned = { ...content, ...(dto.folderId !== undefined && existing ? { folderId: dto.folderId || null } : {}) }
+    const where = { id, userId, type: BookmarkType.DRAWING, deletedAt: null }
+    try {
+      // A stable client-generated UUID makes retries safe after a lost response.
+      return await this.prisma.bookmark.upsert({
+        where,
+        create: {
+          id,
+          userId,
+          folderId: dto.folderId || null,
+          type: BookmarkType.DRAWING,
+          metadataStatus: MetadataStatus.COMPLETED,
+          ...content,
+          tags,
+        },
+        update: { ...owned, tags: tags && { set: [], ...tags } },
+        ...select,
+      })
+    } catch (error) {
+      const code = (error as { code?: string }).code
+      if (code !== "P2002" && code !== "P2025") throw error
+      const mine = await this.prisma.bookmark.findFirst({ where })
+      if (!mine) throw new NotFoundException("Drawing not found")
+      return this.prisma.bookmark.update({ where, data: { ...owned, tags: tags && { set: [], ...tags } }, ...select })
     }
   }
 
@@ -301,8 +389,8 @@ export class BookmarksService implements OnModuleInit {
       if (!folder) throw new NotFoundException("Folder not found")
       where.folderId = filters.folderId
       if (!filters.isTrash) {
+        // Everything in a shared folder, links and notes, is visible to people with access.
         delete where.userId
-        where.AND = [{ OR: [{ userId }, { type: BookmarkType.BOOKMARK }] }]
       }
     }
 
@@ -334,12 +422,13 @@ export class BookmarksService implements OnModuleInit {
       if (!filters.folderId && !filters.isTrash && filters.isFavorite === undefined && filters.isArchived === undefined && !filters.tag && !filters.status && !filters.type && !filters.contentType) {
         // Only unscoped global search adds shared links; scoped personal queues stay personal.
         delete where.userId
-        where.AND = [{ OR: [{ userId }, { type: BookmarkType.BOOKMARK, folder: { is: accessibleFolder(userId) } }] }]
+        where.AND = [{ OR: [{ userId }, { folder: { is: accessibleFolder(userId) } }] }]
       }
       where.OR = [
         { title: { contains: filters.search, mode: "insensitive" } },
         { description: { contains: filters.search, mode: "insensitive" } },
-        { AND: [{ userId }, { notes: { contains: filters.search, mode: "insensitive" } }] },
+        // A link's notes are personal; a note's text is shared with its folder.
+        { AND: [{ OR: [{ userId }, { type: BookmarkType.NOTE }] }, { notes: { contains: filters.search, mode: "insensitive" } }] },
         { url: { contains: filters.search, mode: "insensitive" } },
       ]
     }
@@ -347,6 +436,8 @@ export class BookmarksService implements OnModuleInit {
     const take = filters.limit
     const findParams: any = {
       where,
+      // A drawing's scene can be large; lists carry its preview image instead.
+      omit: { drawing: true },
       include: {
         tags: true,
         folder: { select: folderSummary },
@@ -367,7 +458,16 @@ export class BookmarksService implements OnModuleInit {
       ? Promise.resolve(undefined)
       : this.prisma.bookmark.count({ where })
 
-    const [items, totalCount] = await Promise.all([itemsPromise, countPromise])
+    const editableFolderIdsPromise = this.prisma.folder.findMany({
+      where: editableFolder(userId),
+      select: { id: true },
+    })
+    const [items, totalCount, editableFolders] = await Promise.all([
+      itemsPromise,
+      countPromise,
+      editableFolderIdsPromise,
+    ])
+    const editableFolderIds = new Set(editableFolders.map((folder) => folder.id))
 
     let nextCursor: string | null = null
     let slicedItems = items
@@ -381,22 +481,26 @@ export class BookmarksService implements OnModuleInit {
     return {
       data: slicedItems.map((item) => ({
         ...item,
-        notes: item.userId === userId ? item.notes : null,
-        noteDocument: item.userId === userId ? item.noteDocument : null,
+        ...shareableNoteFields(item, userId),
+        // canEdit: personal fields (favorite, pin, archive, tags, folder, notes) belong to the author.
         canEdit: item.userId === userId,
+        // access: what this user may do with the item's shared content.
+        access:
+          item.userId === userId
+            ? "owner"
+            : item.folderId && editableFolderIds.has(item.folderId)
+              ? "editor"
+              : "viewer",
       })),
       nextCursor,
       totalCount,
     }
   }
 
+  /** One item the user may open, with what they may do with it. Used by the note editor. */
   async findOne(userId: string, id: string) {
     const bookmark = await this.prisma.bookmark.findFirst({
-      where: {
-        id,
-        userId,
-        deletedAt: null,
-      },
+      where: { id, deletedAt: null, AND: [viewableBookmark(userId)] },
       include: {
         tags: true,
         folder: { select: folderSummary },
@@ -406,8 +510,20 @@ export class BookmarksService implements OnModuleInit {
     if (!bookmark) {
       throw new NotFoundException("Bookmark not found")
     }
-
-    return bookmark
+    if (bookmark.userId === userId) {
+      return { ...bookmark, canEdit: true, access: "owner" as const }
+    }
+    const editable = bookmark.folderId
+      ? await this.prisma.folder.findFirst({ where: { id: bookmark.folderId, ...editableFolder(userId) }, select: { id: true } })
+      : null
+    return {
+      ...bookmark,
+      ...shareableNoteFields(bookmark, userId),
+      // Tags are personal to their author.
+      tags: [],
+      canEdit: false,
+      access: editable ? ("editor" as const) : ("viewer" as const),
+    }
   }
 
   async update(
@@ -415,12 +531,24 @@ export class BookmarksService implements OnModuleInit {
     id: string,
     updateBookmarkDto: UpdateBookmarkDto
   ) {
-    await this.findOne(userId, id) // check existence
+    const existing = await this.prisma.bookmark.findFirst({
+      where: { id, deletedAt: null, AND: [editableBookmark(userId)] },
+      select: { userId: true },
+    })
+    if (!existing) throw new NotFoundException("Bookmark not found")
+    if (existing.userId !== userId) {
+      // Editors change shared content only; personal fields stay with the author.
+      const personal = (["type", "notes", "isPinned", "isFavorite", "isArchived", "folderId", "tags"] as const)
+        .filter((field) => updateBookmarkDto[field] !== undefined)
+      if (personal.length) {
+        throw new ForbiddenException("Only the person who saved this item can change its folder, tags, notes, or personal flags")
+      }
+    }
 
     // Check folder ownership if folderId is updated
     if (updateBookmarkDto.folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: updateBookmarkDto.folderId, ...accessibleFolder(userId) },
+        where: { id: updateBookmarkDto.folderId, ...writableFolder(userId) },
       })
       if (!folder) {
         throw new NotFoundException("Target folder not found")
@@ -467,7 +595,11 @@ export class BookmarksService implements OnModuleInit {
   }
 
   async remove(userId: string, id: string) {
-    await this.findOne(userId, id) // check existence
+    const existing = await this.prisma.bookmark.findFirst({
+      where: { id, deletedAt: null, AND: [editableBookmark(userId)] },
+      select: { id: true },
+    })
+    if (!existing) throw new NotFoundException("Bookmark not found")
 
     return this.prisma.bookmark.update({
       where: { id },
@@ -479,8 +611,9 @@ export class BookmarksService implements OnModuleInit {
 
   // ponytail: restore soft-deleted bookmark; detach orphaned folder if folder was deleted
   async restore(userId: string, id: string) {
+    // Editors may restore what they trashed from a shared folder (it lands in the author's Trash).
     const bookmark = await this.prisma.bookmark.findFirst({
-      where: { id, userId, deletedAt: { not: null } },
+      where: { id, deletedAt: { not: null }, AND: [editableBookmark(userId)] },
     })
 
     if (!bookmark) {
@@ -515,8 +648,8 @@ export class BookmarksService implements OnModuleInit {
     const result = await this.prisma.bookmark.updateMany({
       where: {
         id: { in: ids },
-        userId,
         deletedAt: { not: null },
+        AND: [editableBookmark(userId)],
       },
       data: {
         deletedAt: null,
@@ -530,8 +663,8 @@ export class BookmarksService implements OnModuleInit {
     const result = await this.prisma.bookmark.updateMany({
       where: {
         id: { in: ids },
-        userId,
         deletedAt: null,
+        AND: [editableBookmark(userId)],
       },
       data: {
         deletedAt: new Date(),
@@ -559,7 +692,7 @@ export class BookmarksService implements OnModuleInit {
   async bulkMove(userId: string, ids: string[], folderId?: string | null) {
     if (folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: folderId, ...accessibleFolder(userId) },
+        where: { id: folderId, ...writableFolder(userId) },
       })
       if (!folder) throw new NotFoundException("Folder not found")
     }

@@ -18,6 +18,7 @@ import { Public } from '@/common/decorators/public.decorator';
 import { FoldersService } from './folders.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
+import { AddMemberDto, InvitationDto, MemberRoleDto } from './dto/sharing.dto';
 
 @ApiTags('folders')
 @ApiCookieAuth()
@@ -74,8 +75,46 @@ export class FoldersController {
   @Put(':id/invitation')
   @Header('Cache-Control', 'private, no-store')
   @ApiOperation({ summary: 'Create or rotate a collaboration invitation (owner only)' })
-  async enableInvite(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
-    return this.foldersService.enableInvite(user.id, id);
+  async enableInvite(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: InvitationDto,
+  ) {
+    return this.foldersService.enableInvite(user.id, id, dto?.role);
+  }
+
+  @Patch(':id/invitation')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Change the role the invitation link grants (owner only)' })
+  async updateInviteRole(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: MemberRoleDto,
+  ) {
+    return this.foldersService.updateInviteRole(user.id, id, dto.role);
+  }
+
+  @Post(':id/members')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Give an existing account access by email (owner only)' })
+  async addMember(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AddMemberDto,
+  ) {
+    return this.foldersService.addMember(user.id, id, dto.email, dto.role);
+  }
+
+  @Patch(':id/members/:memberId')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: "Change a member's role (owner only)" })
+  async updateMemberRole(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('memberId', new ParseUUIDPipe()) memberId: string,
+    @Body() dto: MemberRoleDto,
+  ) {
+    return this.foldersService.updateMemberRole(user.id, id, memberId, dto.role);
   }
 
   @Delete(':id/invitation')
