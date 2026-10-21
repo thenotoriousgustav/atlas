@@ -2,15 +2,22 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import { adjacentPreviewBookmark, moodboardColumnCount } from "../src/lib/bookmark-view.ts"
 
-test("masonry adapts to container width and respects the selected column limit", () => {
-  for (const [width, expected] of [[320, 2], [559, 2], [560, 3], [879, 3], [880, 4], [1400, 4]]) {
-    assert.equal(moodboardColumnCount(width, 4), expected)
-    assert.equal(moodboardColumnCount(width, 1), 1)
-    assert.equal(moodboardColumnCount(width, 2), 2)
+test("masonry adapts to container width with responsive breakpoints up to 4 columns", () => {
+  for (const [width, expected] of [
+    [320, 1],
+    [479, 1],
+    [480, 2],
+    [767, 2],
+    [768, 3],
+    [1023, 3],
+    [1024, 4],
+    [1400, 4],
+  ]) {
+    assert.equal(moodboardColumnCount(width), expected)
   }
   // Opening the inspector reduces container width without changing the viewport.
-  assert.equal(moodboardColumnCount(1000, 4), 4)
-  assert.equal(moodboardColumnCount(552, 4), 2)
+  assert.equal(moodboardColumnCount(1000), 3)
+  assert.equal(moodboardColumnCount(552), 2)
 })
 
 test("preview navigation follows displayed order, skips notes, and stops at boundaries", () => {

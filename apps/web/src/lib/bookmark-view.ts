@@ -1,6 +1,8 @@
-export function moodboardColumnCount(width: number, preferred: number) {
-  const available = width < 560 ? 2 : width < 880 ? 3 : 4
-  return Math.min(Math.max(1, preferred), available)
+export function moodboardColumnCount(width: number, _legacy?: unknown): number {
+  if (width > 0 && width < 480) return 1
+  if (width > 0 && width < 768) return 2
+  if (width > 0 && width < 1024) return 3
+  return 4
 }
 
 export function adjacentPreviewBookmark<T extends { id: string; url?: string; type?: string }>(
