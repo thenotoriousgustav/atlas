@@ -1,0 +1,116 @@
+/* Cabinet's own tokens (apps/web/src/app/globals.css), light and dark. */
+:root {
+  color-scheme: light dark;
+  --ground: #f7f7f5;
+  --surface: #ffffff;
+  --text: #272924;
+  --muted: #62645e;
+  --border: #e3e4de;
+  --control: #cdd0c5;
+  --hover: #eeefea;
+  --primary: #272924;
+  --primary-text: #ffffff;
+  --accent: #596344;
+  --accent-soft: #edf0e5;
+  --negative: #9f2430;
+  --radius: 6px;
+  --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #171717;
+    --surface: #202020;
+    --text: #f0f0ec;
+    --muted: #ababa5;
+    --border: #333333;
+    --control: #4a4a4a;
+    --hover: #292929;
+    --primary: #f0f0ec;
+    --primary-text: #171717;
+    --accent: #bac79b;
+    --accent-soft: #2e3326;
+    --negative: #ffb4b4;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--ground); color: var(--text); font: 14px/20px var(--font); }
+svg { display: block; }
+
+.popup { width: 360px; padding: 12px 16px 16px; }
+.bar { display: flex; align-items: center; justify-content: space-between; height: 32px; margin-bottom: 8px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -0.01em; }
+.brand svg { width: 14px; height: 16px; }
+
+.state { display: flex; flex-direction: column; gap: 12px; }
+.page { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--muted); font-size: 12px; }
+.favicon { flex: none; border-radius: 3px; }
+.host { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: 12px; color: var(--muted); }
+input, select {
+  width: 100%; height: 36px; padding: 0 10px; font: inherit; color: inherit;
+  background: var(--surface); border: 1px solid var(--control); border-radius: var(--radius);
+}
+select { padding-right: 28px; }
+input:focus-visible, select:focus-visible, .tags:focus-within, .button:focus-visible, .icon-button:focus-visible, .chip button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+input:focus-visible { outline-offset: -1px; }
+
+.tags {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 36px; padding: 4px 6px;
+  background: var(--surface); border: 1px solid var(--control); border-radius: var(--radius);
+}
+.tags input { flex: 1 1 80px; min-width: 80px; height: 26px; padding: 0 4px; border: 0; background: transparent; }
+.tags input:focus-visible { outline: none; }
+/* The suggestion list is reached by typing; hide Chrome's dropdown arrow. */
+.tags input::-webkit-calendar-picker-indicator { display: none !important; }
+.chip {
+  display: inline-flex; align-items: center; gap: 2px; height: 24px; padding: 0 2px 0 8px; flex: none;
+  background: var(--accent-soft); color: var(--accent); border-radius: 4px; font-size: 12px; white-space: nowrap;
+}
+.chip button {
+  display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 3px;
+  background: transparent; color: inherit; cursor: pointer; font-size: 14px; line-height: 1;
+}
+.chip button:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+
+.actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.actions .button:only-child { margin-left: auto; }
+.hint { font-size: 12px; }
+.muted { color: var(--muted); margin: 0; }
+
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px;
+  font: 500 14px/1 var(--font); color: var(--text); background: transparent;
+  border: 1px solid var(--control); border-radius: var(--radius); cursor: pointer;
+}
+.button:hover { background: var(--hover); }
+.button.primary { color: var(--primary-text); background: var(--primary); border-color: var(--primary); }
+.button.primary:hover { opacity: 0.9; }
+.button:disabled { opacity: 0.55; cursor: default; }
+.icon-button {
+  display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius);
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+.icon-button:hover { background: var(--hover); color: var(--text); }
+.icon-button svg { width: 16px; height: 16px; }
+
+.message-title { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; }
+.check { width: 16px; height: 16px; color: var(--accent); }
+.notice { margin: 0; padding: 8px 10px; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.notice a { color: var(--text); font-weight: 500; }
+.error { margin: 0; font-size: 12px; color: var(--negative); }
+
+.skeleton { background: var(--hover); border-radius: 4px; }
+.skeleton.line { height: 12px; width: 60%; }
+.skeleton.field { height: 54px; }
+
+/* Options page */
+.options { max-width: 440px; padding: 16px; }
+.options h1 { margin: 0 0 4px; font-size: 16px; }
+.options form { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.options .help { font-size: 12px; color: var(--muted); margin: 0; }

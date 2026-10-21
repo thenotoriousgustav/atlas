@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Save to Cabinet</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <main class="popup">
+    <header class="bar">
+      <span class="brand">
+        <svg viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="24" rx="2"/><path d="M2 14h20M9 8h6M9 20h6" stroke-linecap="round"/></svg>
+        Cabinet
+      </span>
+      <button type="button" class="icon-button" id="open-settings" aria-label="Extension settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
+    </header>
+
+    <section id="state-loading" class="state" role="status">
+      <div class="skeleton line wide"></div>
+      <div class="skeleton field"></div>
+      <div class="skeleton field"></div>
+    </section>
+
+    <section id="state-message" class="state" hidden>
+      <p class="message-title" id="message-title"></p>
+      <p class="muted" id="message-text"></p>
+      <button type="button" class="button primary" id="message-action" hidden></button>
+    </section>
+
+    <form id="state-form" class="state" hidden novalidate>
+      <div class="page">
+        <img class="favicon" id="favicon" alt="" width="16" height="16">
+        <span class="host" id="host"></span>
+      </div>
+
+      <label class="field">
+        <span class="label">Title</span>
+        <input id="title" name="title" type="text" maxlength="500" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span class="label">Folder</span>
+        <select id="folder" name="folder"></select>
+      </label>
+
+      <div class="field">
+        <label class="label" for="tag-input">Tags</label>
+        <div class="tags" id="tags">
+          <input id="tag-input" type="text" list="tag-suggestions" placeholder="Add a tag" autocomplete="off" maxlength="30">
+        </div>
+        <datalist id="tag-suggestions"></datalist>
+      </div>
+
+      <p class="notice" id="duplicate" role="status" hidden></p>
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <div class="actions">
+        <span class="hint muted" id="shortcut-hint">Enter to save</span>
+        <button type="submit" class="button primary" id="save">Save</button>
+      </div>
+    </form>
+
+    <section id="state-saved" class="state" hidden>
+      <p class="message-title">
+        <svg viewBox="0 0 256 256" aria-hidden="true" class="check"><path fill="currentColor" d="M229.66 77.66l-128 128a8 8 0 0 1-11.32 0l-56-56a8 8 0 0 1 11.32-11.32L96 188.69 218.34 66.34a8 8 0 0 1 11.32 11.32Z"/></svg>
+        Saved
+      </p>
+      <p class="muted" id="saved-text"></p>
+      <div class="actions">
+        <button type="button" class="button" id="open-saved">Open in Cabinet</button>
+        <button type="button" class="button primary" id="close">Done</button>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

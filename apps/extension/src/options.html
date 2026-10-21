@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Cabinet extension settings</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <main class="options">
+    <h1>Cabinet</h1>
+    <p class="help">Where your Cabinet runs. The defaults match a local development setup.</p>
+    <form id="settings" novalidate>
+      <label class="field">
+        <span class="label">App address</span>
+        <input id="appUrl" type="url" required placeholder="https://cabinet.example.com">
+        <span class="help">Opens when you choose Sign in or Open in Cabinet.</span>
+      </label>
+      <label class="field">
+        <span class="label">API address</span>
+        <input id="apiUrl" type="url" required placeholder="https://api.cabinet.example.com">
+        <span class="help">Chrome asks once for permission to reach a new address.</span>
+      </label>
+      <p class="error" id="error" role="alert" hidden></p>
+      <div class="actions">
+        <span class="hint muted" id="status" role="status"></span>
+        <button type="submit" class="button primary">Save settings</button>
+      </div>
+    </form>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
