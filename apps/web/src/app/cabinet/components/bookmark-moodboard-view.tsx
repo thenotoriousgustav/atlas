@@ -377,7 +377,10 @@ export function MoodboardCard({
         {/* Desktop quick actions stay off the saved preview until needed. */}
         {showActions && <div data-bookmark-actions
           onClick={(e) => e.stopPropagation()}
-          className="absolute top-2.5 right-2.5 z-20 hidden items-center gap-0.5 rounded-sm bg-card p-0.5 transition-opacity sm:flex sm:opacity-0 sm:group-hover/card:opacity-100 sm:focus-within:opacity-100"
+          className={cn(
+            "absolute top-2.5 right-2.5 z-20 hidden items-center gap-0.5 rounded-sm bg-card p-0.5 transition-opacity sm:flex sm:focus-within:opacity-100",
+            bookmark.isFavorite ? "sm:opacity-100" : "sm:opacity-0 sm:group-hover/card:opacity-100"
+          )}
         >
           {isTrashView ? (
             <>
@@ -699,9 +702,15 @@ export function MoodboardCard({
         </div>
 
         {bookmark.canEdit === false && <p className="text-xs text-muted-foreground">Shared bookmark · Read-only</p>}
-        {(preferences.showFolder || preferences.showDate || bookmark.isPinned) && (
+        {(preferences.showFolder || preferences.showDate || bookmark.isPinned || bookmark.isFavorite) && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs leading-5 text-muted-foreground">
             {bookmark.isPinned && <span className="flex items-center gap-1 text-library-olive"><PushPin className="size-3" weight="fill" />Pinned</span>}
+            {bookmark.isFavorite && (
+              <span className="flex items-center gap-1 text-library-olive" title="Favorite">
+                <Star className="size-3 text-library-olive" weight="fill" />
+                <span>Favorite</span>
+              </span>
+            )}
             {preferences.showFolder && (
               <span className="flex min-w-0 max-w-full items-center gap-1" title={folderName || "Unfiled"}>
                 <FolderSimple className="size-3 shrink-0" aria-hidden="true" />

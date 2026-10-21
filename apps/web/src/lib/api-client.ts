@@ -9,6 +9,7 @@ import {
 export {
   AXIOS_INSTANCE,
   useBookmarksControllerCleanDuplicates,
+  useBookmarksControllerBulkAddTags,
   useBookmarksControllerCreate,
   useBookmarksControllerFindAll,
   useBookmarksControllerFindAllInfinite,

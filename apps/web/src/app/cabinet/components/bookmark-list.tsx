@@ -9,7 +9,7 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@/components/ui/empty"
-import { BookmarkSimple, Trash, LinkSimple, FileText, VideoCamera } from "@phosphor-icons/react"
+import { BookmarkSimple, Trash, LinkSimple, FileText, VideoCamera, X } from "@phosphor-icons/react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { BookmarkListView } from "./bookmark-list-view"
 import { BookmarkMoodboardView, MoodboardCard } from "./bookmark-moodboard-view"
@@ -22,6 +22,7 @@ import { adjacentPreviewBookmark, moodboardColumnCount } from "@/lib/bookmark-vi
 interface BookmarkListProps {
   title?: string
   searchQuery?: string
+  onClearSearch?: () => void
   viewControls?: React.ReactNode
   onAddBookmark?: () => void
   sortableInParent?: boolean
@@ -67,6 +68,7 @@ interface BookmarkListProps {
 export function BookmarkList({
   title,
   searchQuery,
+  onClearSearch,
   viewControls,
   onAddBookmark,
   sortableInParent = false,
@@ -276,6 +278,48 @@ export function BookmarkList({
               {viewControls}
             </div>
           )
+        )}
+
+        {(selectedTag || searchQuery) && (
+          <div className="flex flex-wrap items-center gap-2 pt-1" aria-label="Active filters">
+            <span className="text-xs text-muted-foreground">Filtered by:</span>
+            {selectedTag && (
+              <Badge
+                variant="outline"
+                className="flex items-center gap-1.5 rounded-md border-library-olive/30 bg-library-highlight px-2 py-0.5 text-xs text-library-olive"
+              >
+                <span>#{selectedTag}</span>
+                <button
+                  type="button"
+                  onClick={() => onSelectTag("")}
+                  className="cursor-pointer hover:opacity-80"
+                  aria-label={`Clear #${selectedTag} filter`}
+                  title="Clear tag filter"
+                >
+                  <X className="size-3" />
+                </button>
+              </Badge>
+            )}
+            {searchQuery && (
+              <Badge
+                variant="outline"
+                className="flex items-center gap-1.5 rounded-md border-border bg-muted/40 px-2 py-0.5 text-xs text-foreground"
+              >
+                <span>“{searchQuery}”</span>
+                {onClearSearch && (
+                  <button
+                    type="button"
+                    onClick={onClearSearch}
+                    className="cursor-pointer hover:opacity-80"
+                    aria-label="Clear search query"
+                    title="Clear search"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 

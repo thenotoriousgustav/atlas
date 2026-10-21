@@ -24,6 +24,7 @@ import {
   ArrowClockwise,
   Plus,
   Trash,
+  DotsThreeVertical,
   Gear,
   CaretUpDown,
   Sun,
@@ -443,7 +444,7 @@ export function CabinetSidebarFilters({
                     <div
                       key={tag.id}
                       className={cn(
-                        "group inline-flex items-center rounded-md border text-xs transition-colors",
+                        "group relative inline-flex items-center rounded-md border text-xs transition-colors",
                         isSelected
                           ? "border-library-olive/30 bg-library-highlight text-library-olive"
                           : "border-border bg-card text-muted-foreground hover:text-foreground"
@@ -453,12 +454,6 @@ export function CabinetSidebarFilters({
                         onClick={() => {
                           const newTag = isSelected ? undefined : tag.name
                           onSelectTag(newTag)
-                          onSelectFolder(undefined)
-                          onSelectFavorite(undefined)
-                          onSelectArchived(undefined)
-                          onSelectBroken(undefined)
-                          onSelectDuplicates(undefined)
-                          onSelectTrash?.(undefined)
                           onItemSelect?.()
                         }}
                         className="flex items-center gap-1 px-2 py-1"
@@ -466,29 +461,55 @@ export function CabinetSidebarFilters({
                         <TagIcon className="size-2.5 opacity-60" />
                         <span>{tag.name}</span>
                       </button>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation()
-                          const isConfirmed = await confirm({
-                            title: "Delete Tag",
-                            description: `Are you sure you want to delete tag "${tag.name}"? This will untag all associated bookmarks.`,
-                            actionLabel: "Delete",
-                            variant: "destructive",
-                          })
-                          if (isConfirmed) {
-                            onDeleteTag(tag.id)
-                          }
-                        }}
-                        className={cn(
-                          "flex h-full items-center justify-center border-l px-1.5 transition-colors",
-                          isSelected
-                            ? "border-library-olive/20 hover:bg-library-highlight hover:text-library-olive"
-                            : "border-brand-border hover:bg-destructive/10 hover:text-destructive"
-                        )}
-                        title="Delete tag"
-                      >
-                        <X className="size-2.5" />
-                      </button>
+
+                      {isSelected ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onSelectTag(undefined)
+                            onItemSelect?.()
+                          }}
+                          className="flex h-full items-center justify-center border-l border-library-olive/20 px-1.5 transition-colors hover:bg-library-highlight hover:text-library-olive"
+                          title="Clear tag filter"
+                          aria-label={`Clear #${tag.name} filter`}
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(e) => e.stopPropagation()}
+                              className="hidden h-full items-center justify-center border-l border-border px-1 opacity-0 transition-opacity group-hover:flex group-hover:opacity-100 hover:text-foreground"
+                              title="Tag options"
+                              aria-label={`Options for #${tag.name}`}
+                            >
+                              <DotsThreeVertical className="size-2.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-36">
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={async () => {
+                                const isConfirmed = await confirm({
+                                  title: "Delete Tag",
+                                  description: `Are you sure you want to delete tag "${tag.name}"? This will untag all associated bookmarks.`,
+                                  actionLabel: "Delete",
+                                  variant: "destructive",
+                                })
+                                if (isConfirmed) {
+                                  onDeleteTag(tag.id)
+                                }
+                              }}
+                            >
+                              <Trash />
+                              <span>Delete tag</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   )
                 })

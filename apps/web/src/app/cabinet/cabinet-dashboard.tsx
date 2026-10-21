@@ -20,6 +20,7 @@ import {
   useBookmarksControllerGetHealthSummary,
   useBookmarksControllerGetDuplicates,
   useBookmarksControllerCleanDuplicates,
+  useBookmarksControllerBulkAddTags,
   useBookmarksControllerTriggerHealthCheck,
   useBookmarksControllerReorder,
   AXIOS_INSTANCE,
@@ -37,7 +38,9 @@ import { FolderCollaborationDialog } from "./components/folder-collaboration-dia
 import { BookmarkList } from "./components/bookmark-list"
 import { Sortable } from "@/components/ui/sortable"
 import { bookmarkCollisionDetection, masonrySortingStrategy } from "@/lib/bookmark-sortable"
-import { Archive, Trash, ArrowCounterClockwise } from "@phosphor-icons/react"
+import { Archive, Trash, ArrowCounterClockwise, Tag as TagIcon } from "@phosphor-icons/react"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -443,6 +446,7 @@ function CabinetWorkspace() {
 
   const scanHealthMutation = useBookmarksControllerTriggerHealthCheck()
   const cleanDuplicatesMutation = useBookmarksControllerCleanDuplicates()
+  const bulkAddTagsMutation = useBookmarksControllerBulkAddTags()
 
   // Sync mount status
   useEffect(() => {
@@ -806,6 +810,23 @@ function CabinetWorkspace() {
     }
   }
 
+  const handleBulkAddTags = async (tagsToAdd: string[]) => {
+    if (tagsToAdd.length === 0 || selectedBookmarkIds.length === 0) return
+    const toastId = toast.loading(`Adding tags to ${selectedBookmarkIds.length} item(s)...`)
+    try {
+      await bulkAddTagsMutation.mutateAsync({
+        data: {
+          ids: selectedBookmarkIds,
+          tags: tagsToAdd,
+        },
+      })
+      await invalidateAllQueries()
+      toast.success(`Tag applied to ${selectedBookmarkIds.length} item(s)`, { id: toastId })
+    } catch {
+      toast.error("Failed to add tags", { id: toastId })
+    }
+  }
+
   const handleDropBookmarkToFolder = async (folderId: string, bookmarkIds: string[]) => {
     const targetFolder = folders.find((f: any) => f.id === folderId)
     const folderName = targetFolder ? targetFolder.name : "folder"
@@ -1003,6 +1024,7 @@ function CabinetWorkspace() {
               <BookmarkList
                 title={activeFilterLabel}
                 searchQuery={searchQuery}
+                onClearSearch={() => setSearchQuery("")}
                 onAddBookmark={() => { resetBookmarkForm(); setIsBookmarkModalOpen(true) }}
                 viewControls={<BookmarkViewControls
                   sort={sort}
@@ -1054,12 +1076,7 @@ function CabinetWorkspace() {
                 selectedBookmarkIds={selectedBookmarkIds}
                 onToggleSelect={handleToggleSelectBookmark}
                 onSelectTag={(tag) => {
-                  setSelectedTag(tag)
-                  setSelectedFolderId(undefined)
-                  setFilterFavorite(undefined)
-                  setFilterBroken(undefined)
-                  setFilterDuplicates(undefined)
-                  setFilterTrash(undefined)
+                  setSelectedTag(tag || undefined)
                 }}
                 onToggleFavorite={toggleFavorite}
                 onTogglePin={togglePin}
@@ -1245,6 +1262,59 @@ function CabinetWorkspace() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <ActionBarItem variant="outline" size="default">
+                    <TagIcon className="mr-1 h-3.5 w-3.5" />
+                    Tag
+                  </ActionBarItem>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-64 p-3">
+                  <div className="flex flex-col gap-2.5">
+                    <span className="text-xs font-medium text-foreground">Add tag to {selectedBookmarkIds.length} item{selectedBookmarkIds.length === 1 ? "" : "s"}</span>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        const form = e.currentTarget
+                        const input = form.elements.namedItem("tagInput") as HTMLInputElement
+                        const clean = input?.value.trim().replace(/^#/, "")
+                        if (clean) {
+                          void handleBulkAddTags([clean])
+                          input.value = ""
+                        }
+                      }}
+                      className="flex gap-1.5"
+                    >
+                      <Input
+                        name="tagInput"
+                        placeholder="tag name..."
+                        className="h-8 text-xs"
+                      />
+                      <Button type="submit" size="sm" className="h-8 px-2.5 text-xs">
+                        Add
+                      </Button>
+                    </form>
+                    {tags.length > 0 && (
+                      <div className="flex flex-col gap-1 border-t border-border pt-1.5">
+                        <span className="text-[11px] text-muted-foreground">Or pick existing:</span>
+                        <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
+                          {tags.map((tag: any) => (
+                            <button
+                              key={tag.id || tag.name}
+                              type="button"
+                              onClick={() => void handleBulkAddTags([tag.name])}
+                              className="cursor-pointer rounded-sm bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-library-highlight hover:text-library-olive"
+                            >
+                              #{tag.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               <ActionBarItem
                 onClick={handleBulkArchive}

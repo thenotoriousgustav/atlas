@@ -279,14 +279,15 @@ export function useCabinetFilters(folders: any[]) {
     (tag: string | undefined) => {
       setSelectedTagState(tag)
       syncUrl({
-        folderId: undefined,
+        folderId: selectedFolderId,
         tag,
-        view: undefined,
+        view: currentBaseView,
+        format: formatFilter !== "all" ? formatFilter : undefined,
         q: searchDebounced,
         sortMode: sort,
       })
     },
-    [searchDebounced, sort, syncUrl]
+    [selectedFolderId, currentBaseView, formatFilter, searchDebounced, sort, syncUrl]
   )
 
   const setFilterFavorite = useCallback(

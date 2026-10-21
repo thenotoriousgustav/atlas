@@ -14,7 +14,7 @@ import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
 import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
-import { ArrowLeft, Image, Table as TableIcon } from "@phosphor-icons/react"
+import { ArrowLeft, Image, Table as TableIcon, FolderSimple } from "@phosphor-icons/react"
 import {
   BlockEditor,
   SlashCommand,
@@ -31,9 +31,17 @@ import {
 } from "@/components/extensions/image-placeholder"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { authClient } from "@/lib/auth-client"
-import { AXIOS_INSTANCE } from "@/lib/api-client"
+import { AXIOS_INSTANCE, useFoldersControllerFindAll } from "@/lib/api-client"
 import {
   NoteAutosave,
   type NoteSnapshot,
@@ -120,10 +128,10 @@ export default function NoteEditorPage({ noteId }: { noteId: string }) {
         }
         if (controller.signal.aborted) return
         const saved: NoteSnapshot = {
-          folderId: note
-            ? undefined
-            : new URLSearchParams(window.location.search).get("folder") ||
-              undefined,
+          folderId:
+            note?.folderId ||
+            new URLSearchParams(window.location.search).get("folder") ||
+            undefined,
           title: note?.title ?? "",
           notes: note?.notes || note?.description || "",
           noteDocument:
@@ -219,7 +227,10 @@ function NoteCanvas({
 }) {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { data: foldersData } = useFoldersControllerFindAll()
+  const folders = (foldersData as any)?.data || foldersData || []
   const [title, setTitle] = useState(initial.title)
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(initial.folderId)
   const [hasSaved, setHasSaved] = useState(initiallySaved)
   const [status, setStatus] = useState<NoteSaveStatus>(
     recovered ? "unsaved" : "saved"
@@ -334,15 +345,51 @@ function NoteCanvas({
   }, [editor, draft])
 
   const leave = async () => {
-    if (await autosave.current?.flush()) router.push("/cabinet")
+    if (await autosave.current?.flush()) {
+      if (current.current.folderId) {
+        router.push(`/cabinet?folder=${encodeURIComponent(current.current.folderId)}`)
+      } else {
+        router.push("/cabinet")
+      }
+    }
   }
+
+  const currentFolder = folders.find((f: any) => f.id === selectedFolderId)
 
   return (
     <main className="min-h-[100dvh] bg-background text-foreground">
       <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 sm:px-8">
-        <Button variant="ghost" size="sm" onClick={leave}>
-          <ArrowLeft data-icon="inline-start" /> Cabinet
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={leave} title={currentFolder ? `Back to ${currentFolder.name}` : "Back to Cabinet"}>
+            <ArrowLeft data-icon="inline-start" />
+            <span className="max-w-32 truncate sm:max-w-xs">{currentFolder ? currentFolder.name : "Cabinet"}</span>
+          </Button>
+
+          <Select
+            value={selectedFolderId || "__root__"}
+            onValueChange={(val) => {
+              const next = val === "__root__" ? undefined : val
+              setSelectedFolderId(next)
+              update({ ...current.current, folderId: next })
+            }}
+          >
+            <SelectTrigger size="sm" aria-label="Note folder" className="h-8 gap-1.5 border-none bg-muted/40 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+              <FolderSimple className="size-3.5 shrink-0" />
+              <SelectValue placeholder="Unfiled" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="__root__">Unfiled (Root)</SelectItem>
+                {folders.map((f: any) => (
+                  <SelectItem key={f.id} value={f.id}>
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex items-center gap-3">
           <span
             className="text-xs text-muted-foreground"
