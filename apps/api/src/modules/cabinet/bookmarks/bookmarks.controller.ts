@@ -66,6 +66,13 @@ export class BookmarksController {
     return this.bookmarksService.scrapeUrl(url);
   }
 
+  @Get('embeddable')
+  @ApiOperation({ summary: 'Check whether a website allows being shown in an iframe' })
+  @ApiQuery({ name: 'url', required: true })
+  async embeddable(@Query('url') url: string) {
+    return this.bookmarksService.checkEmbeddable(url);
+  }
+
   @Get('media/extract')
   @ApiOperation({ summary: 'Extract downloadable video/audio formats using yt-dlp' })
   @ApiQuery({ name: 'url', required: true })

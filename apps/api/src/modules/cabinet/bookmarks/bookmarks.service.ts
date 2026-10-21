@@ -28,6 +28,7 @@ import { CRAWLER_USER_AGENTS } from "@/modules/cabinet/providers/metadata/metada
 import { validatePublicUrl } from "@/common/utils/ssrf"
 import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from "./bookmark-order"
 import { accessibleFolder, folderSummary } from "../folders/folder-access"
+import { frameBlockedByHeaders } from "./embed-policy"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -165,18 +166,30 @@ export class BookmarksService implements OnModuleInit {
     ) {
       throw new NotFoundException("Note not found")
     }
-    if (!existing && dto.folderId) {
+    if (dto.folderId) {
       const folder = await this.prisma.folder.findFirst({
         where: { id: dto.folderId, ...accessibleFolder(userId) },
       })
       if (!folder) throw new NotFoundException("Folder not found")
     }
+    const tagNames = dto.tags
+      ?.map((name) => name.replace(/^#/, "").trim().toLowerCase())
+      .filter(Boolean)
     const data = {
       title: dto.title?.trim() || "Untitled note",
       ...bookmarkSortFields({ title: dto.title?.trim() || "Untitled note" }),
       notes: dto.notes ?? "",
       noteDocument: dto.noteDocument,
+      ...(dto.folderId !== undefined && existing ? { folderId: dto.folderId || null } : {}),
     }
+    const tags = tagNames
+      ? {
+          connectOrCreate: [...new Set(tagNames)].map((name) => ({
+            where: { name_userId: { name, userId } },
+            create: { name, userId },
+          })),
+        }
+      : undefined
     const include = { tags: true, folder: { select: folderSummary } }
     try {
       // A stable client-generated UUID makes retries safe after a lost response.
@@ -189,8 +202,9 @@ export class BookmarksService implements OnModuleInit {
           type: BookmarkType.NOTE,
           metadataStatus: MetadataStatus.COMPLETED,
           ...data,
+          tags,
         },
-        update: data,
+        update: { ...data, tags: tags && { set: [], ...tags } },
         include,
       })
     } catch (error) {
@@ -199,7 +213,11 @@ export class BookmarksService implements OnModuleInit {
       // An existing ID is writable only by its owner, and only while it is an active note.
       const note = await this.prisma.bookmark.findFirst({ where })
       if (!note) throw new NotFoundException("Note not found")
-      return this.prisma.bookmark.update({ where, data, include })
+      return this.prisma.bookmark.update({
+        where,
+        data: { ...data, tags: tags && { set: [], ...tags } },
+        include,
+      })
     }
   }
 
@@ -761,6 +779,50 @@ export class BookmarksService implements OnModuleInit {
 
   async scrapeUrl(url: string) {
     return this.metadataService.extract(url)
+  }
+
+  /** Reports whether the page may be shown in an iframe. Unknown results stay embeddable. */
+  async checkEmbeddable(url: string): Promise<{ embeddable: boolean }> {
+    let target = url
+    for (let hop = 0; hop < 4; hop++) {
+      try {
+        await validatePublicUrl(target)
+      } catch {
+        return { embeddable: false }
+      }
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 5000)
+      try {
+        const response = await fetch(target, {
+          method: "GET",
+          redirect: "manual",
+          signal: controller.signal,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml",
+          },
+        })
+        const location = response.headers.get("location")
+        if (response.status >= 300 && response.status < 400 && location) {
+          target = new URL(location, target).toString()
+          continue
+        }
+        return {
+          embeddable: !frameBlockedByHeaders(
+            response.headers.get("x-frame-options"),
+            response.headers.get("content-security-policy"),
+          ),
+        }
+      } catch {
+        return { embeddable: true }
+      } finally {
+        clearTimeout(timeout)
+        // Only the headers matter; stop downloading the body.
+        controller.abort()
+      }
+    }
+    return { embeddable: true }
   }
 
   async getHealthSummary(userId: string) {
