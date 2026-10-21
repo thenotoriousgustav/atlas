@@ -2,28 +2,12 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import {
-  MagnifyingGlass,
-  FolderSimple,
-  Tag,
-  Plus,
-  Star,
-  Archive,
-  Trash,
-  VideoCamera,
-  FileText,
-  ArrowsClockwise,
-  SignOut,
-} from "@phosphor-icons/react"
-import {
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandSeparator,
-} from "@/components/ui/command"
+import { MagnifyingGlass, FolderSimple, Tag, Plus, Star, Archive, Trash, VideoCamera, FileText, ArrowsClockwise, List, SquaresFour, SidebarSimple } from "@phosphor-icons/react"
+import { CommandDialog, CommandInput, CommandList, CommandGroup, CommandItem, CommandShortcut, CommandSeparator } from "@/components/ui/command"
+import { Button } from "@/components/ui/button"
+import { useSidebar } from "@/components/ui/sidebar"
+import { safeHttpUrl } from "@/lib/shared-collection"
+import { useBookmarkSearch } from "../hooks/use-bookmark-search"
 
 interface CommandMenuProps {
   open: boolean
@@ -41,209 +25,80 @@ interface CommandMenuProps {
   onOpenAddBookmark: () => void
   onOpenAddFolder: () => void
   onScanHealth: () => void
+  onCreateNote: () => void
+  onViewModeChange: (mode: 'list' | 'moodboard') => void
 }
 
-export function CommandMenu({
-  open,
-  onOpenChange,
-  folders,
-  tags,
-  bookmarks,
-  onSelectFolder,
-  onSelectTag,
-  onFilterFavorite,
-  onFilterArchived,
-  onFilterTrash,
-  onFilterVideo,
-  onFilterNotes,
-  onOpenAddBookmark,
-  onOpenAddFolder,
-  onScanHealth,
-}: CommandMenuProps) {
-  const router = useRouter()
+type Action = { label: string; icon: typeof Plus; run: () => void; shortcut?: string }
 
+export function CommandMenu(props: CommandMenuProps) {
+  const router = useRouter()
+  const { toggleSidebar } = useSidebar()
+  const [search, setSearch] = React.useState('')
+  const query = useBookmarkSearch(search, props.open)
+  const searching = !!search.trim()
+  const waiting = searching && (query.isDebouncing || query.isPending)
+  const matches = (label: string) => search.trim().toLowerCase().split(/\s+/).every((word) => label.toLowerCase().includes(word))
+  const mod = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+'
+  React.useEffect(() => { if (!props.open) setSearch('') }, [props.open])
   React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        onOpenChange(!open)
+    const down = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault()
+        props.onOpenChange(!props.open)
       }
     }
-    document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
-  }, [open, onOpenChange])
+    document.addEventListener('keydown', down)
+    return () => document.removeEventListener('keydown', down)
+  }, [props.open, props.onOpenChange])
 
-  return (
-    <CommandDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Cabinet Command Menu"
-      description="Search bookmarks, jump to folders, or run quick actions"
-    >
-      <CommandInput placeholder="Type a command or search bookmarks..." />
-      <CommandList className="max-h-[380px]">
-        <CommandEmpty>No matching results.</CommandEmpty>
+  const actions: Action[] = [
+    { label: 'Add new bookmark', icon: Plus, run: props.onOpenAddBookmark, shortcut: 'B' },
+    { label: 'Create note', icon: FileText, run: props.onCreateNote, shortcut: 'N' },
+    { label: 'Create new folder', icon: FolderSimple, run: props.onOpenAddFolder },
+    { label: 'Check broken links & duplicates', icon: ArrowsClockwise, run: props.onScanHealth },
+  ]
+  const views: Action[] = [
+    { label: 'All Bookmarks', icon: FolderSimple, run: () => { props.onSelectFolder(undefined); props.onSelectTag(undefined) } },
+    { label: 'Favorites', icon: Star, run: props.onFilterFavorite },
+    { label: 'Notes Only', icon: FileText, run: props.onFilterNotes },
+    { label: 'Videos & Media', icon: VideoCamera, run: props.onFilterVideo },
+    { label: 'Archive', icon: Archive, run: props.onFilterArchived },
+    { label: 'Trash', icon: Trash, run: props.onFilterTrash },
+    { label: 'List view', icon: List, run: () => props.onViewModeChange('list'), shortcut: '1' },
+    { label: 'Moodboard view', icon: SquaresFour, run: () => props.onViewModeChange('moodboard'), shortcut: '2' },
+    { label: 'Toggle sidebar', icon: SidebarSimple, run: toggleSidebar, shortcut: `${mod}B` },
+  ]
+  const folders = props.folders.filter((folder) => matches(`folder ${folder.name}`))
+  const tags = props.tags.filter((tag) => matches(`tag #${tag.name}`))
+  const groups = [ ['Actions', actions.filter((item) => matches(item.label))], ['Views & Filters', views.filter((item) => matches(item.label))] ] as const
+  const items = searching ? (query.isDebouncing ? [] : query.items) : props.bookmarks.slice(0, 10)
+  const select = (run: () => void) => { props.onOpenChange(false); run() }
 
-        {/* Quick Actions */}
-        <CommandGroup heading="Actions">
-          <CommandItem
-            onSelect={() => {
-              onOpenAddBookmark()
-              onOpenChange(false)
-            }}
-          >
-            <Plus className="mr-2 size-4" />
-            <span>Add new bookmark</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onOpenAddFolder()
-              onOpenChange(false)
-            }}
-          >
-            <FolderSimple className="mr-2 size-4" />
-            <span>Create new folder</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onScanHealth()
-              onOpenChange(false)
-            }}
-          >
-            <ArrowsClockwise className="mr-2 size-4" />
-            <span>Check broken links & duplicates</span>
-          </CommandItem>
-        </CommandGroup>
-
-        <CommandSeparator />
-
-        {/* Views & Filters */}
-        <CommandGroup heading="Views & Filters">
-          <CommandItem
-            onSelect={() => {
-              onSelectFolder(undefined)
-              onSelectTag(undefined)
-              onOpenChange(false)
-            }}
-          >
-            <FolderSimple className="mr-2 size-4" />
-            <span>All Bookmarks</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onFilterFavorite()
-              onOpenChange(false)
-            }}
-          >
-            <Star className="mr-2 size-4 text-[#956400]" weight="fill" />
-            <span>Favorites</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onFilterNotes()
-              onOpenChange(false)
-            }}
-          >
-            <FileText className="mr-2 size-4" />
-            <span>Notes Only</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onFilterVideo()
-              onOpenChange(false)
-            }}
-          >
-            <VideoCamera className="mr-2 size-4 text-purple-600" />
-            <span>Videos & Media</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onFilterArchived()
-              onOpenChange(false)
-            }}
-          >
-            <Archive className="mr-2 size-4" />
-            <span>Archive</span>
-          </CommandItem>
-          <CommandItem
-            onSelect={() => {
-              onFilterTrash()
-              onOpenChange(false)
-            }}
-          >
-            <Trash className="mr-2 size-4 text-red-600" />
-            <span>Trash</span>
-          </CommandItem>
-        </CommandGroup>
-
-        {/* Folders */}
-        {folders.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Folders">
-              {folders.map((folder) => (
-                <CommandItem
-                  key={folder.id}
-                  value={`folder ${folder.name}`}
-                  onSelect={() => {
-                    onSelectFolder(folder.id)
-                    onOpenChange(false)
-                  }}
-                >
-                  <FolderSimple className="mr-2 size-4 text-muted-foreground" />
-                  <span>{folder.name}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Tags">
-              {tags.map((tag) => (
-                <CommandItem
-                  key={tag.id}
-                  value={`tag #${tag.name}`}
-                  onSelect={() => {
-                    onSelectTag(tag.name)
-                    onOpenChange(false)
-                  }}
-                >
-                  <Tag className="mr-2 size-4 text-muted-foreground" />
-                  <span>#{tag.name}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-
-        {/* Recent / Searchable Bookmarks */}
-        {bookmarks.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Bookmarks">
-              {bookmarks.slice(0, 10).map((b) => (
-                <CommandItem
-                  key={b.id}
-                  value={`${b.title || ""} ${b.url || ""} ${b.description || ""}`}
-                  onSelect={() => {
-                    if (b.url) {
-                      window.open(b.url, "_blank", "noopener,noreferrer")
-                    }
-                    onOpenChange(false)
-                  }}
-                >
-                  <MagnifyingGlass className="mr-2 size-4 text-muted-foreground" />
-                  <span className="truncate">{b.title || b.url || "Untitled"}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-      </CommandList>
-    </CommandDialog>
-  )
+  return <CommandDialog open={props.open} onOpenChange={props.onOpenChange} title="Cabinet Command Menu" description="Search your entire library, jump to folders, or run quick actions" commandProps={{ shouldFilter: false }}>
+    <CommandInput value={search} onValueChange={setSearch} aria-label="Search commands and bookmarks" placeholder="Search your entire library or run a command…" />
+    <CommandList className="max-h-[55dvh]">
+      {groups.map(([heading, actions]) => actions.length > 0 && <CommandGroup key={heading} heading={heading}>
+        {actions.map(({ label, icon: Icon, run, shortcut }) => <CommandItem key={label} value={`action ${label}`} onSelect={() => select(run)}>
+          <Icon /><span>{label}</span>{shortcut && <CommandShortcut><kbd className="rounded-sm border px-1.5 font-sans">{shortcut}</kbd></CommandShortcut>}
+        </CommandItem>)}
+      </CommandGroup>)}
+      {folders.length > 0 && <CommandGroup heading="Folders">{folders.map((folder) => <CommandItem key={folder.id} value={`folder ${folder.id}`} onSelect={() => select(() => props.onSelectFolder(folder.id))}><FolderSimple /><span>{folder.name}</span></CommandItem>)}</CommandGroup>}
+      {tags.length > 0 && <CommandGroup heading="Tags">{tags.map((tag) => <CommandItem key={tag.id} value={`tag ${tag.id}`} onSelect={() => select(() => props.onSelectTag(tag.name))}><Tag /><span>#{tag.name}</span></CommandItem>)}</CommandGroup>}
+      {waiting && <p role="status" className="px-3 py-4 text-sm text-muted-foreground">Searching your library…</p>}
+      {searching && query.isError && !query.isDebouncing && <div role="alert" className="px-3 py-3 text-sm">Could not search your library. <Button size="sm" variant="outline" onClick={() => void query.refetch()}>Retry search</Button></div>}
+      {items.length > 0 && <><CommandSeparator /><CommandGroup heading={searching ? 'Across your library' : 'In this view'}>
+        {items.map((bookmark) => {
+          const safe = safeHttpUrl(bookmark.url || '')
+          return <CommandItem key={bookmark.id} value={`bookmark ${bookmark.id}`} disabled={!safe && bookmark.type !== 'NOTE'} onSelect={() => select(() => {
+            if (bookmark.type === 'NOTE') router.push(`/cabinet/notes/${encodeURIComponent(bookmark.id)}`)
+            else if (safe) window.open(safe.href, '_blank', 'noopener,noreferrer')
+          })}><MagnifyingGlass /><span className="truncate">{bookmark.title || safe?.hostname || 'Untitled'}</span></CommandItem>
+        })}
+      </CommandGroup></>}
+      {searching && !waiting && !query.isError && items.length === 0 && folders.length === 0 && tags.length === 0 && groups.every(([, actions]) => actions.length === 0) && <p role="status" className="px-3 py-4 text-sm text-muted-foreground">No matching results.</p>}
+      {searching && !waiting && query.hasNextPage && <Button variant="ghost" className="w-full" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? 'Loading more…' : query.isFetchNextPageError ? 'Retry more results' : 'More results'}</Button>}
+    </CommandList>
+    <p className="border-t px-3 py-2 text-xs text-muted-foreground">{searching ? 'Your saved links and notes, including Archive. Trash is excluded.' : 'Type to search beyond this view. / focuses library search.'}</p>
+  </CommandDialog>
 }

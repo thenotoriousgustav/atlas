@@ -10,6 +10,7 @@ export {
   AXIOS_INSTANCE,
   useBookmarksControllerCleanDuplicates,
   useBookmarksControllerCreate,
+  useBookmarksControllerFindAll,
   useBookmarksControllerFindAllInfinite,
   useBookmarksControllerGetDuplicates,
   useBookmarksControllerGetHealthSummary,

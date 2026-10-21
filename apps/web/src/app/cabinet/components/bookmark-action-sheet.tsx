@@ -19,6 +19,8 @@ import {
   ArrowCounterClockwise,
   DownloadSimple,
   FileText,
+  Star,
+  CheckSquare,
 } from "@phosphor-icons/react"
 
 interface BookmarkActionSheetProps {
@@ -28,6 +30,8 @@ interface BookmarkActionSheetProps {
   onEditBookmark: (bookmark: any) => void
   onDuplicateBookmark: (bookmark: any) => void
   onTogglePin?: (bookmark: any) => void
+  onToggleFavorite?: (bookmark: any) => void
+  onSelectBookmark?: (bookmark: any) => void
   onToggleArchive: (bookmark: any) => void
   onDeleteBookmark: (id: string) => void
   isTrashView?: boolean
@@ -44,6 +48,8 @@ export function BookmarkActionSheet({
   onDuplicateBookmark,
   onToggleArchive,
   onTogglePin,
+  onToggleFavorite,
+  onSelectBookmark,
   onDeleteBookmark,
   isTrashView,
   onRestoreBookmark,
@@ -81,23 +87,23 @@ export function BookmarkActionSheet({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="rounded-none border-t border-brand-border bg-white px-0 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      <DrawerContent className="max-h-[90dvh] overflow-y-auto rounded-t-xl border-t border-border bg-card px-0 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         {/* Bookmark Meta Header */}
         <DrawerHeader className="border-b border-brand-border px-5 py-3.5 text-left">
           <div className="flex items-center gap-2">
             <img
               src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
               alt=""
-              className="size-4 shrink-0 rounded-none object-contain"
+              className="size-4 shrink-0 rounded-sm object-contain"
               onError={(e) => {
                 ;(e.target as HTMLElement).style.display = "none"
               }}
             />
-            <span className="font-mono text-[11px] font-semibold text-brand-muted uppercase">
+            <span className="text-xs text-muted-foreground">
               {hostname}
             </span>
           </div>
-          <DrawerTitle className="mt-1 line-clamp-1 font-serif text-base font-medium text-brand-charcoal">
+          <DrawerTitle className="mt-1 line-clamp-2 text-base font-medium text-foreground">
             {bookmark.title || hostname}
           </DrawerTitle>
           <DrawerDescription className="sr-only">
@@ -106,7 +112,7 @@ export function BookmarkActionSheet({
         </DrawerHeader>
 
         {/* Action List */}
-        <div className="flex flex-col py-1">
+        <div className="flex flex-col gap-1 p-2 [&>a]:rounded-md [&>button]:rounded-md">
           {/* Download Media (Video/Audio) */}
           {isVideo && onOpenDownload && (
             <button
@@ -115,9 +121,9 @@ export function BookmarkActionSheet({
                 onOpenChange(false)
                 onOpenDownload(bookmark)
               }}
-              className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-purple-700 transition-colors hover:bg-purple-50 active:bg-purple-100"
+              className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
-              <DownloadSimple className="size-4 text-purple-600" />
+              <DownloadSimple className="size-4 text-muted-foreground" />
               <span>Download Media (MP4/MP3)</span>
             </button>
           )}
@@ -137,15 +143,16 @@ export function BookmarkActionSheet({
           )}
 
           {/* Copy Link */}
-          <button
+          {!isNote && <button
             type="button"
             onClick={handleCopy}
             className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
           >
             <LinkSimple className="size-4 text-brand-muted" />
             <span>Copy Link</span>
-          </button>
+          </button>}
 
+          {onSelectBookmark && <button type="button" onClick={() => { onSelectBookmark(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted"><CheckSquare className="size-4" /><span>Select bookmark</span></button>}
           {isTrashView ? (
             <>
               {/* Restore */}
@@ -176,6 +183,10 @@ export function BookmarkActionSheet({
             </>
           ) : (
             <>
+              {onToggleFavorite && <button type="button" onClick={() => { onToggleFavorite(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted">
+                <Star className="size-4" weight={bookmark.isFavorite ? "fill" : "regular"} />
+                <span>{bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}</span>
+              </button>}
               {/* Edit Details */}
               <button
                 type="button"
@@ -205,7 +216,7 @@ export function BookmarkActionSheet({
               {onTogglePin && (
                 <button type="button"
                   onClick={() => { onTogglePin(bookmark); onOpenChange(false) }}
-                  className="flex w-full items-center gap-3 rounded-none px-4 py-3 text-left text-sm hover:bg-muted"
+                  className="flex h-12 w-full items-center gap-3 px-5 text-left text-sm hover:bg-muted"
                 >
                   <PushPin className="size-4" weight={bookmark.isPinned ? "fill" : "regular"} />
                   <span>{bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}</span>

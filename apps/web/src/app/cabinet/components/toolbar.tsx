@@ -5,49 +5,90 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup, DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-} from "@/components/ui/select"
-import {
-  SortAscending,
-  MagnifyingGlass,
-  Plus,
-  SquaresFour,
-  List,
-  CaretDown,
-  BookmarkSimple,
-  FileText,
-} from "@phosphor-icons/react"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { SortAscending, MagnifyingGlass, Plus, SquaresFour, List, CaretDown, BookmarkSimple, FileText, X, Sliders, Command } from "@phosphor-icons/react"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { bookmarkSortOptions, isBookmarkSort, type BookmarkSort } from "@/lib/bookmark-order"
+import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
 import { BookmarkDialog } from "./bookmark-dialog"
 
-interface ToolbarProps {
+interface ViewControlsProps {
   sort?: BookmarkSort
   onSortChange?: (sort: BookmarkSort) => void
   sortDisabled?: boolean
+  viewMode: "list" | "moodboard"
+  onViewModeChange: (mode: "list" | "moodboard") => void
+  columnCount?: number
+  onColumnCountChange?: (count: number) => void
+  displayPreferences?: DisplayPreferences
+  onDisplayPreferencesChange?: (preferences: DisplayPreferences) => void
+}
+
+export function BookmarkViewControls({
+  sort = "custom", onSortChange, sortDisabled = false, viewMode, onViewModeChange,
+  columnCount = 4, onColumnCountChange, displayPreferences = defaultDisplayPreferences, onDisplayPreferencesChange,
+}: ViewControlsProps) {
+  return (
+    <div className="flex items-center gap-2" aria-label="Collection display controls">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-11 sm:h-9" disabled={sortDisabled} aria-label="Sort bookmarks">
+            <SortAscending data-icon="inline-start" />
+            <span className="lg:hidden">Sort</span><span className="hidden lg:inline">{sort === "custom" ? "Custom order" : bookmarkSortOptions.find((option) => option.value === sort)?.label}</span>
+            <CaretDown data-icon="inline-end" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuRadioGroup value={sort} onValueChange={(value) => { if (isBookmarkSort(value)) onSortChange?.(value) }}>
+            {bookmarkSortOptions.map((option) => <DropdownMenuRadioItem key={option.value} value={option.value}>{option.label}</DropdownMenuRadioItem>)}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ToggleGroup type="single" spacing={0} className="overflow-hidden rounded-md border border-border" value={viewMode} onValueChange={(value) => { if (value === "list" || value === "moodboard") onViewModeChange(value) }} aria-label="Bookmark view">
+        <ToggleGroupItem value="moodboard" aria-label="Moodboard View" title="Moodboard View (2)" className="size-11 sm:size-9"><SquaresFour /></ToggleGroupItem>
+        <ToggleGroupItem value="list" aria-label="List View" title="List View (1)" className="size-11 sm:size-9"><List /></ToggleGroupItem>
+      </ToggleGroup>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="h-11 sm:h-9" aria-label="Display options"><Sliders data-icon="inline-start" /><span>Display</span></Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Density</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={displayPreferences.density} onValueChange={(value) => { if (value === "comfortable" || value === "compact") onDisplayPreferencesChange?.({ ...displayPreferences, density: value }) }}>
+              <DropdownMenuRadioItem value="comfortable">Comfortable</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuGroup>
+          {viewMode === "moodboard" && <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Maximum columns</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={String(columnCount)} onValueChange={(value) => onColumnCountChange?.(Number(value))}>
+                {[1, 2, 3, 4].map((count) => <DropdownMenuRadioItem key={count} value={String(count)}>{count} {count === 1 ? "column" : "columns"}</DropdownMenuRadioItem>)}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+          </>}
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Visible details</DropdownMenuLabel>
+            {([ ["showImage", "Preview image"], ["showTitle", "Title"], ["showDescription", "Description"], ["showWebsite", "Website"], ["showFolder", "Folder"], ["showDate", "Date added"] ] as const).map(([key, label]) => (
+              <DropdownMenuCheckboxItem key={key} checked={displayPreferences[key]} onSelect={(event) => event.preventDefault()} onCheckedChange={(checked) => onDisplayPreferencesChange?.({ ...displayPreferences, [key]: checked })}>{label}</DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
+
+interface ToolbarProps {
   searchQuery: string
   onSearchChange: (value: string) => void
   isBookmarkModalOpen: boolean
@@ -57,238 +98,46 @@ interface ToolbarProps {
   folders: any[]
   tags?: any[]
   resetBookmarkForm: () => void
-  viewMode: "list" | "moodboard"
-  onViewModeChange: (mode: "list" | "moodboard") => void
-  columnCount?: number
-  onColumnCountChange?: (count: number) => void
-  onOpenMobileFilters?: () => void
-  activeFilterLabel?: string
   onOpenCommandMenu?: () => void
 }
 
-export function Toolbar({
-  sort = "custom",
-  onSortChange,
-  sortDisabled = false,
-  searchQuery,
-  onSearchChange,
-  isBookmarkModalOpen,
-  setIsBookmarkModalOpen,
-  bookmarkToEdit,
-  bookmarkForm,
-  folders,
-  tags = [],
-  resetBookmarkForm,
-  viewMode,
-  onViewModeChange,
-  columnCount = 4,
-  onColumnCountChange = () => {},
-  activeFilterLabel,
-}: ToolbarProps) {
+export function Toolbar({ searchQuery, onSearchChange, isBookmarkModalOpen, setIsBookmarkModalOpen, bookmarkToEdit, bookmarkForm, folders, tags = [], resetBookmarkForm, onOpenCommandMenu }: ToolbarProps) {
   const router = useRouter()
-
   const handleCreate = (type: "BOOKMARK" | "NOTE") => {
+    resetBookmarkForm()
     if (type === "NOTE") {
-      resetBookmarkForm()
       setIsBookmarkModalOpen(false)
       const params = new URLSearchParams({ new: "1" })
-      if (bookmarkForm.state.values.folderId) {
-        params.set("folder", bookmarkForm.state.values.folderId)
-      }
+      if (bookmarkForm.state.values.folderId) params.set("folder", bookmarkForm.state.values.folderId)
       router.push(`/cabinet/notes/${crypto.randomUUID()}?${params}`)
       return
     }
-    resetBookmarkForm()
     setIsBookmarkModalOpen(true)
   }
 
   return (
-    <div className="flex w-full flex-col justify-between gap-2 rounded-none bg-transparent py-0 shadow-none sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
-      {/* Mobile Top Bar (visible on < md): Active Filter Label + View Mode Toggles */}
-      <div className="flex items-center justify-between gap-2 md:hidden">
-        <div className="flex items-center gap-2">
-          <span className="font-serif text-sm font-medium text-foreground">
-            {activeFilterLabel || "All Bookmarks"}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <ButtonGroup className="shrink-0 border border-brand-border bg-muted/40 p-0.5">
-            <Button
-              onClick={() => onViewModeChange("moodboard")}
-              variant={viewMode === "moodboard" ? "default" : "ghost"}
-              size="icon-xs"
-              className="size-7"
-              title="Moodboard View"
-            >
-              <SquaresFour className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              onClick={() => onViewModeChange("list")}
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="icon-xs"
-              className="size-7"
-              title="List View"
-            >
-              <List className="h-3.5 w-3.5" />
-            </Button>
-          </ButtonGroup>
-        </div>
+    <div className="flex w-full min-w-0 items-center justify-between gap-3">
+      <InputGroup className="h-11 min-w-0 flex-1 rounded-md bg-card shadow-none sm:h-9 sm:max-w-xl">
+        <InputGroupInput id="cabinet-search-input" type="search" aria-label="Search bookmarks" placeholder="Search your library…" value={searchQuery} onChange={(event) => onSearchChange(event.target.value)} className="text-base md:text-sm" />
+        <InputGroupAddon align="inline-start"><MagnifyingGlass /></InputGroupAddon>
+        <InputGroupAddon align="inline-end">
+          {searchQuery ? <Button type="button" variant="ghost" size="icon-xs" aria-label="Clear search" onClick={() => onSearchChange("")}><X /></Button> : <kbd className="hidden rounded-sm border bg-background px-1.5 text-xs text-muted-foreground sm:block" title="Focus search (/)">/</kbd>}
+        </InputGroupAddon>
+      </InputGroup>
+      <div className="hidden shrink-0 items-center gap-3 sm:flex">
+        {onOpenCommandMenu && <Button variant="ghost" size="icon" onClick={onOpenCommandMenu} aria-label="Open command menu" title="Command menu (⌘K)"><Command /></Button>}
+        <ButtonGroup aria-label="Add to Cabinet">
+          <Button onClick={() => handleCreate("BOOKMARK")}><Plus data-icon="inline-start" /> Add bookmark</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button className="border-l border-primary-foreground/20" size="icon-lg" aria-label="Choose what to add"><CaretDown /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end"><DropdownMenuGroup>
+              <DropdownMenuItem onSelect={() => handleCreate("BOOKMARK")}><BookmarkSimple /> Add bookmark</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleCreate("NOTE")}><FileText /> Create note</DropdownMenuItem>
+            </DropdownMenuGroup></DropdownMenuContent>
+          </DropdownMenu>
+        </ButtonGroup>
       </div>
-
-      <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-1 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
-        {/* Search Input */}
-        <InputGroup className="h-8 w-full sm:w-52 md:w-60 lg:w-72">
-          <InputGroupInput
-            id="cabinet-search-input"
-            type="text"
-            placeholder="Search titles, descriptions... (/)"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="text-xs"
-          />
-          <InputGroupAddon align="inline-start">
-            <MagnifyingGlass className="text-brand-muted" />
-          </InputGroupAddon>
-          <InputGroupAddon align="inline-end" className="hidden sm:flex">
-            <kbd
-              onClick={() => {
-                const input = document.getElementById("cabinet-search-input") as HTMLInputElement | null
-                input?.focus()
-                input?.select()
-              }}
-              className="cursor-pointer border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground hover:bg-muted"
-              title="Focus Search (/)"
-            >
-              /
-            </kbd>
-          </InputGroupAddon>
-        </InputGroup>
-
-        {/* Sort Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-8 max-w-full shrink-0 text-xs"
-              disabled={sortDisabled}
-              aria-label="Sort bookmarks"
-            >
-              <SortAscending data-icon="inline-start" />
-              <span className="truncate">
-                {bookmarkSortOptions.find((option) => option.value === sort)?.label}
-              </span>
-              <CaretDown data-icon="inline-end" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuRadioGroup
-              value={sort}
-              onValueChange={(value) => {
-                if (isBookmarkSort(value)) onSortChange?.(value)
-              }}
-            >
-              {bookmarkSortOptions.map((option) => (
-                <DropdownMenuRadioItem key={option.value} value={option.value}>
-                  {option.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* View Mode & Column Toggles for Desktop */}
-        <div className="hidden items-center justify-between gap-2 sm:justify-start md:flex">
-          <ButtonGroup className="shrink-0 border border-brand-border bg-muted/30 p-0.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => onViewModeChange("moodboard")}
-                  variant={viewMode === "moodboard" ? "default" : "ghost"}
-                  size="icon-xs"
-                  className="size-7"
-                >
-                  <SquaresFour className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Moodboard View (2)</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => onViewModeChange("list")}
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="icon-xs"
-                  className="size-7"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>List View (1)</TooltipContent>
-            </Tooltip>
-          </ButtonGroup>
-
-          {viewMode === "moodboard" && (
-            <Select
-              value={columnCount.toString()}
-              onValueChange={(val) => onColumnCountChange(parseInt(val, 10))}
-            >
-              <SelectTrigger aria-label="Maximum moodboard columns" title="Maximum columns; adapts to available space" className="h-8 w-20 rounded-none border-brand-border bg-background px-2 text-[10px] font-bold tracking-wider text-foreground uppercase focus-visible:ring-1 focus-visible:ring-brand-charcoal/30 focus-visible:outline-none">
-                <SelectValue placeholder="COLS" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="1">1 Col</SelectItem>
-                  <SelectItem value="2">2 Cols</SelectItem>
-                  <SelectItem value="3">3 Cols</SelectItem>
-                  <SelectItem value="4">4 Cols</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-      </div>
-
-      {/* Add Button & Dropdown */}
-      <ButtonGroup className="hidden shrink-0 sm:flex" aria-label="Add to Cabinet">
-        <Button onClick={() => handleCreate("BOOKMARK")} className="h-8">
-          <Plus data-icon="inline-start" />
-          Add
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              className="h-8 border-l border-primary-foreground/20"
-              size="icon-xs"
-              aria-label="Choose what to add"
-            >
-              <CaretDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => handleCreate("BOOKMARK")}>
-                <BookmarkSimple /> Add bookmark
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleCreate("NOTE")}>
-                <FileText /> Create note
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ButtonGroup>
-
-      {/* Extracted Bookmark Form Dialog */}
-      <BookmarkDialog
-        isOpen={isBookmarkModalOpen}
-        onOpenChange={setIsBookmarkModalOpen}
-        bookmarkToEdit={bookmarkToEdit}
-        bookmarkForm={bookmarkForm}
-        folders={folders}
-        tags={tags}
-        onClose={() => setIsBookmarkModalOpen(false)}
-      />
+      <BookmarkDialog isOpen={isBookmarkModalOpen} onOpenChange={setIsBookmarkModalOpen} bookmarkToEdit={bookmarkToEdit} bookmarkForm={bookmarkForm} folders={folders} tags={tags} onClose={() => setIsBookmarkModalOpen(false)} />
     </div>
   )
 }

@@ -1,90 +1,72 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { toast } from "@/components/ui/sonner"
+import { bookmarkUrl } from "@/lib/bookmark-url"
+import { findExistingBookmark } from "./use-bookmark-search"
 
 interface ClipboardPasteOptions {
   createBookmarkMutation: any
   invalidateAllQueries: () => void
   selectedFolderId?: string
   isModalOpen: boolean
+  onEditBookmark?: (bookmark: any) => void
 }
 
-export function useClipboardPaste({
-  createBookmarkMutation,
-  invalidateAllQueries,
-  selectedFolderId,
-  isModalOpen,
-}: ClipboardPasteOptions) {
+export function useClipboardPaste(options: ClipboardPasteOptions) {
+  const latest = useRef(options)
+  latest.current = options
+  const inFlight = useRef(new Set<string>())
   useEffect(() => {
-    const saveBookmarkFromUrl = async (rawText: string) => {
-      const text = rawText.trim()
-      if (!text) return false
-
-      let targetUrl = ""
-      try {
-        const urlObj = new URL(text)
-        if (urlObj.protocol === "http:" || urlObj.protocol === "https:") {
-          targetUrl = urlObj.toString()
-        }
-      } catch {
-        if (/^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/.*)?$/i.test(text)) {
-          targetUrl = `https://${text}`
+    let mounted = true
+    const controllers = new Set<AbortController>()
+    const toastIds = new Set<string | number>()
+    const handlePaste = (event: ClipboardEvent) => {
+      const { createBookmarkMutation, invalidateAllQueries, selectedFolderId, isModalOpen } = latest.current
+      const active = document.activeElement as HTMLElement | null
+      if (isModalOpen || active?.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="alertdialog"]') || document.querySelector('[role="dialog"], [role="alertdialog"]')) return
+      const text = (event.clipboardData?.getData('text/plain') || '').trim()
+      const canonical = bookmarkUrl(text)
+      if (!canonical) return
+      event.preventDefault()
+      if (inFlight.current.has(canonical)) return
+      inFlight.current.add(canonical)
+      const controller = new AbortController()
+      controllers.add(controller)
+      const save = async () => {
+        const id = toast.loading('Saving bookmark from clipboard…')
+        toastIds.add(id)
+        const action = (bookmark: any) => latest.current.onEditBookmark && bookmark?.id && bookmark.canEdit !== false
+          ? { label: 'Edit', onClick: () => { if (mounted) latest.current.onEditBookmark?.(bookmark) } } : undefined
+        try {
+          const existing = await findExistingBookmark(canonical, controller.signal)
+          if (!mounted) return
+          if (existing) {
+            toast.info('This link is already in your Cabinet', { id, action: action(existing) })
+            return
+          }
+          // Keep the user's fragment for opening the original; normalization is only for matching.
+          const url = /^[a-z][a-z\d+.-]*:/i.test(text) ? text : `https://${text}`
+          const response = await createBookmarkMutation.mutateAsync({ data: { url, folderId: selectedFolderId || undefined } })
+          if (!mounted) return
+          const saved = response?.data?.data ?? response?.data ?? response
+          invalidateAllQueries()
+          toast.success(`Saved: ${saved?.title || url}`, { id, action: action(saved), duration: 8000 })
+        } catch {
+          if (mounted) toast.error('Could not check or save this link. Try Add bookmark.', { id })
+        } finally {
+          controllers.delete(controller)
+          inFlight.current.delete(canonical)
         }
       }
-
-      if (!targetUrl) return false
-
-      const toastId = toast.loading("Saving bookmark from clipboard...")
-
-      try {
-        const res = await createBookmarkMutation.mutateAsync({
-          data: {
-            url: targetUrl,
-            folderId: selectedFolderId || undefined,
-          },
-        })
-        invalidateAllQueries()
-        const savedTitle =
-          (res as any)?.data?.title || (res as any)?.title || targetUrl
-        toast.success(`Saved: ${savedTitle}`, { id: toastId })
-        return true
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to save bookmark from clipboard", {
-          id: toastId,
-        })
-        return false
-      }
+      void save()
     }
-
-    const handlePaste = async (e: ClipboardEvent) => {
-      const activeTag = (document.activeElement?.tagName || "").toLowerCase()
-      const isEditable =
-        activeTag === "input" ||
-        activeTag === "textarea" ||
-        (document.activeElement as HTMLElement)?.isContentEditable
-
-      if (isEditable || isModalOpen) return
-
-      const clipboardText =
-        e.clipboardData?.getData("text/plain") ||
-        e.clipboardData?.getData("text") ||
-        ""
-
-      if (!clipboardText) return
-
-      const saved = await saveBookmarkFromUrl(clipboardText)
-      if (saved) e.preventDefault()
-    }
-
-    window.addEventListener("paste", handlePaste)
+    window.addEventListener('paste', handlePaste)
     return () => {
-      window.removeEventListener("paste", handlePaste)
+      mounted = false
+      window.removeEventListener('paste', handlePaste)
+      controllers.forEach((controller) => controller.abort())
+      toastIds.forEach((id) => toast.dismiss(id))
     }
-  }, [
-    createBookmarkMutation,
-    invalidateAllQueries,
-    isModalOpen,
-    selectedFolderId,
-  ])
+  }, [])
 }

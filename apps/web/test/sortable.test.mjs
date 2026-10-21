@@ -39,6 +39,7 @@ registerHooks({
 const { BookmarkMoodboardView, MoodboardCard } = await import("../src/app/cabinet/components/bookmark-moodboard-view.tsx")
 const { BookmarkListView } = await import("../src/app/cabinet/components/bookmark-list-view.tsx")
 const { BookmarkList } = await import("../src/app/cabinet/components/bookmark-list.tsx")
+const { BookmarkInspector } = await import("../src/app/cabinet/components/bookmark-inspector.tsx")
 const { TooltipProvider } = await import("../src/components/ui/tooltip.tsx")
 const bookmark = { id: "a", title: "Alpha", url: "https://example.com", createdAt: "2026-01-01" }
 const props = {
@@ -90,4 +91,19 @@ test("trash and read-only groups keep actions usable but do not offer sorting", 
     }
   }
   assert.doesNotThrow(() => render(MoodboardCard, { bookmark, isSelected: false }))
+})
+
+test("other contributors' bookmarks cannot be dragged or edited in the UI", () => {
+  const shared = { ...bookmark, canEdit: false }
+  for (const Component of [BookmarkListView, BookmarkMoodboardView]) {
+    const html = render(Component, { bookmarks: [shared], onReorder() {} })
+    assert.match(html, /data-readonly="true"/)
+    assert.doesNotMatch(html, /aria-roledescription="sortable"/)
+    assert.doesNotMatch(html, /draggable="true"/)
+  }
+  const html = render(BookmarkInspector, { bookmark: shared, folders: [], availableTags: [] })
+  assert.match(html, /Only its contributor can edit or delete it/)
+  assert.match(html, /<input[^>]*disabled/)
+  assert.doesNotMatch(html, /Save changes|Retry save|All changes saved/)
+  assert.match(html, /<textarea[^>]*disabled/)
 })

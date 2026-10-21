@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { startBookmarkDrag } from "@/lib/bookmark-drag"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Tooltip,
@@ -31,16 +31,18 @@ import {
   VideoCamera,
   Clock,
   FolderSimple,
+  Check,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuGroup,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "@/components/ui/sonner"
-import type { DisplayPreferences } from "./display-preferences"
+import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
 import {
   Sortable,
   SortableContent,
@@ -49,6 +51,7 @@ import {
 } from "@/components/ui/sortable"
 
 interface MoodboardCardProps {
+  showActions?: boolean
   nativeDrag?: boolean
   onTogglePin?: (bookmark: any) => void
   displayPreferences?: DisplayPreferences
@@ -178,8 +181,9 @@ function renderNoteBlock(node: NoteDocNode, index: number) {
       <ul key={`tasks-${index}`} className="space-y-0.5 text-xs text-foreground/90">
         {items.map((item, itemIndex) => (
           <li key={`task-item-${index}-${itemIndex}`}>
-            <span className="block truncate">
-              {item.checked ? "☑" : "☐"} {item.text}
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden="true" className="flex size-3 shrink-0 items-center justify-center rounded-xs border border-current">{item.checked && <Check />}</span>
+              <span className="truncate">{item.text}</span>
             </span>
           </li>
         ))}
@@ -193,7 +197,7 @@ function renderNoteBlock(node: NoteDocNode, index: number) {
     return (
       <pre
         key={`code-${index}`}
-        className="line-clamp-2 rounded-xs bg-muted/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-foreground/90"
+        className="line-clamp-2 rounded-sm bg-muted/60 px-2 py-1 font-mono text-xs leading-relaxed text-foreground/90"
       >
         {text}
       </pre>
@@ -218,7 +222,7 @@ function NoteContentPreview({ bookmark }: { bookmark: any }) {
 
   if (!blocks.length) {
     return (
-      <p className="line-clamp-4 font-serif text-xs leading-relaxed text-foreground/90">
+      <p className="line-clamp-4 text-[13px] leading-6 text-foreground/90">
         {bookmark.notes ||
           bookmark.description ||
           "Click to add note content..."}
@@ -234,6 +238,7 @@ function NoteContentPreview({ bookmark }: { bookmark: any }) {
 }
 
 export function MoodboardCard({
+  showActions = true,
   nativeDrag = true,
   onTogglePin,
   displayPreferences,
@@ -260,14 +265,7 @@ export function MoodboardCard({
 }: MoodboardCardProps) {
   const hostname = getHostname(bookmark.url)
   const folderName = folders.find((folder) => folder.id === bookmark.folderId)?.name
-  const preferences = displayPreferences ?? {
-    showTitle: true,
-    showDescription: true,
-    showImage: true,
-    showWebsite: true,
-    showFolder: true,
-    showDate: true,
-  }
+  const preferences = displayPreferences ?? defaultDisplayPreferences
   const isNote = bookmark.type === "NOTE" || !bookmark.url
   const isVideo =
     bookmark.contentType === "VIDEO" ||
@@ -329,7 +327,8 @@ export function MoodboardCard({
 
   return (
     <Card
-      draggable={nativeDrag}
+      draggable={nativeDrag && bookmark.canEdit !== false}
+      data-readonly={bookmark.canEdit === false}
       onDragStart={(e) => {
         if (!nativeDrag) {
           e.preventDefault()
@@ -349,36 +348,36 @@ export function MoodboardCard({
         }
       }}
       className={cn(
-        "group/card flex h-auto w-full cursor-pointer flex-col overflow-hidden rounded-md border border-border/80 bg-card text-card-foreground shadow-2xs transition-all hover:border-foreground/30 hover:shadow-xs",
+        "group/card [&[data-readonly=true]_[data-bookmark-actions]]:hidden flex h-auto w-full cursor-pointer flex-col overflow-hidden rounded-lg border border-border/80 bg-card text-card-foreground shadow-none transition-colors hover:border-foreground/25",
         isSelected
-          ? "border-foreground ring-1 ring-foreground/20"
+          ? "border-library-olive ring-1 ring-library-olive/30"
           : "border-border/80"
       )}
     >
       {/* Top Visual Image Header Container */}
-      <div className="relative w-full shrink-0 overflow-hidden bg-muted/30">
+      <div className={cn("relative w-full shrink-0 overflow-hidden bg-muted/30", showActions && !isNote && !preferences.showImage && (hasSelectedItems ? "min-h-10" : "sm:min-h-10"))}>
         {/* Checkbox Overlay (Top Left) */}
-        <div
+        {showActions && <div data-bookmark-actions
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "absolute top-2.5 left-2.5 z-20 flex items-center gap-1 rounded-sm border border-border/70 bg-background/90 p-0.5 shadow-2xs backdrop-blur-xs transition-opacity",
-            isSelected || bookmark.isPinned
+            "absolute top-2.5 left-2.5 z-20 flex items-center gap-1 rounded-sm bg-card p-1 transition-opacity",
+            isSelected || hasSelectedItems
               ? "opacity-100"
-              : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100"
+              : "hidden focus-within:opacity-100 sm:flex sm:opacity-0 sm:group-hover/card:opacity-100"
           )}
         >
           <Checkbox
             checked={isSelected}
             onCheckedChange={onToggleSelect}
-            className="rounded-xs border-border"
+            aria-label={`Select ${bookmark.title || "bookmark"}`}
+            className="border-input"
           />
-          {bookmark.isPinned && <PushPin className="size-3.5" weight="fill" aria-label="Pinned bookmark" />}
-        </div>
+        </div>}
 
-        {/* Floating Quick Action Buttons (Top Right - Raindrop style) */}
-        <div
+        {/* Desktop quick actions stay off the saved preview until needed. */}
+        {showActions && <div data-bookmark-actions
           onClick={(e) => e.stopPropagation()}
-          className="absolute top-2.5 right-2.5 z-20 flex items-center gap-0.5 rounded-sm border border-border/60 bg-background/90 p-0.5 shadow-2xs backdrop-blur-xs transition-opacity opacity-90 sm:opacity-0 sm:group-hover/card:opacity-100 sm:focus-within:opacity-100"
+          className="absolute top-2.5 right-2.5 z-20 hidden items-center gap-0.5 rounded-sm bg-card p-0.5 transition-opacity sm:flex sm:opacity-0 sm:group-hover/card:opacity-100 sm:focus-within:opacity-100"
         >
           {isTrashView ? (
             <>
@@ -416,6 +415,7 @@ export function MoodboardCard({
             <>
               {onTogglePin && (
                 <Button
+                  className="hidden sm:inline-flex"
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => onTogglePin(bookmark)}
@@ -433,13 +433,13 @@ export function MoodboardCard({
                     onClick={() => onToggleFavorite(bookmark)}
                     variant="ghost"
                     size="icon-xs"
-                    className="size-6"
+                    className="hidden size-6 sm:inline-flex"
                     title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}
                   >
                     <Star
                       className={cn(
                         "size-3.5",
-                        bookmark.isFavorite ? "text-[#956400]" : "text-brand-muted"
+                        bookmark.isFavorite ? "text-library-olive" : "text-muted-foreground"
                       )}
                       weight={bookmark.isFavorite ? "fill" : "regular"}
                     />
@@ -456,7 +456,7 @@ export function MoodboardCard({
                       onClick={() => onOpenDownload(bookmark)}
                       variant="ghost"
                       size="icon-xs"
-                      className="size-6 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                      className="hidden size-6 sm:inline-flex"
                       title="Download media"
                     >
                       <DownloadSimple className="size-3.5" weight="bold" />
@@ -465,18 +465,6 @@ export function MoodboardCard({
                   <TooltipContent>Download Media</TooltipContent>
                 </Tooltip>
               )}
-
-              {/* Mobile Action Sheet Trigger */}
-              <Button
-                type="button"
-                onClick={() => onOpenActionSheet?.(bookmark)}
-                variant="ghost"
-                size="icon-xs"
-                className="flex size-6 text-brand-muted hover:text-brand-charcoal md:hidden"
-                title="Bookmark actions"
-              >
-                <DotsThreeVertical className="size-3.5" weight="bold" />
-              </Button>
 
               {/* Desktop 3-Dot Dropdown */}
               <div className="hidden md:inline-flex">
@@ -491,11 +479,12 @@ export function MoodboardCard({
                       <DotsThreeVertical className="size-3.5" weight="bold" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44 rounded-none">
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuGroup>
                     {isVideo && onOpenDownload && (
                       <DropdownMenuItem
                         onClick={() => onOpenDownload(bookmark)}
-                        className="flex cursor-pointer items-center gap-2 text-xs font-medium text-purple-600"
+                        className="flex cursor-pointer items-center gap-2 text-sm"
                       >
                         <DownloadSimple className="size-3.5" />
                         <span>Download Media</span>
@@ -537,12 +526,13 @@ export function MoodboardCard({
                       <Trash className="size-3.5" />
                       <span>Delete</span>
                     </DropdownMenuItem>
+                    </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </>
           )}
-        </div>
+        </div>}
 
         {isNote ? (
           <div
@@ -554,24 +544,23 @@ export function MoodboardCard({
                 return
               }
               e.preventDefault()
+              e.stopPropagation()
               onEditBookmark(bookmark)
             }}
-            className="relative flex aspect-[16/10] w-full cursor-pointer flex-col justify-between bg-muted/40 p-4 text-foreground transition-colors hover:bg-muted/60"
+            className="relative flex min-h-36 w-full cursor-pointer flex-col bg-muted/40 p-4 text-foreground"
           >
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 font-mono text-[9px] font-semibold tracking-wider text-muted-foreground uppercase">
+              <div className="mb-3 flex items-center gap-1.5 pl-6 text-xs font-medium text-muted-foreground">
                 <FileText className="size-3.5" />
-                <span>Personal Note</span>
+                <span>Note</span>
               </div>
-              <div className="max-w-full line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
-                {bookmark.title || "Untitled note"}
-              </div>
-              <NoteContentPreview bookmark={bookmark} />
+              {preferences.showDescription && <NoteContentPreview bookmark={bookmark} />}
             </div>
           </div>
         ) : preferences.showImage ? (
           <a
             href={bookmark.url}
+            aria-label={`Preview ${bookmark.title || hostname} in Cabinet`}
             target="_blank"
             rel="noreferrer"
             onClick={(e) => {
@@ -591,7 +580,7 @@ export function MoodboardCard({
               {/* Thumbnail loading state with Clock icon */}
               {imageStatus === "loading" && (
                 <div
-                  className="relative flex aspect-[16/10] w-full flex-col items-center justify-center bg-muted/40 p-4 text-muted-foreground animate-pulse"
+                  className="relative flex aspect-[16/10] w-full flex-col items-center justify-center bg-muted/40 p-4 text-muted-foreground"
                   role="status"
                   aria-label="Loading thumbnail"
                 >
@@ -601,7 +590,7 @@ export function MoodboardCard({
                       style={{ animationDuration: "3s" }}
                     />
                   </div>
-                  <span className="mt-2 font-mono text-[10px] font-medium tracking-wider text-muted-foreground/80 uppercase">
+                  <span className="mt-2 text-xs text-muted-foreground">
                     {isPendingEnrichment
                       ? "Generating preview..."
                       : "Loading thumbnail..."}
@@ -618,39 +607,15 @@ export function MoodboardCard({
                   onLoad={() => setImageStatus("ready")}
                   onError={handleImageError}
                   className={cn(
-                    "block h-auto w-full object-cover transition-opacity duration-200",
+                    "block h-auto max-h-96 w-full object-cover transition-opacity duration-200 motion-reduce:transition-none",
                     imageStatus === "ready" ? "opacity-100" : "hidden"
                   )}
                 />
               )}
 
               {imageStatus === "error" && (
-                <div
-                  className="relative flex aspect-[16/10] w-full flex-col items-center justify-center bg-muted/30 p-4"
-                >
-                  <div className="flex size-10 items-center justify-center rounded-sm border border-border/60 bg-background shadow-2xs">
-                    <img
-                      src={
-                        bookmark.faviconUrl ||
-                        `https://www.google.com/s2/favicons?sz=128&domain=${hostname}`
-                      }
-                      alt=""
-                      onError={(e) => {
-                        const fallback = `https://www.google.com/s2/favicons?sz=128&domain=${hostname}`
-                        if (e.currentTarget.src !== fallback) {
-                          e.currentTarget.src = fallback
-                        } else {
-                          e.currentTarget.style.display = "none"
-                        }
-                      }}
-                      className="size-5 object-contain"
-                    />
-                  </div>
-                  <span
-                    className="mt-2 max-w-full truncate px-2 font-mono text-[10px] font-medium tracking-wider text-muted-foreground uppercase"
-                  >
-                    {hostname}
-                  </span>
+                <div className={cn("relative flex w-full flex-col justify-end bg-muted/50 px-4 pb-4 pt-14", preferences.showWebsite ? "min-h-28" : "min-h-14")}>
+                  {preferences.showWebsite && <span className="max-w-full truncate font-serif text-2xl tracking-tight text-muted-foreground">{hostname.replace(/^www\./, "")}</span>}
                 </div>
               )}
             </>
@@ -659,13 +624,13 @@ export function MoodboardCard({
       </div>
 
       {/* Card Content */}
-      <div className="flex flex-1 flex-col justify-between gap-2.5 p-3.5">
+      <CardContent className={cn("flex flex-1 flex-col", preferences.density === "compact" ? "gap-2 p-3" : "gap-3 p-4")}>
         <div className="flex flex-col gap-1.5">
           {isVideo && (
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge
                 variant="outline"
-                className="rounded-sm border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 font-mono text-[9px] font-medium text-purple-600 dark:text-purple-400 uppercase"
+                className="rounded-sm border-border bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
               >
                 <VideoCamera className="mr-1 inline-block size-3" />
                 Video
@@ -677,31 +642,25 @@ export function MoodboardCard({
             (isNote ? (
               <button
                 type="button"
-                onClick={() => onEditBookmark(bookmark)}
-                className="line-clamp-2 text-left text-xs leading-snug font-medium text-foreground hover:underline"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  if (hasSelectedItems || event.shiftKey || event.metaKey || event.ctrlKey) onToggleSelect()
+                  else onEditBookmark(bookmark)
+                }}
+                className={cn("line-clamp-2 text-left leading-6 font-medium text-foreground hover:underline", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
               >
                 {bookmark.title || "Untitled note"}
               </button>
             ) : (
               <a
                 href={bookmark.url}
+                title={bookmark.title || bookmark.url}
                 target="_blank"
-                rel="noreferrer"
-                onClick={(e) => {
-                  if (hasSelectedItems || e.shiftKey || e.metaKey || e.ctrlKey) {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onToggleSelect()
-                  } else if (onInspectBookmark) {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onInspectBookmark(bookmark)
-                  }
-                }}
-                className="group/link line-clamp-2 text-xs leading-snug font-medium text-foreground hover:underline"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className={cn("group/link line-clamp-2 leading-6 font-medium text-foreground decoration-foreground/30 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
               >
                 {bookmark.title || bookmark.url}
-                <ArrowSquareOut className="ml-1 inline-block h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover/link:opacity-100" />
               </a>
             ))}
           {!isNote &&
@@ -711,7 +670,7 @@ export function MoodboardCard({
                 {bookmark.status === "BROKEN" && (
                   <Badge
                     variant="outline"
-                    className="shrink-0 rounded-sm border-none bg-destructive/10 px-1.5 py-0.5 font-mono text-[9px] text-destructive uppercase"
+                    className="shrink-0 rounded-sm border-none bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive"
                   >
                     Broken
                   </Badge>
@@ -719,7 +678,7 @@ export function MoodboardCard({
                 {bookmark.status === "REDIRECTED" && (
                   <Badge
                     variant="outline"
-                    className="shrink-0 rounded-sm border-none bg-blue-500/10 px-1.5 py-0.5 font-mono text-[9px] text-blue-600 dark:text-blue-400 uppercase"
+                    className="shrink-0 rounded-sm border-none bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
                     title="URL updated automatically to new address"
                   >
                     Redirected
@@ -727,55 +686,61 @@ export function MoodboardCard({
                 )}
               </div>
             )}
-          {preferences.showDescription && bookmark.description && (
-            <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+          {preferences.showDescription && !isNote && bookmark.description && (
+            <p className={cn("line-clamp-2 leading-5 text-muted-foreground", preferences.density === "compact" ? "text-xs" : "text-sm")}>
               {bookmark.description}
             </p>
           )}
-          {preferences.showWebsite && (
-            <p className="truncate font-mono text-[10px] text-muted-foreground/80">
+          {preferences.showWebsite && hostname && (imageStatus !== "error" || !preferences.showImage) && (
+            <p className="truncate text-xs leading-5 text-muted-foreground">
               {hostname}
             </p>
           )}
         </div>
 
-        {(preferences.showFolder || preferences.showDate) && (
-          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+        {bookmark.canEdit === false && <p className="text-xs text-muted-foreground">Shared bookmark · Read-only</p>}
+        {(preferences.showFolder || preferences.showDate || bookmark.isPinned) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs leading-5 text-muted-foreground">
+            {bookmark.isPinned && <span className="flex items-center gap-1 text-library-olive"><PushPin className="size-3" weight="fill" />Pinned</span>}
             {preferences.showFolder && (
-              <Badge variant="outline" className="max-w-full gap-1 rounded-sm px-1.5 py-0.5 font-mono text-[9px] font-normal text-muted-foreground">
-                <FolderSimple aria-hidden="true" />
+              <span className="flex min-w-0 max-w-full items-center gap-1" title={folderName || "Unfiled"}>
+                <FolderSimple className="size-3 shrink-0" aria-hidden="true" />
                 <span className="truncate">{folderName || "Unfiled"}</span>
-              </Badge>
+              </span>
             )}
             {preferences.showDate && bookmark.createdAt && (
-              <Badge variant="outline" className="rounded-sm px-1.5 py-0.5 font-mono text-[9px] font-normal text-muted-foreground">
+              <time dateTime={bookmark.createdAt} title="Date added" className="whitespace-nowrap">
                 {new Date(bookmark.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
-              </Badge>
+              </time>
             )}
           </div>
         )}
-        {bookmark.tags && bookmark.tags.length > 0 && (
+        {(bookmark.tags?.length > 0 || (showActions && onOpenActionSheet && bookmark.canEdit !== false)) && (
+          <div className={cn("flex items-center justify-between gap-2", !bookmark.tags?.length && "md:hidden")}>
           <div className="flex flex-wrap items-center gap-1 pt-0.5">
-            {bookmark.tags.slice(0, 3).map((tag: any) => (
-              <span
-                key={tag.id}
+            {bookmark.tags?.slice(0, 3).map((tag: any) => (
+              <button
+                type="button"
+                key={tag.id || tag.name}
                 onClick={(e) => {
                   e.stopPropagation()
                   onSelectTag(tag.name)
                 }}
-                className="cursor-pointer rounded-xs bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="cursor-pointer rounded-sm bg-muted/60 px-1.5 py-1 text-xs text-muted-foreground hover:bg-library-highlight hover:text-library-olive focus-visible:outline-2 focus-visible:outline-ring"
               >
                 #{tag.name}
-              </span>
+              </button>
             ))}
-            {bookmark.tags.length > 3 && (
-              <span className="font-mono text-[9px] text-muted-foreground/60">
+            {bookmark.tags?.length > 3 && (
+              <span className="text-xs text-muted-foreground">
                 +{bookmark.tags.length - 3}
               </span>
             )}
           </div>
+          {showActions && onOpenActionSheet && bookmark.canEdit !== false && <Button data-bookmark-actions type="button" variant="ghost" size="icon" className="size-11 shrink-0 md:hidden" aria-label="Bookmark actions" onClick={(event) => { event.stopPropagation(); onOpenActionSheet(bookmark) }}><DotsThreeVertical /></Button>}
+          </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   )
 }
@@ -880,13 +845,13 @@ export function BookmarkMoodboardView({
   const content = (
     <>
       <SortableContent withoutSlot>
-        <Masonry columnCount={activeColumnCount} gap={16} linear virtualize={false}>
+        <Masonry columnCount={activeColumnCount} gap={12} linear virtualize={false}>
           {bookmarks.map((bookmark) => (
             <MasonryItem key={bookmark.id}>
               <SortableItem
                 value={bookmark.id}
-                asHandle={canSort && !bookmark.isPinned}
-                disabled={!canSort || bookmark.isPinned}
+                asHandle={canSort && !bookmark.isPinned && bookmark.canEdit !== false}
+                disabled={!canSort || bookmark.isPinned || bookmark.canEdit === false}
                 aria-label={`Reorder ${bookmark.title || "bookmark"}`}
                 className="w-full rounded-md data-dragging:opacity-30 data-sort-over:ring-2 data-sort-over:ring-primary"
               >

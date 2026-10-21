@@ -21,11 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
   SelectContent,
+  SelectGroup,
   SelectItem,
 } from "@/components/ui/select"
 import { ClipboardText, Sparkle, X } from "@phosphor-icons/react"
 import { Spinner } from "@/components/ui/spinner"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
+import { DuplicateBookmarkNotice } from "./duplicate-bookmark-notice"
 import {
   TagsInput,
   TagsInputList,
@@ -98,22 +100,23 @@ export function MobileAddBookmarkDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90dvh] rounded-none border-t border-brand-border bg-white pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      <DrawerContent className="max-h-[90dvh] rounded-t-xl border-t border-border bg-card pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         {/* Header */}
         <DrawerHeader className="border-b border-brand-border px-5 py-3 text-left">
           <div className="flex items-center justify-between">
             <div>
-              <DrawerTitle className="font-serif text-lg font-medium text-brand-charcoal">
+              <DrawerTitle className="text-lg font-medium text-foreground">
                 {bookmarkToEdit ? "Edit Bookmark" : "New Bookmark"}
               </DrawerTitle>
-              <DrawerDescription className="font-mono text-[10px] text-brand-muted uppercase">
+              <DrawerDescription className="text-sm text-muted-foreground">
                 Save link with auto-extracted metadata
               </DrawerDescription>
             </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="flex size-8 items-center justify-center text-brand-muted hover:text-brand-charcoal active:scale-95"
+              className="flex size-11 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label="Close bookmark form"
             >
               <X className="size-4" />
             </button>
@@ -127,7 +130,7 @@ export function MobileAddBookmarkDrawer({
             <button
               type="button"
               onClick={handleQuickPasteAndScrape}
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-none border border-brand-border bg-brand-canvas px-4 py-2.5 font-mono text-xs font-semibold text-brand-charcoal transition-all hover:bg-brand-charcoal/5 active:scale-[0.98]"
+              className="mb-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <ClipboardText className="size-4 text-brand-muted" />
               <span>Paste from Clipboard & Auto-Fill</span>
@@ -139,7 +142,6 @@ export function MobileAddBookmarkDrawer({
               e.preventDefault()
               e.stopPropagation()
               bookmarkForm.handleSubmit()
-              onOpenChange(false)
             }}
             className="flex flex-col gap-4"
           >
@@ -161,7 +163,7 @@ export function MobileAddBookmarkDrawer({
                             <div className="flex items-center justify-between">
                               <FieldLabel
                                 htmlFor="mobile-url"
-                                className="font-mono text-xs text-brand-muted uppercase"
+                                className="text-sm text-muted-foreground"
                               >
                                 URL
                               </FieldLabel>
@@ -172,7 +174,7 @@ export function MobileAddBookmarkDrawer({
                                   onClick={() =>
                                     handleScrape(field.state.value)
                                   }
-                                  className="flex items-center gap-1 font-mono text-[10px] font-semibold text-brand-charcoal hover:underline"
+                                  className="flex min-h-11 items-center gap-1 text-xs font-medium text-foreground hover:underline"
                                 >
                                   {isScraping ? (
                                     <>
@@ -197,10 +199,11 @@ export function MobileAddBookmarkDrawer({
                                 field.handleChange(e.target.value)
                               }
                               aria-invalid={isInvalid}
-                              placeholder="https://example.com"
+                              placeholder="Paste a link"
                               type="url"
-                              className="h-10 text-sm"
+                              className="h-11 text-base"
                             />
+                            <DuplicateBookmarkNotice url={field.state.value} excludeId={bookmarkToEdit?.id} />
                             {isInvalid && (
                               <FieldError
                                 errors={field.state.meta.errors.map(
@@ -229,7 +232,7 @@ export function MobileAddBookmarkDrawer({
                     <Field data-invalid={isInvalid}>
                       <FieldLabel
                         htmlFor="mobile-title"
-                        className="font-mono text-xs text-brand-muted uppercase"
+                        className="text-sm text-muted-foreground"
                       >
                         Title (Optional)
                       </FieldLabel>
@@ -241,7 +244,7 @@ export function MobileAddBookmarkDrawer({
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
                         placeholder="Auto-fetched or custom title"
-                        className="h-10 text-sm"
+                        className="h-11 text-base"
                       />
                       {isInvalid && (
                         <FieldError
@@ -265,7 +268,7 @@ export function MobileAddBookmarkDrawer({
                     <Field data-invalid={isInvalid}>
                       <FieldLabel
                         htmlFor="mobile-desc"
-                        className="font-mono text-xs text-brand-muted uppercase"
+                        className="text-sm text-muted-foreground"
                       >
                         Description (Optional)
                       </FieldLabel>
@@ -277,7 +280,7 @@ export function MobileAddBookmarkDrawer({
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
                         placeholder="Short summary (optional)"
-                        className="h-10 text-sm"
+                        className="h-11 text-base"
                       />
                       {isInvalid && (
                         <FieldError
@@ -299,26 +302,29 @@ export function MobileAddBookmarkDrawer({
                     field.state.meta.isTouched && !field.state.meta.isValid
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel className="font-mono text-xs text-brand-muted uppercase">
+                      <FieldLabel htmlFor="mobile-folder" className="text-sm text-muted-foreground">
                         Folder
                       </FieldLabel>
                       <Select
-                        value={field.state.value || ""}
-                        onValueChange={(val) => field.handleChange(val)}
+                        value={field.state.value || "__root__"}
+                        onValueChange={(val) => field.handleChange(val === "__root__" ? "" : val)}
                       >
                         <SelectTrigger
                           aria-invalid={isInvalid}
-                          className="h-10 w-full rounded-none border border-brand-border bg-white px-3 text-sm font-medium text-brand-charcoal"
+                          id="mobile-folder"
+                          className="h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground"
                         >
                           <SelectValue placeholder="Root (No Folder)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Root (No Folder)</SelectItem>
+                          <SelectGroup>
+                          <SelectItem value="__root__">Root (No Folder)</SelectItem>
                           {folders.map((f: any) => (
                             <SelectItem key={f.id} value={f.id}>
                               {f.name}
                             </SelectItem>
                           ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                       {isInvalid && (
@@ -339,7 +345,7 @@ export function MobileAddBookmarkDrawer({
                 children={(field: any) => {
                   return (
                     <Field>
-                      <FieldLabel className="font-mono text-xs text-brand-muted uppercase">
+                      <FieldLabel htmlFor="mobile-tags" className="text-sm text-muted-foreground">
                         Tags
                       </FieldLabel>
                       <TagsInput
@@ -350,7 +356,7 @@ export function MobileAddBookmarkDrawer({
                           )
                           field.handleChange(formatted)
                         }}
-                        className="min-h-10 rounded-none border border-brand-border bg-white p-1"
+                        className="min-h-11 rounded-md border border-input bg-card p-1"
                       >
                         <TagsInputList>
                           {(field.state.value || []).map((tag: string) => (
@@ -359,8 +365,9 @@ export function MobileAddBookmarkDrawer({
                             </TagsInputItem>
                           ))}
                           <TagsInputInput
+                            id="mobile-tags"
                             placeholder="Add #tag and press Enter..."
-                            className="text-xs"
+                            className="text-base"
                           />
                         </TagsInputList>
                       </TagsInput>
@@ -372,12 +379,12 @@ export function MobileAddBookmarkDrawer({
 
             {/* Submit Button */}
             <div className="pt-2">
-              <Button
-                type="submit"
-                className="h-11 w-full rounded-none bg-brand-charcoal text-xs font-semibold text-white uppercase hover:bg-brand-charcoal/90 active:scale-[0.99]"
-              >
-                {bookmarkToEdit ? "Update Bookmark" : "Save Bookmark"}
-              </Button>
+              <bookmarkForm.Subscribe selector={(state: any) => state.isSubmitting}>
+                {(isSubmitting: boolean) => <Button type="submit" disabled={isSubmitting} className="h-11 w-full">
+                  {isSubmitting && <Spinner />}
+                  {bookmarkToEdit ? "Update Bookmark" : "Save Bookmark"}
+                </Button>}
+              </bookmarkForm.Subscribe>
             </div>
           </form>
         </div>

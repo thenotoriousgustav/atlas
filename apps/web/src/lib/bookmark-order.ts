@@ -4,7 +4,7 @@ export const bookmarkSortOptions = [
   { value: "custom", label: "Custom Order (Drag & Drop)" },
   { value: "newest", label: "Newest First" },
   { value: "oldest", label: "Oldest First" },
-  { value: "title", label: "Alphabetical (A–Z)" },
+  { value: "title", label: "Alphabetical (A-Z)" },
   { value: "domain", label: "Domain" },
 ] as const satisfies ReadonlyArray<{ value: BookmarksControllerFindAllSort; label: string }>
 

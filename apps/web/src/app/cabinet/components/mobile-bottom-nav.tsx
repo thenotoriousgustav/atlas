@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuGroup,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -41,7 +42,7 @@ export function MobileBottomNav({
   return (
     <nav
       aria-label="Mobile Bottom Navigation"
-      className="fixed inset-x-0 bottom-0 z-40 block border-t border-brand-border bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 block border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <div className="flex h-14 items-center justify-around px-2">
         {/* Tab 1: All Bookmarks */}
@@ -59,7 +60,7 @@ export function MobileBottomNav({
             className="size-5"
             weight={activeTab === "all" ? "fill" : "regular"}
           />
-          <span className="font-mono text-[9px] font-semibold tracking-tight uppercase">
+          <span className="text-xs font-medium">
             All
           </span>
         </button>
@@ -82,7 +83,7 @@ export function MobileBottomNav({
             className="size-5"
             weight={activeTab === "folders" ? "fill" : "regular"}
           />
-          <span className="font-mono text-[9px] font-semibold tracking-tight uppercase">
+          <span className="text-xs font-medium">
             Folders
           </span>
         </button>
@@ -93,19 +94,21 @@ export function MobileBottomNav({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex size-11 items-center justify-center rounded-none bg-brand-charcoal text-white shadow-sm transition-all hover:bg-brand-charcoal/90 active:scale-90"
+                className="flex size-11 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 aria-label="Add to Cabinet"
               >
                 <Plus className="size-5" weight="bold" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" side="top" className="w-44">
+              <DropdownMenuGroup>
               <DropdownMenuItem onSelect={onOpenAdd}>
                 <BookmarkSimple /> Add bookmark
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={onCreateNote}>
                 <FileText /> Create note
               </DropdownMenuItem>
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -117,18 +120,15 @@ export function MobileBottomNav({
           className={cn(
             "flex min-w-[56px] flex-1 flex-col items-center justify-center gap-1 py-1 transition-colors active:scale-95",
             activeTab === "favorites"
-              ? "text-[#956400]"
+              ? "text-foreground"
               : "text-brand-muted hover:text-brand-charcoal"
           )}
         >
           <Star
-            className={cn(
-              "size-5",
-              activeTab === "favorites" ? "text-[#956400]" : ""
-            )}
+            className="size-5"
             weight={activeTab === "favorites" ? "fill" : "regular"}
           />
-          <span className="font-mono text-[9px] font-semibold tracking-tight uppercase">
+          <span className="text-xs font-medium">
             Favs
           </span>
         </button>
@@ -151,7 +151,7 @@ export function MobileBottomNav({
             className="size-5"
             weight={activeTab === "library" ? "fill" : "regular"}
           />
-          <span className="font-mono text-[9px] font-semibold tracking-tight uppercase">
+          <span className="text-xs font-medium">
             Library
           </span>
           {trashCount > 0 && (

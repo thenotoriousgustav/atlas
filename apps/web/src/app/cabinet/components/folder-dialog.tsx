@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
   SelectContent,
+  SelectGroup,
   SelectItem,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
@@ -134,19 +135,19 @@ export function FolderDialog({
                       Parent Folder (optional)
                     </FieldLabel>
                     <Select
-                      value={field.state.value || ""}
+                      value={field.state.value || "__root__"}
                       onValueChange={(val) =>
-                        field.handleChange(val === "" ? null : val)
+                        field.handleChange(val === "__root__" ? "" : val)
                       }
                     >
                       <SelectTrigger
                         id={field.name}
-                        className="rounded-none border-brand-border"
                       >
                         <SelectValue placeholder="Root (No parent folder)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">
+                        <SelectGroup>
+                        <SelectItem value="__root__">
                           Root (No parent folder)
                         </SelectItem>
                         {folders
@@ -158,6 +159,7 @@ export function FolderDialog({
                               {f.name}
                             </SelectItem>
                           ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                     {isInvalid && (
@@ -178,7 +180,7 @@ export function FolderDialog({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 text-xs uppercase"
+              className="flex-1"
             >
               Cancel
             </Button>
@@ -191,7 +193,7 @@ export function FolderDialog({
                 <Button
                   type="submit"
                   disabled={!canSubmit || isSubmitting}
-                  className="flex-1 text-xs uppercase"
+                  className="flex-1"
                 >
                   {isSubmitting ? (
                     <Spinner className="h-3.5 w-3.5 animate-spin" />

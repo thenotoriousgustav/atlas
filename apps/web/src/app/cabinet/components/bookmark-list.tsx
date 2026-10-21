@@ -9,17 +9,23 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@/components/ui/empty"
-import { BookmarkSimple, Trash } from "@phosphor-icons/react"
+import { BookmarkSimple, Trash, LinkSimple, FileText, VideoCamera } from "@phosphor-icons/react"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { BookmarkListView } from "./bookmark-list-view"
 import { BookmarkMoodboardView, MoodboardCard } from "./bookmark-moodboard-view"
 import { BookmarkActionSheet } from "./bookmark-action-sheet"
 import { BookmarkWebview } from "./bookmark-webview"
-import { BookmarkInspector } from "./bookmark-inspector"
+import { BookmarkInspector, type BookmarkInspectorHandle } from "./bookmark-inspector"
 import type { DisplayPreferences } from "./display-preferences"
 import { adjacentPreviewBookmark, moodboardColumnCount } from "@/lib/bookmark-view"
 
 interface BookmarkListProps {
+  title?: string
+  searchQuery?: string
+  viewControls?: React.ReactNode
+  onAddBookmark?: () => void
   sortableInParent?: boolean
+  headerActions?: React.ReactNode
   displayPreferences: DisplayPreferences
   bookmarks: any[]
   isBookmarksLoading: boolean
@@ -54,10 +60,17 @@ interface BookmarkListProps {
   onInspectBookmark?: (bookmark: any) => void
   availableTags?: any[]
   onUpdateBookmark?: (id: string, data: any) => Promise<any>
+  formatFilter?: "all" | "links" | "notes" | "media"
+  onFormatFilterChange?: (format: "all" | "links" | "notes" | "media") => void
 }
 
 export function BookmarkList({
+  title,
+  searchQuery,
+  viewControls,
+  onAddBookmark,
   sortableInParent = false,
+  headerActions,
   displayPreferences,
   bookmarks,
   isBookmarksLoading,
@@ -70,7 +83,7 @@ export function BookmarkList({
   folders,
   viewMode,
   selectedBookmarkIds,
-  onToggleSelect,
+  onToggleSelect: toggleSelect,
   onSelectTag,
   onToggleFavorite,
   onTogglePin,
@@ -92,9 +105,38 @@ export function BookmarkList({
   onInspectBookmark,
   availableTags = [],
   onUpdateBookmark,
+  formatFilter = "all",
+  onFormatFilterChange,
 }: BookmarkListProps) {
+  const onToggleSelect = (id: string) => {
+    if (bookmarks.find((bookmark) => bookmark.id === id)?.canEdit !== false) toggleSelect(id)
+  }
   const [previewBookmark, setPreviewBookmark] = React.useState<any | null>(null)
   const [showPreviewDetails, setShowPreviewDetails] = React.useState(true)
+  const inspectorRef = React.useRef<BookmarkInspectorHandle>(null)
+  const navigating = React.useRef(false)
+  const navigatePreview = async (next: any | null) => {
+    if (navigating.current) return
+    navigating.current = true
+    try {
+      if (await inspectorRef.current?.flush() !== false) setPreviewBookmark(next)
+    } finally { navigating.current = false }
+  }
+  const closeDetails = async () => {
+    if (await inspectorRef.current?.flush() !== false) setShowPreviewDetails(false)
+  }
+  const updatePreview = async (id: string, data: any) => {
+    if (!onUpdateBookmark) throw new Error('Bookmark editing is unavailable')
+    const result = await onUpdateBookmark(id, data)
+    const saved = result?.data?.data ?? result?.data ?? result
+    setPreviewBookmark((current: any) => current?.id !== id ? current : {
+      ...current, ...data,
+      tags: data.tags?.map((name: string) => ({ name })) ?? current.tags,
+      folder: folders.find((folder) => folder.id === data.folderId) || null,
+      ...(saved?.id === id ? saved : {}),
+    })
+    return result
+  }
   const openBookmark = (bookmark: any) => {
     if (bookmark.type === "NOTE" || !bookmark.url) {
       onEditBookmark(bookmark)
@@ -133,7 +175,7 @@ export function BookmarkList({
       const folderName = folders.find(
         (f: any) => f.id === selectedFolderId
       )?.name
-      return `Folder: ${folderName || "Loading..."}`
+      return folderName || "Loading..."
     }
     if (selectedTag) {
       return `Tag: ${selectedTag}`
@@ -173,37 +215,68 @@ export function BookmarkList({
   }
 
   return (
-    <div ref={containerRef} className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="flex items-center gap-2 font-mono text-xs tracking-wider text-muted-foreground uppercase">
-          {isTrashView ? (
-            <Trash className="h-3.5 w-3.5 text-foreground" />
-          ) : (
-            <BookmarkSimple className="h-3.5 w-3.5 text-foreground" />
-          )}
-          {isDuplicatesView ? "Duplicate Groups" : getHeaderTitle()}
-        </h2>
-        <div className="flex items-center gap-2">
-          {isTrashView && bookmarks.length > 0 && onEmptyTrash && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEmptyTrash}
-              className="h-6 rounded-xs border-destructive/30 px-2 font-mono text-[9px] text-destructive uppercase hover:bg-destructive/10"
-            >
-              Empty Trash
-            </Button>
-          )}
-          <Badge variant="secondary" className="h-5 px-1.5 py-0 font-mono text-[9px] tabular-nums font-normal">
-            {isBookmarksLoading
-              ? "..."
-              : isBookmarksError
-                ? "Unavailable"
-              : isDuplicatesView
-                ? `${duplicateGroups?.length || 0} Groups`
-                : `${totalBookmarks !== undefined ? totalBookmarks : bookmarks.length} Items`}
-          </Badge>
+    <div ref={containerRef} className="flex min-w-0 flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="break-words text-2xl font-semibold leading-8 tracking-tight text-foreground">
+              {isDuplicatesView ? "Duplicate Groups" : title || getHeaderTitle()}
+            </h1>
+            <p className="mt-1 break-words text-sm tabular-nums text-muted-foreground" aria-live="polite">
+              {isBookmarksLoading ? "Loading your collection…" : isBookmarksError ? "Collection unavailable" : isDuplicatesView
+                ? `${duplicateGroups?.length || 0} duplicate URL groups`
+                : `${(totalBookmarks ?? bookmarks.length).toLocaleString()} saved items${searchQuery ? ` matching “${searchQuery}”` : ""}`}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {isTrashView && bookmarks.length > 0 && onEmptyTrash && <Button variant="outline" size="sm" onClick={onEmptyTrash}><Trash data-icon="inline-start" />Empty Trash</Button>}
+            {headerActions}
+          </div>
         </div>
+
+        {!isDuplicatesView ? (
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-0.5">
+            {onFormatFilterChange && (
+              <ToggleGroup
+                type="single"
+                value={formatFilter}
+                onValueChange={(val) => {
+                  if (val) onFormatFilterChange(val as any)
+                }}
+                spacing={0}
+                variant="outline"
+                className="overflow-hidden rounded-md border border-border bg-card"
+                aria-label="Filter by format"
+              >
+                <ToggleGroupItem value="all" className="h-8 px-2.5 text-xs font-medium" aria-label="All formats">
+                  All
+                </ToggleGroupItem>
+                <ToggleGroupItem value="links" className="h-8 px-2.5 text-xs font-medium" aria-label="Links only">
+                  <LinkSimple className="size-3.5" data-icon="inline-start" />
+                  <span>Links</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="notes" className="h-8 px-2.5 text-xs font-medium" aria-label="Notes only">
+                  <FileText className="size-3.5" data-icon="inline-start" />
+                  <span>Notes</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="media" className="h-8 px-2.5 text-xs font-medium" aria-label="Media only">
+                  <VideoCamera className="size-3.5" data-icon="inline-start" />
+                  <span>Media</span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+            )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              {viewControls}
+            </div>
+          </div>
+        ) : (
+          viewControls && (
+            <div className="flex justify-end pt-0.5">
+              {viewControls}
+            </div>
+          )
+        )}
       </div>
 
       {isBookmarksLoading ? (
@@ -213,8 +286,8 @@ export function BookmarkList({
             aria-hidden="true"
             className={
               viewMode === "list"
-                ? "divide-y divide-brand-border rounded-none border border-brand-border bg-transparent motion-reduce:animate-none"
-                : "grid gap-4 rounded-none bg-transparent motion-reduce:animate-none"
+                ? "divide-y divide-border rounded-lg border border-border bg-transparent motion-reduce:animate-none"
+                : "grid gap-3 bg-transparent motion-reduce:animate-none"
             }
             style={
               viewMode === "moodboard"
@@ -235,7 +308,7 @@ export function BookmarkList({
               ) : (
                 <div
                   key={index}
-                  className="flex flex-col border border-brand-border"
+                  className="flex flex-col overflow-hidden rounded-lg border border-border"
                 >
                   <div className="aspect-[4/3] bg-muted" />
                   <div className="flex flex-col gap-3 p-4">
@@ -249,9 +322,9 @@ export function BookmarkList({
           </Skeleton>
         </div>
       ) : isBookmarksError ? (
-        <Empty role="alert" className="rounded-none border border-brand-border bg-white p-10">
+        <Empty role="alert" className="rounded-lg border border-border bg-card p-10">
           <EmptyHeader>
-            <EmptyTitle>Could not load bookmarks</EmptyTitle>
+            <EmptyTitle role="heading" aria-level={2}>Could not load bookmarks</EmptyTitle>
             <EmptyDescription>
               Your bookmarks could not be loaded. Please try again.
             </EmptyDescription>
@@ -259,29 +332,30 @@ export function BookmarkList({
           {onRetryBookmarks && <Button variant="outline" onClick={onRetryBookmarks}>Try again</Button>}
         </Empty>
       ) : bookmarks.length === 0 ? (
-        <Empty className="rounded-none border border-brand-border bg-white p-10">
+        <Empty className="rounded-lg border border-dashed border-border bg-card p-10">
           <EmptyHeader>
-            <EmptyTitle>
+            <EmptyTitle role="heading" aria-level={2}>
               {isTrashView ? "Trash is empty" : "No bookmarks found"}
             </EmptyTitle>
             <EmptyDescription>
               {isTrashView
                 ? "No bookmarks in the trash."
-                : "No bookmarks found matching the filters."}
+                : "No bookmarks found matching the filters. Use Add to save a link, or try different filters."}
             </EmptyDescription>
           </EmptyHeader>
+          {!isTrashView && onAddBookmark && <Button onClick={onAddBookmark}><BookmarkSimple data-icon="inline-start" />Add bookmark</Button>}
         </Empty>
       ) : isDuplicatesView ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between border border-brand-border bg-brand-charcoal/5 p-3.5">
-            <span className="font-mono text-xs text-brand-charcoal">
+            <span className="text-sm text-foreground">
               Found {duplicateGroups?.length || 0} duplicate URL groups.
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={onCleanDuplicates}
-              className="h-8 font-mono text-[10px] uppercase hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+              className="hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
             >
               Auto-Clean Duplicates
             </Button>
@@ -290,15 +364,15 @@ export function BookmarkList({
           {duplicateGroups?.map((group, index) => (
             <Card
               key={index}
-              className="space-y-4 rounded-none border border-brand-border bg-white p-4 shadow-none"
+              className="flex flex-col gap-4 p-4 shadow-none"
             >
               <div className="flex items-center justify-between border-b border-brand-border pb-2">
-                <span className="max-w-xl truncate font-mono text-[10px] text-brand-muted">
+                <span className="max-w-xl truncate text-xs text-muted-foreground">
                   URL: {group.url}
                 </span>
                 <Badge
                   variant="outline"
-                  className="shrink-0 border-none bg-brand-charcoal/5 font-mono text-[9px]"
+                  className="shrink-0 border-none bg-muted text-xs"
                 >
                   {group.bookmarks.length} instances
                 </Badge>
@@ -404,31 +478,36 @@ export function BookmarkList({
       {previewBookmark && (
         <BookmarkWebview
           key={previewBookmark.id}
-          bookmark={previewBookmark}
-          onClose={() => setPreviewBookmark(null)}
+          bookmark={bookmarks.find((item) => item.id === previewBookmark.id) || previewBookmark}
+          onClose={() => void navigatePreview(null)}
           showDetails={showPreviewDetails}
-          onToggleDetails={() => setShowPreviewDetails((visible) => !visible)}
+          onToggleDetails={() => { if (showPreviewDetails) void closeDetails(); else setShowPreviewDetails(true) }}
           inspector={onUpdateBookmark ? (
             <BookmarkInspector
+              ref={inspectorRef}
+              key={previewBookmark.id}
               bookmark={bookmarks.find((item) => item.id === previewBookmark.id) || previewBookmark}
               folders={folders}
               availableTags={availableTags}
-              onClose={() => setShowPreviewDetails(false)}
-              onUpdateBookmark={onUpdateBookmark}
+              onClose={() => void closeDetails()}
+              onCloseWithDraft={() => setPreviewBookmark(null)}
+              onUpdateBookmark={updatePreview}
               onDeleteBookmark={onDeleteBookmark}
               onToggleFavorite={onToggleFavorite}
               onTogglePin={onTogglePin}
               onToggleArchive={onToggleArchive}
-              className="h-full w-full border-0 lg:w-[22rem] lg:shrink-0"
+              className="h-full w-full border-0 lg:w-96 lg:shrink-0"
             />
           ) : undefined}
-          onPrevious={previousBookmark ? () => setPreviewBookmark(previousBookmark) : undefined}
-          onNext={nextBookmark ? () => setPreviewBookmark(nextBookmark) : undefined}
+          onPrevious={previousBookmark ? () => void navigatePreview(previousBookmark) : undefined}
+          onNext={nextBookmark ? () => void navigatePreview(nextBookmark) : undefined}
         />
       )}
 
       {/* Mobile Native Bottom Action Sheet for Bookmark Actions */}
       <BookmarkActionSheet
+        onSelectBookmark={(bookmark) => onToggleSelect(bookmark.id)}
+        onToggleFavorite={onToggleFavorite}
         onTogglePin={onTogglePin}
         open={!!actionSheetBookmark}
         onOpenChange={(open) => !open && setActionSheetBookmark(null)}

@@ -22,7 +22,7 @@ registerHooks({
     }
     if (specifier === "@/lib/api-client") {
       return {
-        url: "data:text/javascript,export function useBookmarksControllerGetHealthSummary(){return {data:{total:10,ok:8,redirected:1,broken:1,trash:2},isFetching:false,refetch(){}}};export function useBookmarksControllerGetDuplicates(){return {data:[],isFetching:false,refetch(){}}};export function useBookmarksControllerCleanDuplicates(){return {mutateAsync(){}}};export function useBookmarksControllerTriggerHealthCheck(){return {mutateAsync(){}}};export function useBookmarksControllerImport(){return {mutateAsync(){}}};export const AXIOS_INSTANCE={get:async()=>({data:''}),delete:async()=>({data:''})};",
+        url: "data:text/javascript,export function useBookmarksControllerFindAll(){return {data:null}};export function useBookmarksControllerGetHealthSummary(){return {data:{total:10,ok:8,redirected:1,broken:1,trash:2},isFetching:false,refetch(){}}};export function useBookmarksControllerGetDuplicates(){return {data:[],isFetching:false,refetch(){}}};export function useBookmarksControllerCleanDuplicates(){return {mutateAsync(){}}};export function useBookmarksControllerTriggerHealthCheck(){return {mutateAsync(){}}};export function useBookmarksControllerImport(){return {mutateAsync(){}}};export const AXIOS_INSTANCE={get:async()=>({data:''}),delete:async()=>({data:''})};",
         shortCircuit: true,
       }
     }
@@ -73,8 +73,11 @@ test("SettingsPage renders with all major configuration sections", () => {
   assert.match(html, /Shortcuts/)
 
   // Active appearance tab content
-  assert.match(html, /Theme &amp; Atmosphere|Theme & Atmosphere/)
-  assert.match(html, /Default View Mode/)
-  assert.match(html, /Card Detail Elements/)
-  assert.match(html, /Show Preview \/ Thumbnail Image/)
+  assert.match(html, /Theme/)
+  assert.match(html, /Layout &amp; density|Layout & density/)
+  assert.match(html, /Visible details/)
+  assert.match(html, /Preview image/)
+  assert.match(html, /Comfortable/)
+  assert.match(html, /Compact/)
+  assert.match(html, /Display preview/)
 })

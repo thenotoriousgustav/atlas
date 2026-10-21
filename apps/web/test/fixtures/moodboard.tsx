@@ -1,7 +1,7 @@
 import React from "react"
 import { createRoot } from "react-dom/client"
 import { AppRouterContext, type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
-import { Toolbar } from "../../src/app/cabinet/components/toolbar"
+import { BookmarkViewControls } from "../../src/app/cabinet/components/toolbar"
 import { useCabinetFilters } from "../../src/app/cabinet/hooks/use-cabinet-filters"
 import { BookmarkMoodboardView } from "../../src/app/cabinet/components/bookmark-moodboard-view"
 import { FolderTree } from "../../src/app/cabinet/components/folder-tree"
@@ -30,11 +30,7 @@ function Fixture() {
   return (
     <AppRouterContext.Provider value={router}>
     <TooltipProvider>
-      <Toolbar sort={sort} onSortChange={handleSortChange}
-        searchQuery="" onSearchChange={noop} isBookmarkModalOpen={false} setIsBookmarkModalOpen={noop}
-        bookmarkToEdit={null} bookmarkForm={{ Field: () => null, state: { values: { folderId: "" } } }}
-        folders={[]} resetBookmarkForm={noop} viewMode="moodboard" onViewModeChange={noop}
-      />
+      <BookmarkViewControls sort={sort} onSortChange={handleSortChange} viewMode="moodboard" onViewModeChange={noop} />
       <output id="sort">{sort}</output>
       <button onClick={() => { setBookmarks(initial); setDrop(""); setSelected([]) }}>Reset</button>
       <button onClick={() => setColumns((n) => n === 3 ? 2 : 3)}>Columns</button>

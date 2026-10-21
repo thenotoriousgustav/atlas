@@ -14,6 +14,9 @@ function parseUrlFilters() {
   const folder = params.get("folder")
   const tag = params.get("tag")
   const view = params.get("view")
+  const format =
+    params.get("format") ||
+    (view === "notes" ? "notes" : view === "bookmarks" ? "links" : view === "media" ? "media" : undefined)
   const q = params.get("q")
   const sort = params.get("sort")
 
@@ -26,7 +29,10 @@ function parseUrlFilters() {
         ? folder
         : undefined,
     tag: tag ? tag.trim().replace(/^#/, "") : undefined,
-    view: view || undefined,
+    view: view && !["notes", "bookmarks", "media"].includes(view) ? view : undefined,
+    format: ["all", "links", "notes", "media"].includes(format || "")
+      ? (format as "all" | "links" | "notes" | "media")
+      : undefined,
     searchQuery: q || "",
     sort: isBookmarkSort(sort) ? sort : undefined,
   }
@@ -73,28 +79,31 @@ export function useCabinetFilters(folders: any[]) {
   const [filterType, setFilterTypeState] = useState<
     "BOOKMARK" | "NOTE" | undefined
   >(
-    initialUrl.view === "notes"
+    initialUrl.format === "notes"
       ? "NOTE"
-      : initialUrl.view === "bookmarks"
+      : initialUrl.format === "links"
         ? "BOOKMARK"
         : undefined
   )
   const [filterContentType, setFilterContentTypeState] = useState<
     string | undefined
-  >(initialUrl.view === "media" ? "VIDEO" : undefined)
+  >(initialUrl.format === "media" ? "VIDEO" : undefined)
 
   const isNavigatingRef = useRef(false)
 
-  // Current active view key
-  const currentView = useMemo(() => {
+  const formatFilter: "all" | "links" | "notes" | "media" = useMemo(() => {
+    if (filterContentType === "VIDEO") return "media"
+    if (filterType === "NOTE") return "notes"
+    if (filterType === "BOOKMARK") return "links"
+    return "all"
+  }, [filterContentType, filterType])
+
+  const currentBaseView = useMemo(() => {
     if (filterTrash) return "trash"
     if (filterFavorite) return "favorites"
     if (filterArchived) return "archive"
     if (filterBroken) return "broken"
     if (filterDuplicates) return "duplicates"
-    if (filterType === "NOTE") return "notes"
-    if (filterType === "BOOKMARK") return "bookmarks"
-    if (filterContentType === "VIDEO") return "media"
     return undefined
   }, [
     filterTrash,
@@ -102,6 +111,17 @@ export function useCabinetFilters(folders: any[]) {
     filterArchived,
     filterBroken,
     filterDuplicates,
+  ])
+
+  // Current active view key (legacy compatible)
+  const currentView = useMemo(() => {
+    if (currentBaseView) return currentBaseView
+    if (filterType === "NOTE") return "notes"
+    if (filterType === "BOOKMARK") return "bookmarks"
+    if (filterContentType === "VIDEO") return "media"
+    return undefined
+  }, [
+    currentBaseView,
     filterType,
     filterContentType,
   ])
@@ -112,6 +132,7 @@ export function useCabinetFilters(folders: any[]) {
       folderId,
       tag,
       view,
+      format,
       q,
       sortMode,
       replace = false,
@@ -119,6 +140,7 @@ export function useCabinetFilters(folders: any[]) {
       folderId?: string
       tag?: string
       view?: string
+      format?: string
       q?: string
       sortMode?: string
       replace?: boolean
@@ -128,6 +150,7 @@ export function useCabinetFilters(folders: any[]) {
       if (folderId) params.set("folder", folderId)
       if (tag) params.set("tag", tag)
       if (view) params.set("view", view)
+      if (format && format !== "all") params.set("format", format)
       if (q && q.trim()) params.set("q", q.trim())
       if (sortMode && sortMode !== "custom") params.set("sort", sortMode)
 
@@ -179,13 +202,13 @@ export function useCabinetFilters(folders: any[]) {
       setFilterDuplicatesState(parsed.view === "duplicates" ? true : undefined)
       setFilterTrashState(parsed.view === "trash" ? true : undefined)
       setFilterTypeState(
-        parsed.view === "notes"
+        parsed.format === "notes"
           ? "NOTE"
-          : parsed.view === "bookmarks"
+          : parsed.format === "links"
             ? "BOOKMARK"
             : undefined
       )
-      setFilterContentTypeState(parsed.view === "media" ? "VIDEO" : undefined)
+      setFilterContentTypeState(parsed.format === "media" ? "VIDEO" : undefined)
 
       setTimeout(() => {
         isNavigatingRef.current = false
@@ -231,6 +254,16 @@ export function useCabinetFilters(folders: any[]) {
   const setSelectedFolderId = useCallback(
     (id: string | undefined) => {
       setSelectedFolderIdState(id)
+      if (id) {
+        setSelectedTagState(undefined)
+        setFilterFavoriteState(undefined)
+        setFilterArchivedState(false)
+        setFilterBrokenState(undefined)
+        setFilterDuplicatesState(undefined)
+        setFilterTrashState(undefined)
+        setFilterTypeState(undefined)
+        setFilterContentTypeState(undefined)
+      }
       syncUrl({
         folderId: id,
         tag: undefined,
@@ -329,29 +362,52 @@ export function useCabinetFilters(folders: any[]) {
   const setFilterType = useCallback(
     (type: "BOOKMARK" | "NOTE" | undefined) => {
       setFilterTypeState(type)
+      const format = type === "NOTE" ? "notes" : type === "BOOKMARK" ? "links" : "all"
       syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: type === "NOTE" ? "notes" : type === "BOOKMARK" ? "bookmarks" : undefined,
+        folderId: selectedFolderId,
+        tag: selectedTag,
+        view: currentBaseView,
+        format: format !== "all" ? format : undefined,
         q: searchDebounced,
         sortMode: sort,
       })
     },
-    [searchDebounced, sort, syncUrl]
+    [selectedFolderId, selectedTag, currentBaseView, searchDebounced, sort, syncUrl]
   )
 
   const setFilterContentType = useCallback(
     (ct: string | undefined) => {
       setFilterContentTypeState(ct)
+      const format = ct === "VIDEO" ? "media" : "all"
       syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: ct === "VIDEO" ? "media" : undefined,
+        folderId: selectedFolderId,
+        tag: selectedTag,
+        view: currentBaseView,
+        format: format !== "all" ? format : undefined,
         q: searchDebounced,
         sortMode: sort,
       })
     },
-    [searchDebounced, sort, syncUrl]
+    [selectedFolderId, selectedTag, currentBaseView, searchDebounced, sort, syncUrl]
+  )
+
+  const handleFormatFilterChange = useCallback(
+    (format: "all" | "links" | "notes" | "media") => {
+      const nextType = format === "links" ? "BOOKMARK" : format === "notes" ? "NOTE" : undefined
+      const nextContentType = format === "media" ? "VIDEO" : undefined
+      setFilterTypeState(nextType)
+      setFilterContentTypeState(nextContentType)
+      syncUrl({
+        folderId: selectedFolderId,
+        tag: selectedTag,
+        view: currentBaseView,
+        format: format !== "all" ? format : undefined,
+        q: searchDebounced,
+        sortMode: sort,
+        replace: true,
+      })
+    },
+    [selectedFolderId, selectedTag, currentBaseView, searchDebounced, sort, syncUrl]
   )
 
   const handleSortChange = useCallback(
@@ -522,6 +578,8 @@ export function useCabinetFilters(folders: any[]) {
     setFilterType,
     filterContentType,
     setFilterContentType,
+    formatFilter,
+    handleFormatFilterChange,
     activeMobileTab,
     handleSelectMobileTab,
     activeFilterLabel,

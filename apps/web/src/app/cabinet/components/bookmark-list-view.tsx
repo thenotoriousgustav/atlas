@@ -4,39 +4,11 @@ import { startBookmarkDrag } from "@/lib/bookmark-drag"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip"
-import {
-  Star,
-  PushPin,
-  Archive,
-  PencilSimple,
-  Trash,
-  Copy,
-  DotsThreeVertical,
-  LinkSimple,
-  ArrowCounterClockwise,
-  FileText,
-  DownloadSimple,
-  VideoCamera,
-} from "@phosphor-icons/react"
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+import { Star, PushPin, Archive, PencilSimple, Trash, Copy, DotsThreeVertical, LinkSimple, ArrowCounterClockwise, FileText, DownloadSimple, FolderSimple } from "@phosphor-icons/react"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { toast } from "@/components/ui/sonner"
-import type { DisplayPreferences } from "./display-preferences"
-import {
-  Sortable,
-  SortableContent,
-  SortableItem,
-} from "@/components/ui/sortable"
+import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
+import { Sortable, SortableContent, SortableItem } from "@/components/ui/sortable"
 
 interface BookmarkListViewProps {
   displayPreferences?: DisplayPreferences
@@ -61,414 +33,91 @@ interface BookmarkListViewProps {
 }
 
 export function BookmarkListView({
-  displayPreferences,
-  bookmarks,
-  selectedBookmarkIds,
-  onToggleSelect,
-  onSelectTag,
-  onToggleFavorite,
-  onTogglePin,
-  onToggleArchive,
-  onEditBookmark,
-  onDeleteBookmark,
-  onDuplicateBookmark,
-  getHostname,
-  onReorder,
-  isTrashView,
-  onRestoreBookmark,
-  onPermanentDeleteBookmark,
-  onOpenActionSheet,
-  onOpenDownload,
-  onInspectBookmark,
+  displayPreferences, bookmarks, selectedBookmarkIds, onToggleSelect, onSelectTag,
+  onToggleFavorite, onTogglePin, onToggleArchive, onEditBookmark, onDeleteBookmark,
+  onDuplicateBookmark, getHostname, onReorder, isTrashView, onRestoreBookmark,
+  onPermanentDeleteBookmark, onOpenActionSheet, onOpenDownload, onInspectBookmark,
 }: BookmarkListViewProps) {
-  const preferences = displayPreferences ?? {
-    showTitle: true,
-    showDescription: true,
-    showImage: true,
-    showWebsite: true,
-    showFolder: true,
-    showDate: true,
-  }
-  const handleCopyUrl = (url: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const preferences = displayPreferences ?? defaultDisplayPreferences
+  const handleCopyUrl = (url: string, event: React.MouseEvent) => {
+    event.stopPropagation()
     navigator.clipboard?.writeText(url)
     toast.success("URL copied to clipboard")
   }
 
   return (
-    <Sortable
-      value={bookmarks}
-      onValueChange={(newItems) => onReorder?.(newItems)}
-      getItemValue={(item) => item.id}
-      orientation="vertical"
-    >
-      <SortableContent className="divide-y divide-brand-border border border-brand-border">
+    <Sortable value={bookmarks} onValueChange={(items) => onReorder?.(items)} getItemValue={(item) => item.id} orientation="vertical">
+      <SortableContent className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border bg-card">
         {bookmarks.map((bookmark: any) => {
           const hostname = getHostname(bookmark.url)
           const isSelected = selectedBookmarkIds.includes(bookmark.id)
           const isNote = bookmark.type === "NOTE" || !bookmark.url
-          const isVideo =
-            bookmark.contentType === "VIDEO" ||
-            (bookmark.url &&
-              (bookmark.url.includes("youtube.com") ||
-                bookmark.url.includes("youtu.be") ||
-                bookmark.url.includes("tiktok.com") ||
-                bookmark.url.includes("instagram.com") ||
-                bookmark.url.includes("vimeo.com") ||
-                bookmark.url.includes("twitter.com") ||
-                bookmark.url.includes("x.com")))
+          const isVideo = bookmark.contentType === "VIDEO" || /(?:youtube\.com|youtu\.be|tiktok\.com|instagram\.com|vimeo\.com|twitter\.com|x\.com)/.test(bookmark.url || "")
+          const date = bookmark.createdAt ? new Date(bookmark.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""
           return (
-            <SortableItem
-              key={bookmark.id}
-              value={bookmark.id}
-              asHandle={!isTrashView && !!onReorder && !bookmark.isPinned}
-              disabled={isTrashView || !onReorder || bookmark.isPinned}
-              aria-label={`Reorder ${bookmark.title || "bookmark"}`}
+            <SortableItem key={bookmark.id} value={bookmark.id}
+              asHandle={!isTrashView && !!onReorder && !bookmark.isPinned && bookmark.canEdit !== false}
+              disabled={isTrashView || !onReorder || bookmark.isPinned || bookmark.canEdit === false}
+              data-readonly={bookmark.canEdit === false} aria-label={`Reorder ${bookmark.title || "bookmark"}`}
               className={cn(
-                "group/item flex h-10 items-center justify-between gap-3 bg-white px-3 text-xs transition-colors hover:bg-muted/40",
-                isSelected && "bg-muted/60"
+                "group/item flex items-center justify-between gap-3 bg-card px-4 transition-colors hover:bg-muted/30 [&[data-readonly=true]_[data-bookmark-actions]]:hidden",
+                preferences.density === "compact" ? "min-h-14 py-2 text-sm" : "min-h-20 py-4 text-base",
+                isSelected && "bg-library-highlight",
               )}
-              draggable
-              onDragStart={(e) => {
+              draggable={bookmark.canEdit !== false}
+              onDragStart={(event) => {
                 const ids = isSelected && selectedBookmarkIds.length > 0 ? selectedBookmarkIds : [bookmark.id]
-                startBookmarkDrag(e, ids, bookmark.title || hostname || "Bookmark")
+                startBookmarkDrag(event, ids, bookmark.title || hostname || "Bookmark")
               }}
-              onClick={(e) => {
-                if (selectedBookmarkIds.length > 0 || e.shiftKey || e.metaKey || e.ctrlKey) {
-                  e.preventDefault()
-                  onToggleSelect(bookmark.id)
-                } else {
-                  onInspectBookmark?.(bookmark)
-                }
+              onClick={(event) => {
+                if (selectedBookmarkIds.length > 0 || event.shiftKey || event.metaKey || event.ctrlKey) { event.preventDefault(); onToggleSelect(bookmark.id) }
+                else onInspectBookmark?.(bookmark)
               }}
             >
-              <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className={cn(
-                    "shrink-0 transition-opacity",
-                    isSelected
-                      ? "opacity-100"
-                      : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100"
-                  )}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => onToggleSelect(bookmark.id)}
-                    className="rounded-none border-brand-border data-[state=checked]:border-brand-charcoal data-[state=checked]:bg-brand-charcoal"
-                  />
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div data-bookmark-actions onClick={(event) => event.stopPropagation()} className={cn("shrink-0 transition-opacity", isSelected ? "opacity-100" : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100")}>
+                  <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect(bookmark.id)} aria-label={`Select ${bookmark.title || "bookmark"}`} />
                 </div>
-
-                {!isTrashView && onTogglePin && (
-                  <Button variant="ghost" size="icon-xs"
-                    onClick={(e) => { e.stopPropagation(); onTogglePin(bookmark) }}
-                    title={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
-                    aria-label={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
-                    aria-pressed={!!bookmark.isPinned}
-                  >
-                    <PushPin weight={bookmark.isPinned ? "fill" : "regular"} />
-                  </Button>
-                )}
-                {/* Favicon / Icon */}
-                {isNote ? (
-                  <div className="flex size-4 shrink-0 items-center justify-center bg-[#fbf0d9] text-[#8a5d3b]">
-                    <FileText className="size-3" />
+                {!isTrashView && onTogglePin && bookmark.canEdit !== false && <Button variant="ghost" size="icon-xs" onClick={(event) => { event.stopPropagation(); onTogglePin(bookmark) }} title={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"} aria-label={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"} aria-pressed={!!bookmark.isPinned}><PushPin weight={bookmark.isPinned ? "fill" : "regular"} /></Button>}
+                {preferences.showImage && <span className="hidden size-6 shrink-0 items-center justify-center text-muted-foreground sm:flex">
+                  {isNote ? <FileText /> : <img src={bookmark.faviconUrl || `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} alt="" className="size-5 object-contain" onError={(event) => { event.currentTarget.style.visibility = "hidden" }} />}
+                </span>}
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  {preferences.showTitle && (isNote ? <button type="button" onClick={(event) => { event.stopPropagation(); if (selectedBookmarkIds.length > 0 || event.shiftKey || event.metaKey || event.ctrlKey) onToggleSelect(bookmark.id); else onEditBookmark(bookmark) }} className="truncate text-left font-medium text-foreground hover:underline">{bookmark.title || "Untitled Note"}</button> : <a href={bookmark.url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="truncate font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring">{bookmark.title || bookmark.url}</a>)}
+                  {preferences.showDescription && bookmark.description && <p className={cn("line-clamp-1 text-muted-foreground", preferences.density === "compact" ? "text-xs" : "text-sm")}>{bookmark.description}</p>}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    {preferences.showWebsite && hostname && <span className="max-w-full truncate">{hostname}</span>}
+                    {preferences.showFolder && bookmark.folder && <span className="flex min-w-0 items-center gap-1"><FolderSimple className="size-3" /><span className="truncate">{bookmark.folder.name}</span></span>}
+                    {preferences.showDate && date && <time dateTime={bookmark.createdAt} title="Date added" className="tabular-nums md:hidden">{date}</time>}
+                    {(isNote || isVideo) && <Badge variant="secondary">{isNote ? "Note" : "Video"}</Badge>}
+                    {bookmark.tags?.slice(0, 2).map((tag: any) => <button type="button" key={tag.id || tag.name} onClick={(event) => { event.stopPropagation(); onSelectTag(tag.name) }} className="hover:text-library-olive focus-visible:outline-2 focus-visible:outline-ring">#{tag.name}</button>)}
                   </div>
-                ) : preferences.showImage ? (
-                  <img
-                    src={
-                      bookmark.faviconUrl ||
-                      `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
-                    }
-                    alt=""
-                    className="size-4 shrink-0 rounded-none border border-border bg-white object-contain"
-                    onError={(e) => {
-                      const fallback = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
-                      if (e.currentTarget.src !== fallback) {
-                        e.currentTarget.src = fallback
-                      } else {
-                        ;(e.currentTarget as HTMLElement).style.display = "none"
-                      }
-                    }}
-                  />
-                ) : null}
-
-                {/* Title and Domain on a single clean row */}
-                <div className="flex min-w-0 flex-1 items-baseline gap-2 truncate">
-                  {isNote ? (
-                    <span
-                      onClick={(e) => {
-                        if (selectedBookmarkIds.length > 0 || e.shiftKey || e.metaKey || e.ctrlKey) {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          onToggleSelect(bookmark.id)
-                          return
-                        }
-                        e.stopPropagation()
-                        onEditBookmark(bookmark)
-                      }}
-                      className="cursor-pointer truncate font-serif font-medium text-foreground hover:underline"
-                    >
-                      {bookmark.title || "Untitled Note"}
-                    </span>
-                  ) : (
-                    <a
-                      href={bookmark.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => {
-                        if (selectedBookmarkIds.length > 0 || e.shiftKey || e.metaKey || e.ctrlKey) {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          onToggleSelect(bookmark.id)
-                        } else if (onInspectBookmark) {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          onInspectBookmark(bookmark)
-                        }
-                      }}
-                      className="truncate font-medium text-foreground hover:underline"
-                    >
-                      {bookmark.title || bookmark.url}
-                    </a>
-                  )}
-
-                  {!isNote && preferences.showWebsite && hostname && (
-                    <span className="hidden shrink-0 font-mono text-[10px] text-muted-foreground sm:inline">
-                      {hostname}
-                    </span>
-                  )}
                 </div>
-
-                {/* Tags (max 2) */}
-                {bookmark.tags && bookmark.tags.length > 0 && (
-                  <div className="hidden shrink-0 items-center gap-1 md:flex">
-                    {bookmark.tags.slice(0, 2).map((tag: any) => (
-                      <span
-                        key={tag.id}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onSelectTag(tag.name)
-                        }}
-                        className="bg-brand-blue-bg text-brand-blue-text cursor-pointer rounded-none px-1.5 py-0.5 font-mono text-[9px] hover:opacity-80"
-                      >
-                        #{tag.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Badges */}
-                {isNote && (
-                  <Badge
-                    variant="outline"
-                    className="shrink-0 rounded-none border-[#ebd8b7] bg-[#fbf0d9] px-1.5 py-0 font-mono text-[9px] text-[#8a5d3b] uppercase"
-                  >
-                    Note
-                  </Badge>
-                )}
-                {isVideo && (
-                  <Badge
-                    variant="outline"
-                    className="shrink-0 rounded-none border-purple-200 bg-purple-50 px-1.5 py-0 font-mono text-[9px] text-purple-700 uppercase"
-                  >
-                    Video
-                  </Badge>
-                )}
-                {bookmark.folder && (
-                  <span className="hidden shrink-0 font-mono text-[10px] text-muted-foreground lg:inline">
-                    [{bookmark.folder.name}]
-                  </span>
-                )}
               </div>
-
               <div className="flex shrink-0 items-center gap-3">
-                {/* Date */}
-                <span className="hidden font-mono text-[10px] text-muted-foreground/80 md:inline-block">
-                  {new Date(bookmark.createdAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-
-                {/* Quick Actions (revealed on hover) */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-0.5 opacity-90 transition-opacity sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus-within:opacity-100"
-                >
-                  {isTrashView ? (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={() => onRestoreBookmark?.(bookmark.id)}
-                            variant="ghost"
-                            size="icon-xs"
-                            className="size-7 text-brand-charcoal hover:bg-brand-charcoal/10"
-                            title="Restore bookmark"
-                          >
-                            <ArrowCounterClockwise className="size-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Restore</TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={() =>
-                              onPermanentDeleteBookmark?.(bookmark.id)
-                            }
-                            variant="ghost"
-                            size="icon-xs"
-                            className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            title="Delete permanently"
-                          >
-                            <Trash className="size-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Permanently</TooltipContent>
-                      </Tooltip>
-                    </>
-                  ) : (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={() => onToggleFavorite(bookmark)}
-                            variant="ghost"
-                            size="icon-xs"
-                            className="size-8 sm:size-7"
-                            title={
-                              bookmark.isFavorite ? "Unfavorite" : "Favorite"
-                            }
-                          >
-                            <Star
-                              className={cn(
-                                "size-4 sm:size-3.5",
-                                bookmark.isFavorite
-                                  ? "text-[#956400]"
-                                  : "text-brand-muted"
-                              )}
-                              weight={bookmark.isFavorite ? "fill" : "regular"}
-                            />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Favorite</TooltipContent>
-                      </Tooltip>
-
-                      {/* Download Video Media Button */}
-                      {isVideo && onOpenDownload && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onOpenDownload(bookmark)
-                              }}
-                              variant="ghost"
-                              size="icon-xs"
-                              className="size-8 text-purple-600 hover:bg-purple-50 hover:text-purple-700 sm:size-7"
-                              title="Download video/audio with yt-dlp"
-                            >
-                              <DownloadSimple
-                                className="size-4 sm:size-3.5"
-                                weight="bold"
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Download Media</TooltipContent>
-                        </Tooltip>
-                      )}
-
-                      {/* Mobile Action Sheet Trigger */}
-                      <Button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onOpenActionSheet?.(bookmark)
-                        }}
-                        variant="ghost"
-                        size="icon-xs"
-                        className="flex size-8 text-brand-muted hover:text-brand-charcoal md:hidden"
-                        title="More actions"
-                      >
-                        <DotsThreeVertical className="size-4" weight="bold" />
-                      </Button>
-
-                      {/* Desktop Dropdown Menu */}
-                      <div className="hidden md:inline-flex">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              className="size-7 text-brand-muted hover:text-brand-charcoal"
-                              title="More actions"
-                            >
-                              <DotsThreeVertical
-                                className="size-3.5"
-                                weight="bold"
-                              />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-48 rounded-none"
-                          >
-                            {isVideo && onOpenDownload && (
-                              <DropdownMenuItem
-                                onClick={() => onOpenDownload(bookmark)}
-                                className="flex cursor-pointer items-center gap-2 text-xs font-medium text-purple-600"
-                              >
-                                <DownloadSimple className="size-3.5" />
-                                <span>Download Media</span>
-                              </DropdownMenuItem>
-                            )}
-
-                            <DropdownMenuItem
-                              onClick={() => onEditBookmark(bookmark)}
-                              className="flex items-center gap-2 text-xs"
-                            >
-                              <PencilSimple className="size-3.5" />
-                              <span>Edit Details</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => handleCopyUrl(bookmark.url, e)}
-                              className="flex items-center gap-2 text-xs"
-                            >
-                              <LinkSimple className="size-3.5" />
-                              <span>Copy Link</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onDuplicateBookmark(bookmark)}
-                              className="flex items-center gap-2 text-xs"
-                            >
-                              <Copy className="size-3.5" />
-                              <span>Duplicate</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onToggleArchive(bookmark)}
-                              className="flex items-center gap-2 text-xs"
-                            >
-                              <Archive className="size-3.5" />
-                              <span>
-                                {bookmark.isArchived ? "Unarchive" : "Archive"}
-                              </span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => onDeleteBookmark(bookmark.id)}
-                            >
-                              <Trash className="size-3.5" />
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </>
-                  )}
+                {preferences.showDate && date && <time dateTime={bookmark.createdAt} title="Date added" className="hidden text-xs tabular-nums text-muted-foreground md:inline-block">{date}</time>}
+                <div data-bookmark-actions onClick={(event) => event.stopPropagation()} className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus-within:opacity-100">
+                  {isTrashView ? <>
+                    <Button onClick={() => onRestoreBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Restore bookmark"><ArrowCounterClockwise /></Button>
+                    <Button onClick={() => onPermanentDeleteBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Delete permanently"><Trash /></Button>
+                  </> : <>
+                    <Button onClick={() => onToggleFavorite(bookmark)} variant="ghost" size="icon" className="hidden sm:inline-flex" title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}><Star className={cn(bookmark.isFavorite && "text-library-olive")} weight={bookmark.isFavorite ? "fill" : "regular"} /></Button>
+                    <Button type="button" onClick={() => onOpenActionSheet?.(bookmark)} variant="ghost" size="icon" className="size-11 md:hidden" title="More actions"><DotsThreeVertical /></Button>
+                    <div className="hidden md:inline-flex">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" title="More actions"><DotsThreeVertical /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48"><DropdownMenuGroup>
+                          {isVideo && onOpenDownload && <DropdownMenuItem onClick={() => onOpenDownload(bookmark)}><DownloadSimple />Download Media</DropdownMenuItem>}
+                          <DropdownMenuItem onClick={() => onEditBookmark(bookmark)}><PencilSimple />Edit Details</DropdownMenuItem>
+                          <DropdownMenuItem onClick={(event) => handleCopyUrl(bookmark.url, event)}><LinkSimple />Copy Link</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDuplicateBookmark(bookmark)}><Copy />Duplicate</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onToggleArchive(bookmark)}><Archive />{bookmark.isArchived ? "Unarchive" : "Archive"}</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onClick={() => onDeleteBookmark(bookmark.id)}><Trash />Delete</DropdownMenuItem>
+                        </DropdownMenuGroup></DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </>}
                 </div>
               </div>
             </SortableItem>

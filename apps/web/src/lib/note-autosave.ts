@@ -8,17 +8,17 @@ export interface NoteSnapshot {
 export type NoteSaveStatus = "saved" | "unsaved" | "saving" | "error"
 
 /** Serializes writes so an older request cannot overwrite more recent typing. */
-export class NoteAutosave {
-  private pending: NoteSnapshot | null = null
+export class NoteAutosave<T extends object = NoteSnapshot> {
+  private pending: T | null = null
   private inFlight: Promise<boolean> | null = null
   private timer: ReturnType<typeof setTimeout> | undefined
 
-  private save: (snapshot: NoteSnapshot) => Promise<void>
+  private save: (snapshot: T) => Promise<void>
   private status: (status: NoteSaveStatus) => void
   private delay: number
 
   constructor(
-    save: (snapshot: NoteSnapshot) => Promise<void>,
+    save: (snapshot: T) => Promise<void>,
     status: (status: NoteSaveStatus) => void,
     delay = 800
   ) {
@@ -31,7 +31,7 @@ export class NoteAutosave {
     return this.pending !== null || this.inFlight !== null
   }
 
-  schedule(snapshot: NoteSnapshot) {
+  schedule(snapshot: T) {
     this.pending = snapshot
     this.status("unsaved")
     clearTimeout(this.timer)

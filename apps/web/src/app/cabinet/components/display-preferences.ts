@@ -1,4 +1,5 @@
 export interface DisplayPreferences {
+  density: "comfortable" | "compact"
   showTitle: boolean
   showDescription: boolean
   showImage: boolean
@@ -8,6 +9,7 @@ export interface DisplayPreferences {
 }
 
 export const defaultDisplayPreferences: DisplayPreferences = {
+  density: "comfortable",
   showTitle: true,
   showDescription: true,
   showImage: true,

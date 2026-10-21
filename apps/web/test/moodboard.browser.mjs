@@ -138,7 +138,7 @@ try {
     await page.getByRole("button", { name: "Sort bookmarks", exact: true }).click()
     await page.getByRole("menuitemradio", { name: label, exact: true }).click()
   }
-  for (const [value, label] of [["newest", "Newest First"], ["oldest", "Oldest First"], ["title", "Alphabetical (A–Z)"], ["domain", "Domain"]]) {
+  for (const [value, label] of [["newest", "Newest First"], ["oldest", "Oldest First"], ["title", "Alphabetical (A-Z)"], ["domain", "Domain"]]) {
     await chooseSort(label)
     await expect(page.locator("#sort")).toHaveText(value)
     await expect(page.locator('[data-slot="masonry"] [aria-roledescription="sortable"]')).toHaveCount(0)

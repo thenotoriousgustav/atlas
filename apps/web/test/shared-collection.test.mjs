@@ -25,5 +25,10 @@ test("login can return to a shared collection but cannot become an open redirect
   for (const next of ["https://evil.test", "//evil.test", "/\\evil.test", "/share/bad", `${path}?next=https://evil.test`, "/login"]) {
     assert.equal(loginReturnPath(`?next=${encodeURIComponent(next)}`), "/cabinet")
   }
+  const invitation = `/invite/${"b".repeat(64)}`
+  assert.equal(loginReturnPath(`?next=${encodeURIComponent(invitation)}`), invitation)
+  for (const next of ["/invite/bad", `${invitation}?next=https://evil.test`, `//evil.test${invitation}`]) {
+    assert.equal(loginReturnPath(`?next=${encodeURIComponent(next)}`), "/cabinet")
+  }
   assert.equal(loginReturnPath(""), "/cabinet")
 })

@@ -90,7 +90,7 @@ export function FolderTree({
   }
 
   return (
-    <Accordion type="multiple" className="space-y-1">
+    <Accordion type="multiple" className="space-y-1 [&_[data-folder-readonly=true]_[data-folder-actions]]:hidden">
       {list.map((folder: any) => {
         const isSelected = selectedFolderId === folder.id
         const hasChildren = folders.some((f: any) => f.parentId === folder.id)
@@ -103,6 +103,7 @@ export function FolderTree({
               className="border-none"
             >
               <FolderDropTarget
+                data-folder-readonly={folder.isOwner === false}
                 folderId={folder.id}
                 disabled={!onDropBookmarkToFolder}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
@@ -110,7 +111,7 @@ export function FolderTree({
                 onDrop={(e) => handleDrop(e, folder.id)}
                 style={{ paddingLeft: `${depth * 12 + 8}px` }}
                 className={cn(
-                  "group flex w-full cursor-pointer items-center justify-between rounded-md py-1.5 pr-2 text-left font-sans text-xs transition-all",
+                  "group flex w-full cursor-pointer items-center justify-between rounded-md py-1 pr-2 text-left text-sm transition-colors",
                   dragOverFolderId === folder.id
                     ? "bg-primary text-primary-foreground font-semibold shadow-xs scale-[1.02] ring-2 ring-primary/40 pl-3"
                     : isSelected
@@ -118,20 +119,21 @@ export function FolderTree({
                       : "text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
                 )}
               >
-                <span
-                  className="flex flex-1 items-center gap-2 truncate"
+                <button
+                  type="button"
+                  className="flex min-h-8 min-w-0 flex-1 items-center gap-2 truncate rounded-sm text-left focus-visible:outline-2 focus-visible:outline-ring"
                   onClick={() => onSelectFolder(folder.id)}
                 >
                   <FolderSimple className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{folder.name}</span>
                   {folder._count?.bookmarks !== undefined && (
-                    <span className="font-mono text-[10px] text-brand-muted/70">
+                    <span className="text-xs tabular-nums text-muted-foreground">
                       ({folder._count.bookmarks})
                     </span>
                   )}
-                </span>
+                </button>
                 <div className="flex shrink-0 items-center gap-1">
-                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div data-folder-actions className="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-focus-within:max-w-20 group-focus-within:opacity-100">
                     <Button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -163,7 +165,7 @@ export function FolderTree({
                       }}
                       variant="ghost"
                       size="icon-xs"
-                      className="hover:bg-brand-red-bg hover:text-brand-red-text size-4 p-0"
+                      className="size-6 p-0 text-destructive hover:bg-destructive/10"
                       title="Delete folder"
                     >
                       <Trash className="h-3 w-3" />
@@ -195,6 +197,7 @@ export function FolderTree({
         return (
           <div key={folder.id} className="space-y-1">
             <FolderDropTarget
+              data-folder-readonly={folder.isOwner === false}
               folderId={folder.id}
               disabled={!onDropBookmarkToFolder}
               onDragOver={(e) => handleDragOver(e, folder.id)}
@@ -202,25 +205,24 @@ export function FolderTree({
               onDrop={(e) => handleDrop(e, folder.id)}
               style={{ paddingLeft: `${depth * 12 + 8}px` }}
               className={cn(
-                "group flex w-full cursor-pointer items-center justify-between rounded-md py-1.5 pr-2 text-left font-sans text-xs transition-all",
+                "group flex w-full cursor-pointer items-center justify-between rounded-md py-1 pr-2 text-left text-sm transition-colors",
                 dragOverFolderId === folder.id
                   ? "bg-primary text-primary-foreground font-semibold shadow-xs scale-[1.02] ring-2 ring-primary/40 pl-3"
                   : isSelected
                     ? "bg-brand-charcoal/10 font-semibold text-brand-charcoal"
                     : "text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
               )}
-              onClick={() => onSelectFolder(folder.id)}
             >
-              <span className="flex items-center gap-2 truncate">
+              <button type="button" onClick={() => onSelectFolder(folder.id)} className="flex min-h-8 min-w-0 flex-1 items-center gap-2 truncate rounded-sm text-left focus-visible:outline-2 focus-visible:outline-ring">
                 <FolderSimple className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{folder.name}</span>
                 {folder._count?.bookmarks !== undefined && (
-                  <span className="font-mono text-[10px] text-brand-muted/70">
+                  <span className="text-xs tabular-nums text-muted-foreground">
                     ({folder._count.bookmarks})
                   </span>
                 )}
-              </span>
-              <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              </button>
+              <div data-folder-actions className="flex max-w-0 shrink-0 items-center gap-1 overflow-hidden opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-focus-within:max-w-20 group-focus-within:opacity-100">
                 <Button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -252,7 +254,7 @@ export function FolderTree({
                   }}
                   variant="ghost"
                   size="icon-xs"
-                  className="hover:bg-brand-red-bg hover:text-brand-red-text size-4 p-0"
+                  className="size-6 p-0 text-destructive hover:bg-destructive/10"
                   title="Delete folder"
                 >
                   <Trash className="h-3 w-3" />

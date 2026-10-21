@@ -84,7 +84,7 @@ try {
   await noOverlap()
   await page.screenshot({ path: "/tmp/cabinet-shared-collection-mobile.png", fullPage: true })
   await page.evaluate(() => document.documentElement.classList.add("dark"))
-  await expect(page.locator('[data-slot="masonry-item"] a').first()).toHaveCSS("background-color", "oklch(0.205 0 0)")
+  await expect(page.locator('[data-slot="masonry-item"] a').first()).toHaveCSS("background-color", "rgb(32, 32, 32)")
   await page.screenshot({ path: "/tmp/cabinet-shared-collection-dark.png", fullPage: true })
 
   copyStatus = 404

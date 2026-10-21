@@ -18,16 +18,12 @@ import {
   FolderPlus,
   Tag as TagIcon,
   DownloadSimple,
-  UploadSimple,
   X,
   Copy,
   Warning,
   ArrowClockwise,
   Plus,
   Trash,
-  FileText,
-  LinkSimple,
-  VideoCamera,
   Gear,
   CaretUpDown,
   Sun,
@@ -41,10 +37,12 @@ import { toast } from "@/components/ui/sonner"
 import { FolderTree } from "./folder-tree"
 import { useConfirm } from "@/hooks/use-confirm"
 import {
-  WorkspaceSidebar,
-  WorkspaceSidebarGroup,
-  WorkspaceSidebarItem,
-} from "@/components/workspace-sidebar"
+  SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup,
+  SidebarGroupLabel, SidebarGroupAction, SidebarGroupContent,
+  SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge,
+  SidebarTrigger, useSidebar,
+} from "@/components/ui/sidebar"
+import { CabinetBrand } from "@/components/cabinet-brand"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,11 +94,26 @@ interface SidebarFiltersProps {
   onSelectContentType?: (type: string | undefined) => void
   healthSummary?: any
   onScan: () => void
-  onImport: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onImport?: (e: React.ChangeEvent<HTMLInputElement>) => void
   resetFolderForm: () => void
   onItemSelect?: () => void
   viewSection?: "all" | "folders" | "library"
   onDropBookmarkToFolder?: (folderId: string, bookmarkIds: string[]) => void
+}
+
+function WorkspaceSidebarGroup({ title, action, children, menu = false }: { title: string; action?: React.ReactNode; children: React.ReactNode; menu?: boolean }) {
+  return <SidebarGroup>
+    <SidebarGroupLabel>{title}</SidebarGroupLabel>
+    {action && <SidebarGroupAction asChild>{action}</SidebarGroupAction>}
+    <SidebarGroupContent>{menu ? <SidebarMenu>{children}</SidebarMenu> : children}</SidebarGroupContent>
+  </SidebarGroup>
+}
+
+function WorkspaceSidebarItem({ icon, label, badge, ...props }: React.ComponentProps<typeof SidebarMenuButton> & { icon: React.ReactNode; label: string; badge?: React.ReactNode }) {
+  return <SidebarMenuItem>
+    <SidebarMenuButton {...props} aria-current={props.isActive ? "page" : undefined} tooltip={label} className="pr-8 data-[active=false]:text-muted-foreground">{icon}<span>{label}</span></SidebarMenuButton>
+    {badge != null && <SidebarMenuBadge>{badge}</SidebarMenuBadge>}
+  </SidebarMenuItem>
 }
 
 const tagSchema = z.object({
@@ -153,6 +166,7 @@ export function CabinetSidebarFilters({
   onDropBookmarkToFolder,
 }: SidebarFiltersProps) {
   const router = useRouter()
+  const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
   const { data: session } = authClient.useSession()
   const currentUser = userProp !== undefined ? userProp : session?.user
@@ -208,16 +222,19 @@ export function CabinetSidebarFilters({
   })
 
   return (
-    <WorkspaceSidebar data-bookmark-sidebar className="h-full">
-      <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4">
+    <nav data-bookmark-sidebar aria-label="Library navigation" className="flex h-full min-h-0 w-full flex-col">
+      <SidebarHeader className="flex min-h-20 flex-row items-center justify-between px-4 py-3">
+        <CabinetBrand />
+        <SidebarTrigger className="size-11 shrink-0 md:hidden" />
+      </SidebarHeader>
+      <SidebarContent className="gap-4 px-2 pb-4">
       {/* Quick Filters / Library Group */}
       {viewSection !== "folders" && (
         <>
-          <WorkspaceSidebarGroup title="Library">
+          <WorkspaceSidebarGroup title="Library" menu>
             <WorkspaceSidebarItem
               icon={<BookmarkSimple className="h-3.5 w-3.5" />}
               label="All Items"
-              badge={healthSummary?.total}
               isActive={
                 selectedFolderId === undefined &&
                 filterFavorite === undefined &&
@@ -225,9 +242,7 @@ export function CabinetSidebarFilters({
                 selectedTag === undefined &&
                 filterBroken === undefined &&
                 filterDuplicates === undefined &&
-                filterTrash === undefined &&
-                filterType === undefined &&
-                filterContentType === undefined
+                filterTrash === undefined
               }
               onClick={() => {
                 onSelectFolder(undefined)
@@ -244,63 +259,8 @@ export function CabinetSidebarFilters({
             />
 
             <WorkspaceSidebarItem
-              icon={<LinkSimple className="h-3.5 w-3.5" />}
-              label="Bookmarks"
-              isActive={filterType === "BOOKMARK"}
-              onClick={() => {
-                onSelectFolder(undefined)
-                onSelectTag(undefined)
-                onSelectFavorite(undefined)
-                onSelectArchived(false)
-                onSelectBroken(undefined)
-                onSelectDuplicates(undefined)
-                onSelectTrash?.(undefined)
-                onSelectType?.("BOOKMARK")
-                onSelectContentType?.(undefined)
-                onItemSelect?.()
-              }}
-            />
-
-            <WorkspaceSidebarItem
-              icon={<FileText className="h-3.5 w-3.5 text-amber-600" />}
-              label="Notes"
-              isActive={filterType === "NOTE"}
-              onClick={() => {
-                onSelectFolder(undefined)
-                onSelectTag(undefined)
-                onSelectFavorite(undefined)
-                onSelectArchived(false)
-                onSelectBroken(undefined)
-                onSelectDuplicates(undefined)
-                onSelectTrash?.(undefined)
-                onSelectType?.("NOTE")
-                onSelectContentType?.(undefined)
-                onItemSelect?.()
-              }}
-            />
-
-            <WorkspaceSidebarItem
-              icon={<VideoCamera className="h-3.5 w-3.5 text-purple-600" />}
-              label="Media & Videos"
-              isActive={filterContentType === "VIDEO"}
-              onClick={() => {
-                onSelectFolder(undefined)
-                onSelectTag(undefined)
-                onSelectFavorite(undefined)
-                onSelectArchived(false)
-                onSelectBroken(undefined)
-                onSelectDuplicates(undefined)
-                onSelectTrash?.(undefined)
-                onSelectType?.(undefined)
-                onSelectContentType?.("VIDEO")
-                onItemSelect?.()
-              }}
-            />
-
-            <WorkspaceSidebarItem
-              icon={<Star className="h-3.5 w-3.5 text-[#956400]" />}
+              icon={<Star className="size-4" />}
               label="Favorites"
-              badge={healthSummary?.favorites}
               isActive={filterFavorite === true}
               onClick={() => {
                 onSelectFolder(undefined)
@@ -319,7 +279,6 @@ export function CabinetSidebarFilters({
             <WorkspaceSidebarItem
               icon={<Archive className="h-3.5 w-3.5" />}
               label="Archive"
-              badge={healthSummary?.archived}
               isActive={filterArchived === true}
               onClick={() => {
                 onSelectFolder(undefined)
@@ -338,7 +297,7 @@ export function CabinetSidebarFilters({
             <WorkspaceSidebarItem
               icon={<Trash className="h-3.5 w-3.5" />}
               label="Trash"
-              badge={healthSummary?.trash}
+              badge={healthSummary?.trash || undefined}
               isActive={filterTrash === true}
               onClick={() => {
                 onSelectFolder(undefined)
@@ -358,20 +317,21 @@ export function CabinetSidebarFilters({
           {/* Health / Maintenance Group */}
           <WorkspaceSidebarGroup
             title="Health"
+            menu
             action={
               <button
                 onClick={onScan}
                 title="Scan links status now"
-                className="rounded-none p-1 text-brand-muted transition-colors hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 <ArrowClockwise className="h-3 w-3" />
               </button>
             }
           >
             <WorkspaceSidebarItem
-              icon={<Warning className="h-3.5 w-3.5 text-red-500" />}
+              icon={<Warning className={cn("size-4", healthSummary?.broken > 0 && "text-destructive")} />}
               label="Broken Links"
-              badge={healthSummary?.broken}
+              badge={healthSummary?.broken || undefined}
               isActive={filterBroken === true}
               onClick={() => {
                 onSelectFolder(undefined)
@@ -388,7 +348,7 @@ export function CabinetSidebarFilters({
             <WorkspaceSidebarItem
               icon={<Copy className="h-3.5 w-3.5" />}
               label="Duplicates"
-              badge={healthSummary?.duplicates}
+              badge={healthSummary?.duplicates || undefined}
               isActive={filterDuplicates === true}
               onClick={() => {
                 onSelectFolder(undefined)
@@ -417,7 +377,7 @@ export function CabinetSidebarFilters({
                   resetFolderForm()
                   setIsFolderModalOpen(true)
                 }}
-                className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                 title="Create folder"
               >
                 <FolderPlus className="h-3.5 w-3.5" />
@@ -464,7 +424,7 @@ export function CabinetSidebarFilters({
                   tagForm.reset()
                   setIsTagModalOpen(true)
                 }}
-                className="rounded-none p-1 text-brand-muted hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                 title="Create tag"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -473,7 +433,7 @@ export function CabinetSidebarFilters({
           >
             <div className="flex flex-wrap gap-1 px-2 pt-1">
               {tags.length === 0 ? (
-                <span className="font-mono text-[10px] text-brand-muted italic">
+                <span className="text-xs text-muted-foreground">
                   No tags yet
                 </span>
               ) : (
@@ -483,10 +443,10 @@ export function CabinetSidebarFilters({
                     <div
                       key={tag.id}
                       className={cn(
-                        "group inline-flex items-center rounded-none border font-mono text-[10px] transition-colors",
+                        "group inline-flex items-center rounded-md border text-xs transition-colors",
                         isSelected
-                          ? "border-brand-charcoal bg-brand-charcoal text-white"
-                          : "border-brand-border bg-white text-brand-muted hover:border-brand-charcoal/40 hover:text-brand-charcoal"
+                          ? "border-library-olive/30 bg-library-highlight text-library-olive"
+                          : "border-border bg-card text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <button
@@ -522,7 +482,7 @@ export function CabinetSidebarFilters({
                         className={cn(
                           "flex h-full items-center justify-center border-l px-1.5 transition-colors",
                           isSelected
-                            ? "border-white/20 hover:bg-white/10 hover:text-white"
+                            ? "border-library-olive/20 hover:bg-library-highlight hover:text-library-olive"
                             : "border-brand-border hover:bg-destructive/10 hover:text-destructive"
                         )}
                         title="Delete tag"
@@ -546,67 +506,49 @@ export function CabinetSidebarFilters({
           />
         </>
       )}
-
-      {/* Sync Group */}
-      {viewSection !== "folders" && (
-        <WorkspaceSidebarGroup title="Sync">
-          <div className="flex flex-col gap-2 px-2 pt-1">
-            <label className="w-full">
-              <span className="flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-none border border-brand-border bg-white px-3 font-mono text-[10px] font-semibold text-brand-charcoal uppercase shadow-none transition-colors hover:bg-brand-canvas">
-                <UploadSimple className="size-3.5" />
-                Import HTML
-              </span>
-              <input
-                type="file"
-                accept=".html"
-                onChange={onImport}
-                className="hidden"
-              />
-            </label>
-          </div>
-        </WorkspaceSidebarGroup>
-      )}
-      </div>
+      </SidebarContent>
 
       {/* User Account & Settings Footer */}
-      <div className="shrink-0 border-t border-brand-border pt-2 pb-1">
+      <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarMenu><SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
+            <SidebarMenuButton
               type="button"
-              className="group/user flex w-full items-center justify-between gap-2.5 rounded-none p-1.5 text-left transition-colors hover:bg-brand-charcoal/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              size="lg"
+              className="group/user flex min-h-14 w-full items-center justify-between gap-2.5 rounded-md p-2 text-left transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-ring"
               aria-label="User account and settings"
             >
               <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-none border border-brand-border bg-brand-charcoal/10 font-serif text-xs font-semibold text-brand-charcoal uppercase">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary font-medium text-foreground">
                   {currentUser?.name?.[0]?.toUpperCase() ||
                     currentUser?.email?.[0]?.toUpperCase() ||
                     "U"}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-xs font-semibold leading-tight text-brand-charcoal">
+                  <span className="truncate text-sm font-medium leading-5 text-foreground">
                     {currentUser?.name || "Cabinet User"}
                   </span>
-                  <span className="truncate font-mono text-[10px] text-brand-muted">
+                  <span className="truncate text-xs text-muted-foreground">
                     {currentUser?.email || "Signed in"}
                   </span>
                 </div>
               </div>
               <CaretUpDown className="size-3.5 shrink-0 text-brand-muted group-hover/user:text-brand-charcoal" />
-            </button>
+            </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            side="top"
-            align="start"
+            side={isMobile ? "top" : "right"}
+            align="end"
             sideOffset={8}
-            className="w-56 rounded-none"
+            className="w-56"
           >
             <DropdownMenuGroup>
               <div className="border-b border-border px-3 py-2">
                 <p className="truncate text-xs font-semibold text-foreground">
                   {currentUser?.name || "Cabinet User"}
                 </p>
-                <p className="truncate font-mono text-[10px] text-muted-foreground">
+                <p className="truncate text-xs text-muted-foreground">
                   {currentUser?.email}
                 </p>
               </div>
@@ -632,7 +574,7 @@ export function CabinetSidebarFilters({
                   )}
                   <span>Theme</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-36 rounded-none">
+                <DropdownMenuSubContent className="w-36">
                   <DropdownMenuRadioGroup
                     value={theme}
                     onValueChange={setTheme}
@@ -656,7 +598,7 @@ export function CabinetSidebarFilters({
                     <Sliders className="size-3.5" />
                     <span>Display details</span>
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-44 rounded-none">
+                  <DropdownMenuSubContent className="w-44">
                     {(
                       [
                         ["showTitle", "Title"],
@@ -699,7 +641,8 @@ export function CabinetSidebarFilters({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    </WorkspaceSidebar>
+        </SidebarMenuItem></SidebarMenu>
+      </SidebarFooter>
+    </nav>
   )
 }

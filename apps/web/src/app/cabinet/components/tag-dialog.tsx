@@ -44,7 +44,7 @@ export function TagDialog({
             e.stopPropagation()
             tagForm.handleSubmit()
           }}
-          className="space-y-4"
+          className="flex flex-col gap-4"
         >
           <tagForm.Field
             name="name"
@@ -81,7 +81,7 @@ export function TagDialog({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 text-xs uppercase"
+              className="flex-1"
             >
               Cancel
             </Button>
@@ -91,7 +91,7 @@ export function TagDialog({
                 <Button
                   type="submit"
                   disabled={!canSubmit || isSubmitting || isCreatingTag}
-                  className="flex-1 text-xs uppercase"
+                  className="flex-1"
                 >
                   {isSubmitting || isCreatingTag ? (
                     <Spinner className="h-3.5 w-3.5 animate-spin" />

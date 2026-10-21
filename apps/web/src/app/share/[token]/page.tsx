@@ -40,11 +40,11 @@ export default async function SharedCollectionPage({ params }: { params: Promise
   return (
     <main className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col px-6 sm:px-10">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-6">
-        <Link href="/" className="font-mono text-sm font-semibold tracking-widest uppercase">Cabinet</Link>
-        <span className="font-mono text-xs text-muted-foreground">Shared collection · Read only</span>
+        <Link href="/" className="font-serif text-2xl">Cabinet</Link>
+        <span className="text-xs text-muted-foreground">Shared collection · Read only</span>
       </header>
       <section className="flex flex-col gap-3 border-b border-border py-10">
-        <p className="font-mono text-xs text-muted-foreground uppercase">{items.length} bookmark{items.length === 1 ? "" : "s"}</p>
+        <p className="text-xs text-muted-foreground">{items.length} bookmark{items.length === 1 ? "" : "s"}</p>
         <h1 className="max-w-4xl break-words font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{collection.name}</h1>
       </section>
       <SharedCollectionBrowser token={token} items={items} />

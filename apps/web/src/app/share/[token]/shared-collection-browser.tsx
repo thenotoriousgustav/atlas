@@ -19,7 +19,7 @@ function SharedBookmarkLink({ item, view }: { item: SharedCollectionItem; view: 
     <a href={item.href} target="_blank" rel="noopener noreferrer"
       className={cn(
         "group flex w-full border-border bg-card text-card-foreground transition-colors hover:border-foreground/40 focus-visible:outline-2 focus-visible:outline-offset-4",
-        view === "grid" ? "flex-col border" : "items-start gap-4 py-4 sm:items-center",
+        view === "grid" ? "flex-col overflow-hidden rounded-lg border" : "items-start gap-4 py-4 sm:items-center",
       )}
     >
       {view === "grid" && item.preview && !imageFailed && (
@@ -31,10 +31,10 @@ function SharedBookmarkLink({ item, view }: { item: SharedCollectionItem; view: 
       <div className={cn("flex min-w-0 flex-1 flex-col gap-2", view === "grid" && "p-4")}>
         <h2 className="break-words text-sm leading-snug font-semibold group-hover:underline">{item.title || item.hostname}</h2>
         {item.description && <p className={cn("break-words text-xs leading-relaxed text-muted-foreground", view === "grid" ? "line-clamp-3" : "line-clamp-2")}>{item.description}</p>}
-        {view === "list" && <span className="truncate font-mono text-[11px] text-muted-foreground">{item.hostname}</span>}
+        {view === "list" && <span className="truncate text-xs text-muted-foreground">{item.hostname}</span>}
       </div>
       <div className={cn("flex shrink-0 items-center gap-2 text-muted-foreground", view === "grid" && "justify-between border-t border-border px-4 py-2.5")}>
-        {view === "grid" && <span className="min-w-0 truncate font-mono text-[11px]">{item.hostname}</span>}
+        {view === "grid" && <span className="min-w-0 truncate text-xs">{item.hostname}</span>}
         <ArrowSquareOut className="size-3.5 shrink-0" aria-hidden="true" />
         <span className="sr-only">Opens in a new tab</span>
       </div>
@@ -121,7 +121,7 @@ export function SharedCollectionBrowser({ token, items }: { token: string; items
           </p>
         </div>
       </div>
-      <p role="status" aria-live="polite" className="font-mono text-xs text-muted-foreground">
+      <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
         {search ? `${filtered.length} of ${items.length}` : items.length} bookmark{(search ? filtered.length : items.length) === 1 ? "" : "s"}
       </p>
       {!filtered.length ? (

@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
   SelectContent,
+  SelectGroup,
   SelectItem,
 } from "@/components/ui/select"
 import {
@@ -42,6 +43,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { ClipboardText, Sparkle } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
+import { DuplicateBookmarkNotice } from "./duplicate-bookmark-notice"
 
 interface BookmarkDialogProps {
   isOpen: boolean
@@ -113,7 +115,7 @@ export function BookmarkDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl rounded-none sm:w-full sm:max-w-2xl">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl sm:w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {bookmarkToEdit ? "Edit bookmark" : "New bookmark"}
@@ -129,7 +131,7 @@ export function BookmarkDialog({
             e.stopPropagation()
             bookmarkForm.handleSubmit()
           }}
-          className="space-y-4"
+          className="flex flex-col gap-4"
         >
           <FieldGroup>
             <bookmarkForm.Subscribe
@@ -153,7 +155,7 @@ export function BookmarkDialog({
                               onBlur={field.handleBlur}
                               onChange={(e) => field.handleChange(e.target.value)}
                               aria-invalid={isInvalid}
-                              placeholder="https://example.com"
+                              placeholder="Paste a link"
                               type="url"
                               className="flex-1"
                             />
@@ -162,7 +164,7 @@ export function BookmarkDialog({
                                 type="button"
                                 variant="outline"
                                 onClick={handlePasteFromClipboard}
-                                className="flex h-9 flex-1 items-center justify-center gap-1 rounded-none border border-border px-2.5 font-mono text-[10px] font-semibold uppercase hover:bg-muted sm:flex-initial"
+                                className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-border px-2.5 text-sm font-medium hover:bg-muted sm:h-9 sm:flex-initial"
                                 title="Paste from clipboard and auto-fill"
                               >
                                 <ClipboardText className="size-3.5" />
@@ -173,7 +175,7 @@ export function BookmarkDialog({
                                 variant="outline"
                                 disabled={!field.state.value || isScraping}
                                 onClick={() => handleScrape(field.state.value)}
-                                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-none border border-border px-3 font-mono text-[10px] font-semibold uppercase hover:bg-muted sm:flex-initial"
+                                className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted sm:h-9 sm:flex-initial"
                               >
                                 {isScraping ? (
                                   <>
@@ -189,6 +191,7 @@ export function BookmarkDialog({
                               </Button>
                             </div>
                           </div>
+                          <DuplicateBookmarkNotice url={field.state.value} excludeId={bookmarkToEdit?.id} />
                           {isInvalid && (
                             <FieldError
                               errors={field.state.meta.errors.map((err: any) =>
@@ -272,22 +275,25 @@ export function BookmarkDialog({
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>Folder</FieldLabel>
                       <Select
-                        value={field.state.value}
-                        onValueChange={(val) => field.handleChange(val)}
+                        value={field.state.value || '__root__'}
+                        onValueChange={(val) => field.handleChange(val === '__root__' ? '' : val)}
                       >
                         <SelectTrigger
+                          id={field.name}
                           aria-invalid={isInvalid}
-                          className="h-10 w-full rounded-none border border-border bg-background px-3 text-sm font-medium text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                          className="h-10 w-full rounded-md border border-input bg-background px-3 text-base text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none md:text-sm"
                         >
                           <SelectValue placeholder="None (Root)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None (Root)</SelectItem>
+                          <SelectGroup>
+                          <SelectItem value="__root__">None (Root)</SelectItem>
                           {folders.map((f: any) => (
                             <SelectItem key={f.id} value={f.id}>
                               {f.name}
                             </SelectItem>
                           ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                       {isInvalid && (
@@ -334,12 +340,12 @@ export function BookmarkDialog({
                             }}
                             className="w-full gap-0"
                           >
-                            <TagsInputList className="flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-sm text-foreground focus-within:ring-1 focus-within:ring-ring">
+                            <TagsInputList className="flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus-within:ring-1 focus-within:ring-ring">
                               {(field.state.value || []).map((tag: string) => (
                                 <TagsInputItem
                                   key={tag}
                                   value={tag}
-                                  className="gap-1 rounded-none border-border bg-muted/50 px-2 py-0.5 text-xs text-foreground"
+                                  className="gap-1 rounded-sm border-border bg-muted/50 px-2 py-0.5 text-xs text-foreground"
                                 >
                                   {tag}
                                 </TagsInputItem>
@@ -348,14 +354,14 @@ export function BookmarkDialog({
                                 render={
                                   <TagsInputInput
                                     placeholder="Select or add tags..."
-                                    className="flex-1 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:outline-none"
+                                    className="flex-1 text-base text-foreground outline-none placeholder:text-muted-foreground focus:outline-none md:text-sm"
                                   />
                                 }
                               />
                             </TagsInputList>
                           </TagsInput>
                         </ComboboxAnchor>
-                        <ComboboxContent className="z-50 max-h-60 w-[var(--radix-popover-trigger-width)] overflow-y-auto rounded-none border border-border bg-popover p-1 shadow-sm">
+                        <ComboboxContent className="z-50 max-h-60 w-[var(--radix-popover-trigger-width)] overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-sm">
                           <ComboboxList className="no-scrollbar max-h-[200px] overflow-y-auto overscroll-contain">
                             {filteredTags.length === 0 ? (
                               <ComboboxEmpty className="py-4 text-center text-xs text-muted-foreground">
@@ -409,7 +415,7 @@ export function BookmarkDialog({
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 text-xs uppercase"
+              className="flex-1"
             >
               Cancel
             </Button>
@@ -419,7 +425,7 @@ export function BookmarkDialog({
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex flex-1 items-center justify-center gap-1.5 text-xs uppercase"
+                  className="flex flex-1 items-center justify-center gap-1.5"
                 >
                   {isSubmitting && <Spinner className="h-3.5 w-3.5" />}
                   Save bookmark
