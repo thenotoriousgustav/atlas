@@ -22,6 +22,8 @@ import {
   Star,
   CheckSquare,
 } from "@phosphor-icons/react"
+import { toast } from "@/components/ui/sonner"
+import { canDownloadMedia, isNoteBookmark } from "@/lib/bookmark-kind"
 
 interface BookmarkActionSheetProps {
   open: boolean
@@ -58,17 +60,8 @@ export function BookmarkActionSheet({
 }: BookmarkActionSheetProps) {
   if (!bookmark) return null
 
-  const isNote = bookmark.type === "NOTE" || !bookmark.url
-  const isVideo =
-    bookmark.contentType === "VIDEO" ||
-    (bookmark.url &&
-      (bookmark.url.includes("youtube.com") ||
-        bookmark.url.includes("youtu.be") ||
-        bookmark.url.includes("tiktok.com") ||
-        bookmark.url.includes("instagram.com") ||
-        bookmark.url.includes("vimeo.com") ||
-        bookmark.url.includes("twitter.com") ||
-        bookmark.url.includes("x.com")))
+  const isNote = isNoteBookmark(bookmark)
+  const canDownload = canDownloadMedia(bookmark)
 
   const getHostname = (url: string) => {
     try {
@@ -81,7 +74,8 @@ export function BookmarkActionSheet({
   const hostname = getHostname(bookmark.url)
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(bookmark.url)
+    navigator.clipboard?.writeText(bookmark.url)
+    toast.success("Link copied")
     onOpenChange(false)
   }
 
@@ -114,7 +108,7 @@ export function BookmarkActionSheet({
         {/* Action List */}
         <div className="flex flex-col gap-1 p-2 [&>a]:rounded-md [&>button]:rounded-md">
           {/* Download Media (Video/Audio) */}
-          {isVideo && onOpenDownload && (
+          {canDownload && onOpenDownload && (
             <button
               type="button"
               onClick={() => {
@@ -124,7 +118,7 @@ export function BookmarkActionSheet({
               className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <DownloadSimple className="size-4 text-muted-foreground" />
-              <span>Download Media (MP4/MP3)</span>
+              <span>Download media</span>
             </button>
           )}
 
@@ -138,7 +132,7 @@ export function BookmarkActionSheet({
               className="flex h-12 items-center gap-3 px-5 text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
             >
               <ArrowSquareOut className="size-4 text-brand-muted" />
-              <span>Open Link in New Tab</span>
+              <span>Open original</span>
             </a>
           )}
 
@@ -149,10 +143,10 @@ export function BookmarkActionSheet({
             className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
           >
             <LinkSimple className="size-4 text-brand-muted" />
-            <span>Copy Link</span>
+            <span>Copy link</span>
           </button>}
 
-          {onSelectBookmark && <button type="button" onClick={() => { onSelectBookmark(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted"><CheckSquare className="size-4" /><span>Select bookmark</span></button>}
+          {onSelectBookmark && <button type="button" onClick={() => { onSelectBookmark(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted"><CheckSquare className="size-4" /><span>Select</span></button>}
           {isTrashView ? (
             <>
               {/* Restore */}
@@ -165,7 +159,7 @@ export function BookmarkActionSheet({
                 className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
               >
                 <ArrowCounterClockwise className="size-4 text-brand-charcoal" />
-                <span>Restore Bookmark</span>
+                <span>Restore</span>
               </button>
 
               {/* Delete Permanently */}
@@ -178,7 +172,7 @@ export function BookmarkActionSheet({
                 className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
               >
                 <Trash className="size-4 text-destructive" />
-                <span>Delete Permanently</span>
+                <span>Delete permanently</span>
               </button>
             </>
           ) : (
@@ -197,7 +191,7 @@ export function BookmarkActionSheet({
                 className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-canvas active:bg-brand-charcoal/5"
               >
                 <PencilSimple className="size-4 text-brand-muted" />
-                <span>Edit Details</span>
+                <span>Edit details</span>
               </button>
 
               {/* Duplicate */}

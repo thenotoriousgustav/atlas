@@ -4,9 +4,11 @@ import { startBookmarkDrag } from "@/lib/bookmark-drag"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Star, PushPin, Archive, PencilSimple, Trash, Copy, DotsThreeVertical, LinkSimple, ArrowCounterClockwise, FileText, DownloadSimple, FolderSimple } from "@phosphor-icons/react"
+import { Star, PushPin, Archive, PencilSimple, Trash, Copy, DotsThreeVertical, LinkSimple, ArrowCounterClockwise, ArrowSquareOut, FileText, DownloadSimple, FolderSimple } from "@phosphor-icons/react"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { toast } from "@/components/ui/sonner"
+import { canDownloadMedia, isNoteBookmark, isVideoBookmark } from "@/lib/bookmark-kind"
+import { activateBookmark, bookmarkOriginalHref } from "@/lib/bookmark-click"
 import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
 import { Sortable, SortableContent, SortableItem } from "@/components/ui/sortable"
 
@@ -51,8 +53,17 @@ export function BookmarkListView({
         {bookmarks.map((bookmark: any) => {
           const hostname = getHostname(bookmark.url)
           const isSelected = selectedBookmarkIds.includes(bookmark.id)
-          const isNote = bookmark.type === "NOTE" || !bookmark.url
-          const isVideo = bookmark.contentType === "VIDEO" || /(?:youtube\.com|youtu\.be|tiktok\.com|instagram\.com|vimeo\.com|twitter\.com|x\.com)/.test(bookmark.url || "")
+          const isNote = isNoteBookmark(bookmark)
+          const isVideo = isVideoBookmark(bookmark)
+          const canDownload = canDownloadMedia(bookmark)
+          const originalHref = bookmarkOriginalHref(bookmark)
+          const activate = (event: React.MouseEvent) =>
+            activateBookmark(event, {
+              bookmark,
+              selectionMode: selectedBookmarkIds.length > 0,
+              onToggleSelect: () => onToggleSelect(bookmark.id),
+              onOpen: () => (onInspectBookmark ?? onEditBookmark)(bookmark),
+            })
           const date = bookmark.createdAt ? new Date(bookmark.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""
           return (
             <SortableItem key={bookmark.id} value={bookmark.id}
@@ -69,10 +80,7 @@ export function BookmarkListView({
                 const ids = isSelected && selectedBookmarkIds.length > 0 ? selectedBookmarkIds : [bookmark.id]
                 startBookmarkDrag(event, ids, bookmark.title || hostname || "Bookmark")
               }}
-              onClick={(event) => {
-                if (selectedBookmarkIds.length > 0 || event.shiftKey || event.metaKey || event.ctrlKey) { event.preventDefault(); onToggleSelect(bookmark.id) }
-                else onInspectBookmark?.(bookmark)
-              }}
+              onClick={activate}
             >
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div data-bookmark-actions onClick={(event) => event.stopPropagation()} className={cn("shrink-0 transition-opacity", isSelected ? "opacity-100" : "opacity-80 focus-within:opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100")}>
@@ -83,8 +91,8 @@ export function BookmarkListView({
                   {isNote ? <FileText /> : <img src={bookmark.faviconUrl || `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`} alt="" className="size-5 object-contain" onError={(event) => { event.currentTarget.style.visibility = "hidden" }} />}
                 </span>}
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  {preferences.showTitle && (isNote ? <button type="button" onClick={(event) => { event.stopPropagation(); if (selectedBookmarkIds.length > 0 || event.shiftKey || event.metaKey || event.ctrlKey) onToggleSelect(bookmark.id); else onEditBookmark(bookmark) }} className="truncate text-left font-medium text-foreground hover:underline">{bookmark.title || "Untitled Note"}</button> : <a href={bookmark.url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="truncate font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring">{bookmark.title || bookmark.url}</a>)}
-                  {preferences.showDescription && bookmark.description && <p className={cn("line-clamp-1 text-muted-foreground", preferences.density === "compact" ? "text-xs" : "text-sm")}>{bookmark.description}</p>}
+                  {preferences.showTitle && (isNote ? <button type="button" onClick={activate} className="truncate text-left font-medium text-foreground hover:underline">{bookmark.title || "Untitled note"}</button> : <a href={originalHref || undefined} target="_blank" rel="noopener noreferrer" draggable={false} onClick={activate} className="truncate font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring">{bookmark.title || bookmark.url}</a>)}
+                  {preferences.showDescription && (isNote ? bookmark.notes : bookmark.description) && <p className={cn("line-clamp-1 text-muted-foreground", preferences.density === "compact" ? "text-xs" : "text-sm")}>{isNote ? bookmark.notes : bookmark.description}</p>}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {preferences.showWebsite && hostname && <span className="max-w-full truncate">{hostname}</span>}
                     {preferences.showFolder && bookmark.folder && <span className="flex min-w-0 items-center gap-1"><FolderSimple className="size-3" /><span className="truncate">{bookmark.folder.name}</span></span>}
@@ -99,8 +107,8 @@ export function BookmarkListView({
                 {preferences.showDate && date && <time dateTime={bookmark.createdAt} title="Date added" className="hidden text-xs tabular-nums text-muted-foreground md:inline-block">{date}</time>}
                 <div data-bookmark-actions onClick={(event) => event.stopPropagation()} className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus-within:opacity-100">
                   {isTrashView ? <>
-                    <Button onClick={() => onRestoreBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Restore bookmark"><ArrowCounterClockwise /></Button>
-                    <Button onClick={() => onPermanentDeleteBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Delete permanently"><Trash /></Button>
+                    <Button onClick={() => onRestoreBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Restore" aria-label="Restore"><ArrowCounterClockwise /></Button>
+                    <Button onClick={() => onPermanentDeleteBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Delete permanently" aria-label="Delete permanently"><Trash /></Button>
                   </> : <>
                     <Button onClick={() => onToggleFavorite(bookmark)} variant="ghost" size="icon" className={cn("hidden sm:inline-flex", bookmark.isFavorite ? "opacity-100" : "sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus-within:opacity-100")} title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}><Star className={cn(bookmark.isFavorite && "text-library-olive")} weight={bookmark.isFavorite ? "fill" : "regular"} /></Button>
                     <Button type="button" onClick={() => onOpenActionSheet?.(bookmark)} variant="ghost" size="icon" className="size-11 md:hidden" title="More actions"><DotsThreeVertical /></Button>
@@ -108,13 +116,14 @@ export function BookmarkListView({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" title="More actions"><DotsThreeVertical /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48"><DropdownMenuGroup>
-                          {isVideo && onOpenDownload && <DropdownMenuItem onClick={() => onOpenDownload(bookmark)}><DownloadSimple />Download Media</DropdownMenuItem>}
-                          <DropdownMenuItem onClick={() => onEditBookmark(bookmark)}><PencilSimple />Edit Details</DropdownMenuItem>
-                          <DropdownMenuItem onClick={(event) => handleCopyUrl(bookmark.url, event)}><LinkSimple />Copy Link</DropdownMenuItem>
+                          {!isNote && originalHref && <DropdownMenuItem asChild><a href={originalHref} target="_blank" rel="noopener noreferrer"><ArrowSquareOut />Open original</a></DropdownMenuItem>}
+                          {canDownload && onOpenDownload && <DropdownMenuItem onClick={() => onOpenDownload(bookmark)}><DownloadSimple />Download media</DropdownMenuItem>}
+                          <DropdownMenuItem onClick={() => onEditBookmark(bookmark)}><PencilSimple />Edit details</DropdownMenuItem>
+                          {!isNote && <DropdownMenuItem onClick={(event) => handleCopyUrl(bookmark.url, event)}><LinkSimple />Copy link</DropdownMenuItem>}
                           <DropdownMenuItem onClick={() => onDuplicateBookmark(bookmark)}><Copy />Duplicate</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onToggleArchive(bookmark)}><Archive />{bookmark.isArchived ? "Unarchive" : "Archive"}</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem variant="destructive" onClick={() => onDeleteBookmark(bookmark.id)}><Trash />Delete</DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => onDeleteBookmark(bookmark.id)}><Trash />Move to Trash</DropdownMenuItem>
                         </DropdownMenuGroup></DropdownMenuContent>
                       </DropdownMenu>
                     </div>

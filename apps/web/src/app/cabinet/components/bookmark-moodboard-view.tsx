@@ -42,6 +42,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "@/components/ui/sonner"
+import { canDownloadMedia, isVideoBookmark } from "@/lib/bookmark-kind"
+import { activateBookmark, bookmarkOriginalHref } from "@/lib/bookmark-click"
+import { getProxiedImageUrl } from "@/lib/bookmark-image"
 import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
 import {
   Sortable,
@@ -75,20 +78,6 @@ interface MoodboardCardProps {
   onOpenActionSheet?: (bookmark: any) => void
   onOpenDownload?: (bookmark: any) => void
   onInspectBookmark?: (bookmark: any) => void
-}
-
-function getProxiedImageUrl(imageUrl?: string | null): string {
-  if (!imageUrl) return ""
-  if (
-    imageUrl.startsWith("/") ||
-    imageUrl.startsWith("blob:") ||
-    imageUrl.startsWith("data:")
-  ) {
-    return imageUrl
-  }
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
-  // Invalidate previews cached before the Reddit share-image request fix.
-  return `${apiBase}/v1/bookmarks/proxy-image?v=2&url=${encodeURIComponent(imageUrl)}`
 }
 
 type NoteDocNode = {
@@ -267,17 +256,16 @@ export function MoodboardCard({
   const folderName = folders.find((folder) => folder.id === bookmark.folderId)?.name
   const preferences = displayPreferences ?? defaultDisplayPreferences
   const isNote = bookmark.type === "NOTE" || !bookmark.url
-  const isVideo =
-    bookmark.contentType === "VIDEO" ||
-    (bookmark.url &&
-      (bookmark.url.includes("youtube.com") ||
-        bookmark.url.includes("youtu.be") ||
-        bookmark.url.includes("tiktok.com") ||
-        bookmark.url.includes("instagram.com") ||
-        bookmark.url.includes("vimeo.com") ||
-        bookmark.url.includes("twitter.com") ||
-        bookmark.url.includes("x.com")))
-  const color = getPastelColor(hostname)
+  const isVideo = isVideoBookmark(bookmark)
+  const canDownload = canDownloadMedia(bookmark)
+  const originalHref = bookmarkOriginalHref(bookmark)
+  const activate = (event: React.MouseEvent) =>
+    activateBookmark(event, {
+      bookmark,
+      selectionMode: hasSelectedItems,
+      onToggleSelect,
+      onOpen: () => (onInspectBookmark ?? onEditBookmark)(bookmark),
+    })
 
   const rawImageUrl = bookmark.imageUrl || ""
   const isPendingEnrichment =
@@ -338,15 +326,7 @@ export function MoodboardCard({
         const ids = isSelected && selectedBookmarkIds.length > 0 ? selectedBookmarkIds : [bookmark.id]
         startBookmarkDrag(e, ids, bookmark.title || hostname || "Bookmark")
       }}
-      onClick={(e) => {
-        // When selection mode is active (any item is selected), clicking anywhere on the card toggles select
-        if (hasSelectedItems || e.shiftKey || e.metaKey || e.ctrlKey) {
-          e.preventDefault()
-          onToggleSelect()
-        } else {
-          onInspectBookmark?.(bookmark)
-        }
-      }}
+      onClick={activate}
       className={cn(
         "group/card [&[data-readonly=true]_[data-bookmark-actions]]:hidden flex h-auto w-full cursor-pointer flex-col overflow-hidden rounded-lg border border-border/80 bg-card text-card-foreground shadow-none transition-colors hover:border-foreground/25",
         isSelected
@@ -411,7 +391,7 @@ export function MoodboardCard({
                     <Trash className="size-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Delete Permanently</TooltipContent>
+                <TooltipContent>Delete permanently</TooltipContent>
               </Tooltip>
             </>
           ) : (
@@ -448,11 +428,11 @@ export function MoodboardCard({
                     />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Favorite</TooltipContent>
+                <TooltipContent>{bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}</TooltipContent>
               </Tooltip>
 
               {/* Download Video Media if available */}
-              {isVideo && onOpenDownload && (
+              {canDownload && onOpenDownload && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -465,7 +445,7 @@ export function MoodboardCard({
                       <DownloadSimple className="size-3.5" weight="bold" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Download Media</TooltipContent>
+                  <TooltipContent>Download media</TooltipContent>
                 </Tooltip>
               )}
 
@@ -484,13 +464,21 @@ export function MoodboardCard({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuGroup>
-                    {isVideo && onOpenDownload && (
+                    {!isNote && originalHref && (
+                      <DropdownMenuItem asChild className="flex items-center gap-2 text-xs">
+                        <a href={originalHref} target="_blank" rel="noopener noreferrer">
+                          <ArrowSquareOut className="size-3.5" />
+                          <span>Open original</span>
+                        </a>
+                      </DropdownMenuItem>
+                    )}
+                    {canDownload && onOpenDownload && (
                       <DropdownMenuItem
                         onClick={() => onOpenDownload(bookmark)}
-                        className="flex cursor-pointer items-center gap-2 text-sm"
+                        className="flex items-center gap-2 text-xs"
                       >
                         <DownloadSimple className="size-3.5" />
-                        <span>Download Media</span>
+                        <span>Download media</span>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
@@ -498,14 +486,14 @@ export function MoodboardCard({
                       className="flex items-center gap-2 text-xs"
                     >
                       <PencilSimple className="size-3.5" />
-                      <span>Edit Details</span>
+                      <span>Edit details</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleCopyUrl}
                       className="flex items-center gap-2 text-xs"
                     >
                       <LinkSimple className="size-3.5" />
-                      <span>Copy Link</span>
+                      <span>Copy link</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDuplicateBookmark(bookmark)}
@@ -525,9 +513,10 @@ export function MoodboardCard({
                     <DropdownMenuItem
                       variant="destructive"
                       onClick={() => onDeleteBookmark(bookmark.id)}
+                      className="flex items-center gap-2 text-xs"
                     >
                       <Trash className="size-3.5" />
-                      <span>Delete</span>
+                      <span>Move to Trash</span>
                     </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -539,17 +528,7 @@ export function MoodboardCard({
 
         {isNote ? (
           <div
-            onClick={(e) => {
-              if (hasSelectedItems || e.shiftKey || e.metaKey || e.ctrlKey) {
-                e.preventDefault()
-                e.stopPropagation()
-                onToggleSelect()
-                return
-              }
-              e.preventDefault()
-              e.stopPropagation()
-              onEditBookmark(bookmark)
-            }}
+            onClick={activate}
             className="relative flex min-h-36 w-full cursor-pointer flex-col bg-muted/40 p-4 text-foreground"
           >
             <div className="space-y-1.5">
@@ -557,26 +536,18 @@ export function MoodboardCard({
                 <FileText className="size-3.5" />
                 <span>Note</span>
               </div>
-              {preferences.showDescription && <NoteContentPreview bookmark={bookmark} />}
+              {/* The note body is the card's preview, like a link's image, so it ignores the Description toggle. */}
+              <NoteContentPreview bookmark={bookmark} />
             </div>
           </div>
         ) : preferences.showImage ? (
           <a
-            href={bookmark.url}
+            href={originalHref || undefined}
             aria-label={`Preview ${bookmark.title || hostname} in Cabinet`}
             target="_blank"
-            rel="noreferrer"
-            onClick={(e) => {
-              if (hasSelectedItems || e.shiftKey || e.metaKey || e.ctrlKey) {
-                e.preventDefault()
-                e.stopPropagation()
-                onToggleSelect()
-              } else if (onInspectBookmark) {
-                e.preventDefault()
-                e.stopPropagation()
-                onInspectBookmark(bookmark)
-              }
-            }}
+            rel="noopener noreferrer"
+            draggable={false}
+            onClick={activate}
             className="group/header relative block w-full overflow-hidden bg-muted/20"
           >
             <>
@@ -645,22 +616,19 @@ export function MoodboardCard({
             (isNote ? (
               <button
                 type="button"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  if (hasSelectedItems || event.shiftKey || event.metaKey || event.ctrlKey) onToggleSelect()
-                  else onEditBookmark(bookmark)
-                }}
+                onClick={activate}
                 className={cn("line-clamp-2 text-left leading-6 font-medium text-foreground hover:underline", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
               >
                 {bookmark.title || "Untitled note"}
               </button>
             ) : (
               <a
-                href={bookmark.url}
+                href={originalHref || undefined}
                 title={bookmark.title || bookmark.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+                draggable={false}
+                onClick={activate}
                 className={cn("group/link line-clamp-2 leading-6 font-medium text-foreground decoration-foreground/30 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
               >
                 {bookmark.title || bookmark.url}
