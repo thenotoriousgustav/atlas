@@ -21,7 +21,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
     setError(null)
     try {
       const response = await AXIOS_INSTANCE.post<{ data: { folderId: string } }>(`/v1/folders/invitations/${token}/accept`)
-      router.replace(`/cabinet?folder=${encodeURIComponent(response.data.data.folderId)}`)
+      router.replace(`/cabinet/folders/${encodeURIComponent(response.data.data.folderId)}`)
     } catch (failure) {
       const status = (failure as { response?: { status?: number } }).response?.status
       if (status === 401) router.push(`/login?next=${encodeURIComponent(`/invite/${token}`)}`)

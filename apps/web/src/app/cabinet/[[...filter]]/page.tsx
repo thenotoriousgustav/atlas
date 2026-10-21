@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic"
 
 const CabinetDashboard = dynamic(
-  () => import("./cabinet-dashboard").then((module) => module.CabinetDashboard),
+  () => import("../cabinet-dashboard").then((module) => module.CabinetDashboard),
   {
     ssr: false,
     loading: () => (
