@@ -426,7 +426,7 @@ export function CabinetSidebarFilters({
                   setIsTagModalOpen(true)
                 }}
                 className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                title="Create tag"
+                title="Manage & create tags"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -444,13 +444,14 @@ export function CabinetSidebarFilters({
                     <div
                       key={tag.id}
                       className={cn(
-                        "group/tag relative inline-flex items-center rounded-md border text-xs transition-colors",
+                        "inline-flex items-center rounded-md border text-xs transition-colors",
                         isSelected
                           ? "border-library-olive/30 bg-library-highlight text-library-olive"
                           : "border-border bg-card text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <button
+                        type="button"
                         onClick={() => {
                           const newTag = isSelected ? undefined : tag.name
                           onSelectTag(newTag)
@@ -462,7 +463,7 @@ export function CabinetSidebarFilters({
                         <span>{tag.name}</span>
                       </button>
 
-                      {isSelected ? (
+                      {isSelected && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -476,39 +477,6 @@ export function CabinetSidebarFilters({
                         >
                           <X className="size-2.5" />
                         </button>
-                      ) : (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={(e) => e.stopPropagation()}
-                              className="hidden h-full items-center justify-center border-l border-border px-1 opacity-0 transition-opacity group-hover/tag:flex group-hover/tag:opacity-100 hover:text-foreground"
-                              title="Tag options"
-                              aria-label={`Options for #${tag.name}`}
-                            >
-                              <DotsThreeVertical className="size-2.5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-36">
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={async () => {
-                                const isConfirmed = await confirm({
-                                  title: "Delete Tag",
-                                  description: `Are you sure you want to delete tag "${tag.name}"? This will untag all associated bookmarks.`,
-                                  actionLabel: "Delete",
-                                  variant: "destructive",
-                                })
-                                if (isConfirmed) {
-                                  onDeleteTag(tag.id)
-                                }
-                              }}
-                            >
-                              <Trash />
-                              <span>Delete tag</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       )}
                     </div>
                   )
@@ -517,12 +485,14 @@ export function CabinetSidebarFilters({
             </div>
           </WorkspaceSidebarGroup>
 
-          {/* Tag Form Dialog */}
+          {/* Tag Form & Management Dialog */}
           <TagDialog
             isOpen={isTagModalOpen}
             onOpenChange={setIsTagModalOpen}
             tagForm={tagForm}
             isCreatingTag={isCreatingTag}
+            tags={tags}
+            onDeleteTag={onDeleteTag}
             onClose={() => setIsTagModalOpen(false)}
           />
         </>

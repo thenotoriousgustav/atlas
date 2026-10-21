@@ -98,7 +98,7 @@ export function useCabinetFilters(folders: any[]) {
     return "all"
   }, [filterContentType, filterType])
 
-  const currentBaseView = useMemo(() => {
+  const currentView = useMemo(() => {
     if (filterTrash) return "trash"
     if (filterFavorite) return "favorites"
     if (filterArchived) return "archive"
@@ -111,19 +111,6 @@ export function useCabinetFilters(folders: any[]) {
     filterArchived,
     filterBroken,
     filterDuplicates,
-  ])
-
-  // Current active view key (legacy compatible)
-  const currentView = useMemo(() => {
-    if (currentBaseView) return currentBaseView
-    if (filterType === "NOTE") return "notes"
-    if (filterType === "BOOKMARK") return "bookmarks"
-    if (filterContentType === "VIDEO") return "media"
-    return undefined
-  }, [
-    currentBaseView,
-    filterType,
-    filterContentType,
   ])
 
   // Sync URL search params helper
@@ -149,7 +136,7 @@ export function useCabinetFilters(folders: any[]) {
       const params = new URLSearchParams()
       if (folderId) params.set("folder", folderId)
       if (tag) params.set("tag", tag)
-      if (view) params.set("view", view)
+      if (view && !["notes", "bookmarks", "media"].includes(view)) params.set("view", view)
       if (format && format !== "all") params.set("format", format)
       if (q && q.trim()) params.set("q", q.trim())
       if (sortMode && sortMode !== "custom") params.set("sort", sortMode)
@@ -170,19 +157,21 @@ export function useCabinetFilters(folders: any[]) {
 
   // Debounce search query input
   useEffect(() => {
+    if (searchQuery === searchDebounced) return
     const handler = setTimeout(() => {
       setSearchDebounced(searchQuery)
       syncUrl({
         folderId: selectedFolderId,
         tag: selectedTag,
         view: currentView,
+        format: formatFilter !== "all" ? formatFilter : undefined,
         q: searchQuery,
         sortMode: sort,
         replace: true,
       })
     }, 200)
     return () => clearTimeout(handler)
-  }, [searchQuery, selectedFolderId, selectedTag, currentView, sort, syncUrl])
+  }, [searchQuery, searchDebounced, selectedFolderId, selectedTag, currentView, formatFilter, sort, syncUrl])
 
   // Browser Back / Forward (popstate) event listener
   useEffect(() => {
@@ -281,13 +270,13 @@ export function useCabinetFilters(folders: any[]) {
       syncUrl({
         folderId: selectedFolderId,
         tag,
-        view: currentBaseView,
+        view: currentView,
         format: formatFilter !== "all" ? formatFilter : undefined,
         q: searchDebounced,
         sortMode: sort,
       })
     },
-    [selectedFolderId, currentBaseView, formatFilter, searchDebounced, sort, syncUrl]
+    [selectedFolderId, currentView, formatFilter, searchDebounced, sort, syncUrl]
   )
 
   const setFilterFavorite = useCallback(
@@ -367,13 +356,13 @@ export function useCabinetFilters(folders: any[]) {
       syncUrl({
         folderId: selectedFolderId,
         tag: selectedTag,
-        view: currentBaseView,
+        view: currentView,
         format: format !== "all" ? format : undefined,
         q: searchDebounced,
         sortMode: sort,
       })
     },
-    [selectedFolderId, selectedTag, currentBaseView, searchDebounced, sort, syncUrl]
+    [selectedFolderId, selectedTag, currentView, searchDebounced, sort, syncUrl]
   )
 
   const setFilterContentType = useCallback(
@@ -383,13 +372,13 @@ export function useCabinetFilters(folders: any[]) {
       syncUrl({
         folderId: selectedFolderId,
         tag: selectedTag,
-        view: currentBaseView,
+        view: currentView,
         format: format !== "all" ? format : undefined,
         q: searchDebounced,
         sortMode: sort,
       })
     },
-    [selectedFolderId, selectedTag, currentBaseView, searchDebounced, sort, syncUrl]
+    [selectedFolderId, selectedTag, currentView, searchDebounced, sort, syncUrl]
   )
 
   const handleFormatFilterChange = useCallback(
@@ -401,14 +390,14 @@ export function useCabinetFilters(folders: any[]) {
       syncUrl({
         folderId: selectedFolderId,
         tag: selectedTag,
-        view: currentBaseView,
+        view: currentView,
         format: format !== "all" ? format : undefined,
         q: searchDebounced,
         sortMode: sort,
         replace: true,
       })
     },
-    [selectedFolderId, selectedTag, currentBaseView, searchDebounced, sort, syncUrl]
+    [selectedFolderId, selectedTag, currentView, searchDebounced, sort, syncUrl]
   )
 
   const handleSortChange = useCallback(
