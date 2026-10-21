@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, PaintBrush, User, Database, Wrench, Keyboard, Sun, Moon, Desktop, DownloadSimple, UploadSimple, GithubLogo, GoogleLogo, SignOut, Trash, ArrowCounterClockwise, SquaresFour, List } from "@phosphor-icons/react"
+import { ArrowLeft, PaintBrush, User, Database, Wrench, Keyboard, Sun, Moon, Desktop, DownloadSimple, UploadSimple, GithubLogo, GoogleLogo, SignOut, Trash, ArrowCounterClockwise, SquaresFour, List, Tag } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -19,6 +19,10 @@ import { authClient } from "@/lib/auth-client"
 import { AXIOS_INSTANCE, useBookmarksControllerGetHealthSummary, useBookmarksControllerFindAll, useBookmarksControllerGetDuplicates, useBookmarksControllerCleanDuplicates, useBookmarksControllerTriggerHealthCheck, useBookmarksControllerImport } from "@/lib/api-client"
 import { defaultDisplayPreferences, type DisplayPreferences } from "../components/display-preferences"
 import { MoodboardCard } from "../components/bookmark-moodboard-view"
+import { TagsSettings } from "./tags-settings"
+
+const settingsTabs = ["appearance", "account", "data", "tags", "maintenance", "shortcuts"] as const
+type SettingsTab = (typeof settingsTabs)[number]
 
 function SettingsSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return <section className="grid items-start gap-5 border-b border-border/70 pb-8 last:border-0 md:grid-cols-[240px_minmax(0,1fr)] md:gap-10">
@@ -38,9 +42,22 @@ export default function SettingsPage() {
   const { data: session } = authClient.useSession()
   const user = session?.user
   const [mounted, setMounted] = useState(false)
+  const [tab, setTab] = useState<SettingsTab>("appearance")
+  // Deep links such as /cabinet/settings?tab=tags open the matching tab.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab")
+    if (settingsTabs.includes(requested as SettingsTab)) setTab(requested as SettingsTab)
+  }, [])
+  const changeTab = (value: string) => {
+    if (!settingsTabs.includes(value as SettingsTab)) return
+    setTab(value as SettingsTab)
+    const url = new URL(window.location.href)
+    if (value === "appearance") url.searchParams.delete("tab")
+    else url.searchParams.set("tab", value)
+    window.history.replaceState(window.history.state, "", url)
+  }
   const [displayPrefs, setDisplayPrefs] = useState<DisplayPreferences>(defaultDisplayPreferences)
   const [defaultViewMode, setDefaultViewMode] = useState<"list" | "moodboard">("list")
-  const [defaultColumns, setDefaultColumns] = useState(4)
   const [preferenceStatus, setPreferenceStatus] = useState("")
   const { data: previewData, isLoading: isPreviewLoading, isError: isPreviewError } = useBookmarksControllerFindAll({ limit: 1, sort: "newest", isArchived: false, isTrash: false }, { query: { staleTime: 60000 } })
   const previewBookmark = (previewData as any)?.data?.data?.[0]
@@ -64,8 +81,6 @@ export default function SettingsPage() {
       const parsed = JSON.parse(localStorage.getItem("cabinet_display_preferences") || "null")
       if (typeof parsed === "object" && parsed !== null) setDisplayPrefs({ ...defaultDisplayPreferences, ...parsed })
     } catch {}
-    const cols = Number(localStorage.getItem("cabinet_column_count"))
-    if (Number.isInteger(cols) && cols >= 1 && cols <= 4) setDefaultColumns(cols)
   }, [])
 
   const savePreference = (key: string, value: string) => {
@@ -80,10 +95,6 @@ export default function SettingsPage() {
   const handleViewModeToggle = (mode: "list" | "moodboard") => {
     setDefaultViewMode(mode)
     savePreference("cabinet_view_mode", mode)
-  }
-  const handleColumnsToggle = (cols: number) => {
-    setDefaultColumns(cols)
-    savePreference("cabinet_column_count", String(cols))
   }
   const handleExport = async () => {
     setIsExporting(true)
@@ -165,10 +176,10 @@ export default function SettingsPage() {
           <p role="status" className="text-xs text-muted-foreground">{preferenceStatus}</p>
         </div>
       </header>
-      <Tabs defaultValue="appearance" className="flex flex-col gap-8">
+      <Tabs value={tab} onValueChange={changeTab} className="flex flex-col gap-8">
         <div className="min-w-0 overflow-x-auto">
           <TabsList variant="line" className="h-auto w-max min-w-full justify-start gap-4">
-            {([ ["appearance", "Appearance", PaintBrush], ["account", "Account", User], ["data", "Data & Export", Database], ["maintenance", "Maintenance", Wrench], ["shortcuts", "Shortcuts", Keyboard] ] as const).map(([value, label, Icon]) => <TabsTrigger key={value} value={value} className="min-h-11 shrink-0 gap-2 text-sm"><Icon />{label}</TabsTrigger>)}
+            {([ ["appearance", "Appearance", PaintBrush], ["account", "Account", User], ["data", "Data & Export", Database], ["tags", "Tags", Tag], ["maintenance", "Maintenance", Wrench], ["shortcuts", "Shortcuts", Keyboard] ] as const).map(([value, label, Icon]) => <TabsTrigger key={value} value={value} className="min-h-11 shrink-0 gap-2 text-sm"><Icon />{label}</TabsTrigger>)}
           </TabsList>
         </div>
         <TabsContent value="appearance" className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_260px]">
@@ -189,9 +200,6 @@ export default function SettingsPage() {
                 <ToggleGroupItem value="comfortable" className="min-h-11">Comfortable</ToggleGroupItem><ToggleGroupItem value="compact" className="min-h-11">Compact</ToggleGroupItem>
               </ToggleGroup>
             </div>
-            {defaultViewMode === "moodboard" && <div className="flex flex-col gap-2"><p className="text-sm font-medium">Maximum columns</p><p className="text-xs text-muted-foreground">Automatically uses fewer columns on smaller screens.</p>
-              <ToggleGroup type="single" variant="outline" value={String(defaultColumns)} onValueChange={(value) => { if (value) handleColumnsToggle(Number(value)) }} aria-label="Maximum columns">{[1, 2, 3, 4].map((cols) => <ToggleGroupItem key={cols} value={String(cols)} aria-label={`${cols} columns`} className="min-h-11 min-w-11 tabular-nums">{cols}</ToggleGroupItem>)}</ToggleGroup>
-            </div>}
           </SettingsSection>
           <SettingsSection title="Visible details" description="Keep the details you use and hide the rest. Your saved content is never changed.">
             <div className="flex flex-col divide-y divide-border/70">
@@ -226,6 +234,11 @@ export default function SettingsPage() {
             <label className="relative w-fit rounded-md has-focus-visible:outline-2 has-focus-visible:outline-ring"><span className="flex min-h-11 items-center gap-2 rounded-md border border-input px-4 text-sm">{isImporting ? <Spinner /> : <UploadSimple />}{isImporting ? "Importing…" : "Choose HTML file"}</span><input type="file" accept=".html" aria-label="Choose HTML file to import" onChange={handleImportFile} disabled={isImporting} className="absolute inset-0 size-full cursor-pointer opacity-0" /></label>
           </SettingsSection>
         </TabsContent>
+        <TabsContent value="tags" className="flex flex-col gap-8">
+          <SettingsSection title="Tags" description="Rename, merge, or delete tags across your whole library. Most used tags come first.">
+            <TagsSettings />
+          </SettingsSection>
+        </TabsContent>
         <TabsContent value="maintenance" className="flex flex-col gap-8">
           <SettingsSection title="Link health" description="Check whether your saved links are still available. Scans run in the background.">
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">{([ ["Total links", health?.total || 0], ["Healthy", health?.ok || 0], ["Redirected", health?.redirected || 0], ["Broken", health?.broken || 0] ] as const).map(([label, value]) => <div key={label}><p className="text-2xl tabular-nums">{value.toLocaleString()}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>)}</div>
@@ -237,7 +250,7 @@ export default function SettingsPage() {
         <TabsContent value="shortcuts" className="flex flex-col gap-8">
           <SettingsSection title="Keyboard shortcuts" description="Move through your library without leaving the keyboard.">
             <dl className="flex flex-col divide-y divide-border/70">{[
-              ["/", "Focus search"], ["N", "Create note"], ["B", "Add bookmark"], ["1", "List view"], ["2", "Moodboard view"], ["⌘B", "Toggle sidebar"], ["⌘K", "Command menu"], ["Space / Enter", "Pick up or drop an item"], ["Arrow keys", "Move a sortable item"], ["Esc", "Cancel drag or close dialog"], ["Shift + Click", "Select multiple bookmarks"],
+              ["/", "Focus search"], ["N", "Create note"], ["B", "Add bookmark"], ["1", "List view"], ["2", "Moodboard view"], ["⌘B", "Toggle sidebar"], ["⌘K", "Command menu"], ["Space / Enter", "Pick up or drop an item"], ["Arrow keys", "Move a sortable item"], ["Esc", "Clear selection, cancel drag, or close dialog"], ["Click", "Open an item in Cabinet"], ["Shift + Click", "Select items"], ["⌘ / Ctrl + Click", "Open the original in a new tab"], ["← / →", "Previous or next item in preview"],
             ].map(([keys, label]) => <div key={keys} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"><dt className="text-sm">{label}</dt><dd className="shrink-0"><kbd className="rounded-sm border border-border bg-muted px-2 py-1 text-xs">{keys}</kbd></dd></div>)}</dl>
           </SettingsSection>
         </TabsContent>

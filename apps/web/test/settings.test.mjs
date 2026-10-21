@@ -22,7 +22,7 @@ registerHooks({
     }
     if (specifier === "@/lib/api-client") {
       return {
-        url: "data:text/javascript,export function useBookmarksControllerFindAll(){return {data:null}};export function useBookmarksControllerGetHealthSummary(){return {data:{total:10,ok:8,redirected:1,broken:1,trash:2},isFetching:false,refetch(){}}};export function useBookmarksControllerGetDuplicates(){return {data:[],isFetching:false,refetch(){}}};export function useBookmarksControllerCleanDuplicates(){return {mutateAsync(){}}};export function useBookmarksControllerTriggerHealthCheck(){return {mutateAsync(){}}};export function useBookmarksControllerImport(){return {mutateAsync(){}}};export const AXIOS_INSTANCE={get:async()=>({data:''}),delete:async()=>({data:''})};",
+        url: "data:text/javascript,export function useBookmarksControllerFindAll(){return {data:null}};export function useBookmarksControllerGetHealthSummary(){return {data:{total:10,ok:8,redirected:1,broken:1,trash:2},isFetching:false,refetch(){}}};export function useBookmarksControllerGetDuplicates(){return {data:[],isFetching:false,refetch(){}}};export function useBookmarksControllerCleanDuplicates(){return {mutateAsync(){}}};export function useBookmarksControllerTriggerHealthCheck(){return {mutateAsync(){}}};export function useBookmarksControllerImport(){return {mutateAsync(){}}};export function useTagsControllerFindAll(){return {data:{data:[]},isLoading:false,isError:false,refetch(){}}};export const AXIOS_INSTANCE={get:async()=>({data:''}),delete:async()=>({data:''}),post:async()=>({data:''}),patch:async()=>({data:''})};",
         shortCircuit: true,
       }
     }
@@ -69,6 +69,7 @@ test("SettingsPage renders with all major configuration sections", () => {
   assert.match(html, /Appearance/)
   assert.match(html, /Account/)
   assert.match(html, /Data &amp; Export|Data & Export/)
+  assert.match(html, />Tags</)
   assert.match(html, /Maintenance/)
   assert.match(html, /Shortcuts/)
 
