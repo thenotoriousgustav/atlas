@@ -1004,6 +1004,157 @@
         ]
       }
     },
+    "/v1/folders/invitations/{token}/accept": {
+      "post": {
+        "operationId": "FoldersController_acceptInvite",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Accept a folder collaboration invitation after signing in",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
+    "/v1/folders/{id}/collaboration": {
+      "get": {
+        "operationId": "FoldersController_getCollaboration",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List folder members and invitation status (owner only)",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
+    "/v1/folders/{id}/invitation": {
+      "put": {
+        "operationId": "FoldersController_enableInvite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create or rotate a collaboration invitation (owner only)",
+        "tags": [
+          "folders"
+        ]
+      },
+      "delete": {
+        "operationId": "FoldersController_disableInvite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Disable new joins without removing existing members (owner only)",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
+    "/v1/folders/{id}/members/{memberId}": {
+      "delete": {
+        "operationId": "FoldersController_removeMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "memberId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Remove a member and revoke the current invitation (owner only)",
+        "tags": [
+          "folders"
+        ]
+      }
+    },
     "/v1/folders/{id}/share": {
       "get": {
         "operationId": "FoldersController_getShare",
@@ -1514,10 +1665,15 @@
             "example": "Next.js developer reference manual",
             "description": "Bookmark description"
           },
+          "notes": {
+            "type": "string",
+            "description": "Private bookmark notes"
+          },
           "folderId": {
             "type": "string",
             "example": "123e4567-e89b-12d3-a456-426614174000",
-            "description": "Folder ID"
+            "description": "Folder ID; null moves the bookmark to Unsorted",
+            "nullable": true
           },
           "tags": {
             "example": [

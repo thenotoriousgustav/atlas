@@ -27,6 +27,7 @@ import { SaveNoteDto } from "./dto/save-note.dto"
 import { CRAWLER_USER_AGENTS } from "@/modules/cabinet/providers/metadata/metadata-provider.interface"
 import { validatePublicUrl } from "@/common/utils/ssrf"
 import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from "./bookmark-order"
+import { accessibleFolder, folderSummary } from "../folders/folder-access"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -88,7 +89,7 @@ export class BookmarksService implements OnModuleInit {
     // 3. Check folder ownership if folderId is specified
     if (createBookmarkDto.folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: createBookmarkDto.folderId, userId, deletedAt: null },
+        where: { id: createBookmarkDto.folderId, ...accessibleFolder(userId) },
       })
       if (!folder) {
         throw new NotFoundException("Target folder not found")
@@ -126,7 +127,7 @@ export class BookmarksService implements OnModuleInit {
       },
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
     })
 
@@ -166,7 +167,7 @@ export class BookmarksService implements OnModuleInit {
     }
     if (!existing && dto.folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: dto.folderId, userId, deletedAt: null },
+        where: { id: dto.folderId, ...accessibleFolder(userId) },
       })
       if (!folder) throw new NotFoundException("Folder not found")
     }
@@ -176,7 +177,7 @@ export class BookmarksService implements OnModuleInit {
       notes: dto.notes ?? "",
       noteDocument: dto.noteDocument,
     }
-    const include = { tags: true, folder: true }
+    const include = { tags: true, folder: { select: folderSummary } }
     try {
       // A stable client-generated UUID makes retries safe after a lost response.
       return await this.prisma.bookmark.upsert({
@@ -219,7 +220,7 @@ export class BookmarksService implements OnModuleInit {
       },
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
     })
 
@@ -275,7 +276,16 @@ export class BookmarksService implements OnModuleInit {
     }
 
     if (filters.folderId) {
+      const folder = await this.prisma.folder.findFirst({
+        where: { id: filters.folderId, ...accessibleFolder(userId) },
+        select: { id: true },
+      })
+      if (!folder) throw new NotFoundException("Folder not found")
       where.folderId = filters.folderId
+      if (!filters.isTrash) {
+        delete where.userId
+        where.AND = [{ OR: [{ userId }, { type: BookmarkType.BOOKMARK }] }]
+      }
     }
 
     if (filters.isFavorite !== undefined) {
@@ -303,10 +313,15 @@ export class BookmarksService implements OnModuleInit {
     }
 
     if (filters.search) {
+      if (!filters.folderId && !filters.isTrash && filters.isFavorite === undefined && filters.isArchived === undefined && !filters.tag && !filters.status && !filters.type && !filters.contentType) {
+        // Only unscoped global search adds shared links; scoped personal queues stay personal.
+        delete where.userId
+        where.AND = [{ OR: [{ userId }, { type: BookmarkType.BOOKMARK, folder: { is: accessibleFolder(userId) } }] }]
+      }
       where.OR = [
         { title: { contains: filters.search, mode: "insensitive" } },
         { description: { contains: filters.search, mode: "insensitive" } },
-        { notes: { contains: filters.search, mode: "insensitive" } },
+        { AND: [{ userId }, { notes: { contains: filters.search, mode: "insensitive" } }] },
         { url: { contains: filters.search, mode: "insensitive" } },
       ]
     }
@@ -316,7 +331,7 @@ export class BookmarksService implements OnModuleInit {
       where,
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
       orderBy: bookmarkOrderBy(filters.sort),
     }
@@ -346,7 +361,12 @@ export class BookmarksService implements OnModuleInit {
     }
 
     return {
-      data: slicedItems,
+      data: slicedItems.map((item) => ({
+        ...item,
+        notes: item.userId === userId ? item.notes : null,
+        noteDocument: item.userId === userId ? item.noteDocument : null,
+        canEdit: item.userId === userId,
+      })),
       nextCursor,
       totalCount,
     }
@@ -361,7 +381,7 @@ export class BookmarksService implements OnModuleInit {
       },
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
     })
 
@@ -382,7 +402,7 @@ export class BookmarksService implements OnModuleInit {
     // Check folder ownership if folderId is updated
     if (updateBookmarkDto.folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: updateBookmarkDto.folderId, userId, deletedAt: null },
+        where: { id: updateBookmarkDto.folderId, ...accessibleFolder(userId) },
       })
       if (!folder) {
         throw new NotFoundException("Target folder not found")
@@ -405,6 +425,7 @@ export class BookmarksService implements OnModuleInit {
         url: updateBookmarkDto.url,
         title: updateBookmarkDto.title,
         description: updateBookmarkDto.description,
+        notes: updateBookmarkDto.notes,
         ...bookmarkSortFields(updateBookmarkDto),
         isPinned: updateBookmarkDto.isPinned,
         isFavorite: updateBookmarkDto.isFavorite,
@@ -422,7 +443,7 @@ export class BookmarksService implements OnModuleInit {
       },
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
     })
   }
@@ -451,7 +472,7 @@ export class BookmarksService implements OnModuleInit {
     let folderId = bookmark.folderId
     if (folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: folderId, userId, deletedAt: null },
+        where: { id: folderId, ...accessibleFolder(userId) },
       })
       if (!folder) {
         folderId = null
@@ -466,7 +487,7 @@ export class BookmarksService implements OnModuleInit {
       },
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
     })
   }
@@ -520,7 +541,7 @@ export class BookmarksService implements OnModuleInit {
   async bulkMove(userId: string, ids: string[], folderId?: string | null) {
     if (folderId) {
       const folder = await this.prisma.folder.findFirst({
-        where: { id: folderId, userId, deletedAt: null },
+        where: { id: folderId, ...accessibleFolder(userId) },
       })
       if (!folder) throw new NotFoundException("Folder not found")
     }
@@ -692,7 +713,7 @@ export class BookmarksService implements OnModuleInit {
       where: { userId, deletedAt: null },
       include: {
         bookmarks: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, userId },
           include: { tags: true },
           orderBy: [{ position: "asc" }, { createdAt: "desc" }],
         },
@@ -806,7 +827,7 @@ export class BookmarksService implements OnModuleInit {
       },
       include: {
         tags: true,
-        folder: true,
+        folder: { select: folderSummary },
       },
       orderBy: { createdAt: "desc" },
     })

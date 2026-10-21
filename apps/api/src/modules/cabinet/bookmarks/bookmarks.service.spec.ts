@@ -61,6 +61,60 @@ describe('BookmarksService - Trash Functionality', () => {
     expect(service).toBeDefined();
   });
 
+  describe('folder collaboration', () => {
+    it('requires current folder access and redacts personal notes on other contributors bookmarks', async () => {
+      prisma.folder.findFirst.mockResolvedValue({ id: 'shared' });
+      prisma.bookmark.findMany.mockResolvedValue([
+        { id: 'own', userId: 'member', notes: 'mine' },
+        { id: 'foreign', userId: 'owner', notes: 'private', noteDocument: { secret: true } },
+      ]);
+      prisma.bookmark.count.mockResolvedValue(2);
+      const result = await service.findAll('member', { folderId: 'shared', search: 'hello' });
+      expect(prisma.folder.findFirst).toHaveBeenCalledWith({ where: {
+        id: 'shared', deletedAt: null, OR: [{ userId: 'member' }, { members: { some: { userId: 'member' } } }],
+      }, select: { id: true } });
+      const query = prisma.bookmark.findMany.mock.calls[0][0];
+      expect(query.where.userId).toBeUndefined();
+      expect(query.where.AND).toEqual([{ OR: [{ userId: 'member' }, { type: 'BOOKMARK' }] }]);
+      expect(query.where.OR).toBeDefined(); // Search must not overwrite authorization.
+      expect(query.include.folder.select).toEqual({ id: true, name: true, userId: true, parentId: true });
+      expect(result.data[0]).toMatchObject({ canEdit: true, notes: 'mine' });
+      expect(result.data[1]).toMatchObject({ canEdit: false, notes: null, noteDocument: null });
+    });
+
+    it('rejects revoked memberships and keeps personal library and trash scoped to the contributor', async () => {
+      prisma.folder.findFirst.mockResolvedValue(null);
+      await expect(service.findAll('outsider', { folderId: 'private' })).rejects.toThrow('Folder not found');
+      expect(prisma.bookmark.findMany).not.toHaveBeenCalled();
+      prisma.bookmark.findMany.mockResolvedValue([]);
+      await service.findAll('member', {});
+      expect(prisma.bookmark.findMany.mock.calls[0][0].where.userId).toBe('member');
+      prisma.folder.findFirst.mockResolvedValue({ id: 'shared' });
+      await service.findAll('member', { folderId: 'shared', isTrash: true });
+      expect(prisma.bookmark.findMany.mock.calls[1][0].where.userId).toBe('member');
+    });
+
+    it('never widens edit, delete, or bulk writes to other contributors', async () => {
+      prisma.bookmark.findFirst.mockResolvedValue(null);
+      await expect(service.update('member', 'foreign', { title: 'overwrite' })).rejects.toThrow('Bookmark not found');
+      await expect(service.remove('member', 'foreign')).rejects.toThrow('Bookmark not found');
+      expect(prisma.bookmark.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'foreign', userId: 'member', deletedAt: null } }));
+      expect(prisma.bookmark.update).not.toHaveBeenCalled();
+      prisma.bookmark.updateMany.mockResolvedValue({ count: 0 });
+      await service.bulkTrash('member', ['foreign']);
+      expect(prisma.bookmark.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { id: { in: ['foreign'] }, userId: 'member', deletedAt: null } }));
+    });
+
+    it('lets members move their own bookmarks into a shared folder but not an inaccessible folder', async () => {
+      prisma.folder.findFirst.mockResolvedValue({ id: 'shared' });
+      prisma.bookmark.updateMany.mockResolvedValue({ count: 1 });
+      await service.bulkMove('member', ['own'], 'shared');
+      expect(prisma.bookmark.updateMany).toHaveBeenCalledWith({ where: { id: { in: ['own'] }, userId: 'member', deletedAt: null }, data: { folderId: 'shared' } });
+      prisma.folder.findFirst.mockResolvedValue(null);
+      await expect(service.bulkMove('member', ['own'], 'private')).rejects.toThrow('Folder not found');
+    });
+  });
+
   describe('bookmark ordering', () => {
     beforeEach(() => {
       prisma.$transaction = jest.fn((run) => run(prisma));
@@ -101,15 +155,16 @@ describe('BookmarksService - Trash Functionality', () => {
 
   describe('smart sorting and pinning', () => {
     it.each(Object.values(BookmarkSort))('sorts %s in the database before paginating, with pinned items first', async (sort) => {
-      prisma.bookmark.findMany.mockResolvedValue([{ id: 'one' }, { id: 'two' }, { id: 'three' }]);
+      prisma.folder.findFirst.mockResolvedValue({ id: 'folder-1' });
+      prisma.bookmark.findMany.mockResolvedValue(['one', 'two', 'three'].map((id) => ({ id, userId: 'user-1' })));
       prisma.bookmark.count.mockResolvedValue(3);
       const result = await service.findAll('user-1', { sort, limit: 2, folderId: 'folder-1' });
       expect(prisma.bookmark.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        orderBy: bookmarkOrderBy(sort), take: 3, where: expect.objectContaining({ userId: 'user-1', folderId: 'folder-1' }),
+        orderBy: bookmarkOrderBy(sort), take: 3, where: expect.objectContaining({ folderId: 'folder-1', AND: [{ OR: [{ userId: 'user-1' }, { type: 'BOOKMARK' }] }] }),
       }));
       expect(bookmarkOrderBy(sort)[0]).toEqual({ isPinned: 'desc' });
       expect(bookmarkOrderBy(sort).at(-1)).toEqual({ id: 'asc' });
-      expect(result).toEqual({ data: [{ id: 'one' }, { id: 'two' }], nextCursor: 'two', totalCount: 3 });
+      expect(result).toEqual({ data: ['one', 'two'].map((id) => ({ id, userId: 'user-1', canEdit: true })), nextCursor: 'two', totalCount: 3 });
       prisma.bookmark.count.mockClear();
       await service.findAll('user-1', { sort, limit: 2, cursor: 'two' });
       expect(prisma.bookmark.findMany).toHaveBeenLastCalledWith(expect.objectContaining({ orderBy: bookmarkOrderBy(sort), cursor: { id: 'two' }, skip: 1 }));
@@ -151,6 +206,49 @@ describe('BookmarksService - Trash Functionality', () => {
         .toEqual({ sortTitle: 'zebra api', sortDomain: 'example.com' });
       expect(bookmarkSortFields({ title: 'Note', url: null })).toEqual({ sortTitle: 'note', sortDomain: null });
       expect(bookmarkSortFields({})).toEqual({ sortTitle: undefined, sortDomain: undefined });
+    });
+  });
+
+  describe('global library search', () => {
+    it('searches accessible shared links and owned notes without exposing other contributors private notes', async () => {
+      prisma.bookmark.findMany.mockResolvedValue([{ id: 'shared', userId: 'another', notes: 'private', noteDocument: { secret: true } }]);
+      prisma.bookmark.count.mockResolvedValue(1);
+      const result = await service.findAll('viewer', { search: 'reference', limit: 20 });
+      const where = prisma.bookmark.findMany.mock.calls[0][0].where;
+      expect(where.userId).toBeUndefined();
+      expect(where.AND).toEqual([{ OR: [{ userId: 'viewer' }, { type: 'BOOKMARK', folder: { is: { deletedAt: null, OR: [{ userId: 'viewer' }, { members: { some: { userId: 'viewer' } } }] } } }] }]);
+      expect(where.OR).toContainEqual({ AND: [{ userId: 'viewer' }, { notes: { contains: 'reference', mode: 'insensitive' } }] });
+      expect(where.folderId).toBeUndefined();
+      expect(where.isArchived).toBeUndefined();
+      expect(result.data[0]).toMatchObject({ canEdit: false, notes: null, noteDocument: null });
+      await service.findAll('viewer', { search: 'reference', isTrash: true });
+      expect(prisma.bookmark.findMany.mock.calls[1][0].where.userId).toBe('viewer');
+      await service.findAll('viewer', { search: 'reference', isFavorite: true });
+      expect(prisma.bookmark.findMany.mock.calls[2][0].where.userId).toBe('viewer');
+      await service.findAll('viewer', { search: 'reference', isArchived: false });
+      expect(prisma.bookmark.findMany.mock.calls[3][0].where.userId).toBe('viewer');
+    });
+  });
+
+  describe('inspector autosave', () => {
+    it('persists private notes and explicit clears only for the contributor', async () => {
+      prisma.bookmark.findFirst.mockResolvedValue({ id: 'a', userId: 'owner' });
+      await service.update('owner', 'a', { title: '', description: '', notes: 'My private draft', folderId: null, tags: [] });
+      expect(prisma.bookmark.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ title: '', description: '', notes: 'My private draft', folderId: null }) }));
+      await service.update('owner', 'a', { notes: '' });
+      expect(prisma.bookmark.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ notes: '' }) }));
+      prisma.bookmark.findFirst.mockResolvedValue(null);
+      prisma.bookmark.update.mockClear();
+      await expect(service.update('another-user', 'a', { notes: 'Forbidden' })).rejects.toThrow('Bookmark not found');
+      expect(prisma.bookmark.update).not.toHaveBeenCalled();
+    });
+
+    it('validates notes and accepts a null folder without stripping the notes field', async () => {
+      const dto = Object.assign(new UpdateBookmarkDto(), { notes: 'Keep this', folderId: null });
+      expect(await validate(dto, { whitelist: true })).toHaveLength(0);
+      expect(dto.notes).toBe('Keep this');
+      expect(dto.folderId).toBeNull();
+      expect(await validate(Object.assign(new UpdateBookmarkDto(), { notes: 123 }))).toEqual(expect.arrayContaining([expect.objectContaining({ property: 'notes' })]));
     });
   });
 
@@ -502,7 +600,7 @@ describe('BookmarksService - Trash Functionality', () => {
       const result = await service.bulkMove('user-1', ['id-1', 'id-2'], 'folder-1');
 
       expect(prisma.folder.findFirst).toHaveBeenCalledWith({
-        where: { id: 'folder-1', userId: 'user-1', deletedAt: null },
+        where: { id: 'folder-1', deletedAt: null, OR: [{ userId: 'user-1' }, { members: { some: { userId: 'user-1' } } }] },
       });
       expect(prisma.bookmark.updateMany).toHaveBeenCalledWith({
         where: {

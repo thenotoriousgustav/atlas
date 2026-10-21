@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { accessibleFolder } from './folder-access';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -35,16 +36,14 @@ export class FoldersService {
   }
 
   async findAll(userId: string) {
-    return this.prisma.folder.findMany({
-      where: {
-        userId,
-        deletedAt: null,
-      },
+    const folders = await this.prisma.folder.findMany({
+      where: accessibleFolder(userId),
+      omit: { inviteTokenHash: true, shareToken: true },
       include: {
         _count: {
           select: {
             bookmarks: {
-              where: { deletedAt: null },
+              where: { deletedAt: null, OR: [{ userId }, { type: 'BOOKMARK' }] },
             },
           },
         },
@@ -53,6 +52,7 @@ export class FoldersService {
         name: 'asc',
       },
     });
+    return folders.map((folder) => ({ ...folder, isOwner: folder.userId === userId, parentId: folder.userId === userId ? folder.parentId : null }));
   }
 
   async findOne(userId: string, id: string) {
@@ -64,7 +64,7 @@ export class FoldersService {
       },
       include: {
         bookmarks: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, OR: [{ userId }, { type: 'BOOKMARK' }] },
         },
       },
     });
@@ -73,7 +73,77 @@ export class FoldersService {
       throw new NotFoundException('Folder not found');
     }
 
-    return folder;
+    return {
+      ...folder,
+      bookmarks: folder.bookmarks.map((bookmark) => ({
+        ...bookmark,
+        notes: bookmark.userId === userId ? bookmark.notes : null,
+        noteDocument: bookmark.userId === userId ? bookmark.noteDocument : null,
+      })),
+    };
+  }
+
+  async getCollaboration(userId: string, id: string) {
+    const folder = await this.prisma.folder.findFirst({
+      where: { id, userId, deletedAt: null },
+      select: { inviteTokenHash: true, members: {
+        select: { userId: true, user: { select: { name: true } } },
+        orderBy: { createdAt: 'asc' },
+      } },
+    });
+    if (!folder) throw new NotFoundException('Folder not found');
+    return { inviteEnabled: !!folder.inviteTokenHash, members: folder.members };
+  }
+
+  async enableInvite(userId: string, id: string) {
+    const token = randomBytes(32).toString('hex');
+    const result = await this.prisma.folder.updateMany({
+      where: { id, userId, deletedAt: null },
+      data: { inviteTokenHash: createHash('sha256').update(token).digest('hex') },
+    });
+    if (!result.count) throw new NotFoundException('Folder not found');
+    return { token };
+  }
+
+  async disableInvite(userId: string, id: string) {
+    const result = await this.prisma.folder.updateMany({
+      where: { id, userId, deletedAt: null }, data: { inviteTokenHash: null },
+    });
+    if (!result.count) throw new NotFoundException('Folder not found');
+    return { inviteEnabled: false };
+  }
+
+  async acceptInvite(userId: string, token: string) {
+    if (!/^[a-f0-9]{64}$/.test(token)) throw new NotFoundException('Invitation not found');
+    return this.prisma.$transaction(async (tx) => {
+      const hash = createHash('sha256').update(token).digest('hex');
+      // Lock the invitation row so revocation and acceptance cannot race.
+      const folders = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+        SELECT "id", "userId" FROM "folders"
+        WHERE "inviteTokenHash" = ${hash} AND "deletedAt" IS NULL FOR UPDATE
+      `;
+      const folder = folders[0];
+      if (!folder) throw new NotFoundException('Invitation not found');
+      if (folder.userId !== userId) {
+        await tx.folderMember.upsert({
+          where: { folderId_userId: { folderId: folder.id, userId } },
+          create: { folderId: folder.id, userId }, update: {},
+        });
+      }
+      return { folderId: folder.id };
+    });
+  }
+
+  async removeMember(userId: string, id: string, memberId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // Lock and revoke first so acceptance cannot race with removing a member.
+      const result = await tx.folder.updateMany({
+        where: { id, userId, deletedAt: null }, data: { inviteTokenHash: null },
+      });
+      if (!result.count) throw new NotFoundException('Folder not found');
+      await tx.folderMember.deleteMany({ where: { folderId: id, userId: memberId } });
+      return { removed: true };
+    });
   }
 
   async getShare(userId: string, id: string) {
@@ -199,7 +269,7 @@ export class FoldersService {
       // Soft delete this folder
       const folder = await tx.folder.update({
         where: { id },
-        data: { deletedAt: new Date(), shareToken: null },
+        data: { deletedAt: new Date(), shareToken: null, inviteTokenHash: null },
       });
 
       // Recursively soft delete subfolders and bookmarks
@@ -226,7 +296,7 @@ export class FoldersService {
     for (const sub of subfolders) {
       await tx.folder.update({
         where: { id: sub.id },
-        data: { deletedAt: now, shareToken: null },
+        data: { deletedAt: now, shareToken: null, inviteTokenHash: null },
       });
       // Recurse
       await this.softDeleteFolderContents(tx, sub.id);

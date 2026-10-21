@@ -57,6 +57,45 @@ export class FoldersController {
     return this.foldersService.copyShared(user.id, token);
   }
 
+  @Post('invitations/:token/accept')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Accept a folder collaboration invitation after signing in' })
+  async acceptInvite(@CurrentUser() user: any, @Param('token') token: string) {
+    return this.foldersService.acceptInvite(user.id, token);
+  }
+
+  @Get(':id/collaboration')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'List folder members and invitation status (owner only)' })
+  async getCollaboration(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.foldersService.getCollaboration(user.id, id);
+  }
+
+  @Put(':id/invitation')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Create or rotate a collaboration invitation (owner only)' })
+  async enableInvite(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.foldersService.enableInvite(user.id, id);
+  }
+
+  @Delete(':id/invitation')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Disable new joins without removing existing members (owner only)' })
+  async disableInvite(@CurrentUser() user: any, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.foldersService.disableInvite(user.id, id);
+  }
+
+  @Delete(':id/members/:memberId')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Remove a member and revoke the current invitation (owner only)' })
+  async removeMember(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('memberId', new ParseUUIDPipe()) memberId: string,
+  ) {
+    return this.foldersService.removeMember(user.id, id, memberId);
+  }
+
   @Get(':id/share')
   @Header('Cache-Control', 'private, no-store')
   @ApiOperation({ summary: 'Get folder sharing status (owner only)' })

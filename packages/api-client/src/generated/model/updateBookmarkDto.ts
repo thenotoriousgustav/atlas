@@ -16,8 +16,13 @@ export interface UpdateBookmarkDto {
   title?: string;
   /** Bookmark description */
   description?: string;
-  /** Folder ID */
-  folderId?: string;
+  /** Private bookmark notes */
+  notes?: string;
+  /**
+     * Folder ID; null moves the bookmark to Unsorted
+     * @nullable
+     */
+  folderId?: string | null;
   /** List of tags */
   tags?: string[];
   /** Keep bookmark pinned above unpinned items */

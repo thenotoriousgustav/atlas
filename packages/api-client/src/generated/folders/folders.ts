@@ -362,6 +362,347 @@ export const useFoldersControllerCopyShared = <TError = unknown,
       return useMutation(getFoldersControllerCopySharedMutationOptions(options), queryClient);
     }
     /**
+ * @summary Accept a folder collaboration invitation after signing in
+ */
+export const foldersControllerAcceptInvite = (
+    token: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/invitations/${token}/accept`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerAcceptInviteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerAcceptInvite>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerAcceptInvite>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['foldersControllerAcceptInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerAcceptInvite>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  foldersControllerAcceptInvite(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerAcceptInviteMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerAcceptInvite>>>
+
+    export type FoldersControllerAcceptInviteMutationError = unknown
+
+    /**
+ * @summary Accept a folder collaboration invitation after signing in
+ */
+export const useFoldersControllerAcceptInvite = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerAcceptInvite>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerAcceptInvite>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerAcceptInviteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary List folder members and invitation status (owner only)
+ */
+export const foldersControllerGetCollaboration = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/collaboration`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerGetCollaborationQueryKey = (id: string,) => {
+    return [
+    `/v1/folders/${id}/collaboration`
+    ] as const;
+    }
+
+
+export const getFoldersControllerGetCollaborationQueryOptions = <TData = Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFoldersControllerGetCollaborationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>> = ({ signal }) => foldersControllerGetCollaboration(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FoldersControllerGetCollaborationQueryResult = NonNullable<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>>
+export type FoldersControllerGetCollaborationQueryError = unknown
+
+
+export function useFoldersControllerGetCollaboration<TData = Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof foldersControllerGetCollaboration>>,
+          TError,
+          Awaited<ReturnType<typeof foldersControllerGetCollaboration>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFoldersControllerGetCollaboration<TData = Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof foldersControllerGetCollaboration>>,
+          TError,
+          Awaited<ReturnType<typeof foldersControllerGetCollaboration>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFoldersControllerGetCollaboration<TData = Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List folder members and invitation status (owner only)
+ */
+
+export function useFoldersControllerGetCollaboration<TData = Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof foldersControllerGetCollaboration>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFoldersControllerGetCollaborationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Create or rotate a collaboration invitation (owner only)
+ */
+export const foldersControllerEnableInvite = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/invitation`, method: 'PUT', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerEnableInviteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerEnableInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerEnableInvite>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['foldersControllerEnableInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerEnableInvite>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  foldersControllerEnableInvite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerEnableInviteMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerEnableInvite>>>
+
+    export type FoldersControllerEnableInviteMutationError = unknown
+
+    /**
+ * @summary Create or rotate a collaboration invitation (owner only)
+ */
+export const useFoldersControllerEnableInvite = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerEnableInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerEnableInvite>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerEnableInviteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Disable new joins without removing existing members (owner only)
+ */
+export const foldersControllerDisableInvite = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/invitation`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerDisableInviteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerDisableInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerDisableInvite>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['foldersControllerDisableInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerDisableInvite>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  foldersControllerDisableInvite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerDisableInviteMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerDisableInvite>>>
+
+    export type FoldersControllerDisableInviteMutationError = unknown
+
+    /**
+ * @summary Disable new joins without removing existing members (owner only)
+ */
+export const useFoldersControllerDisableInvite = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerDisableInvite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerDisableInvite>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerDisableInviteMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Remove a member and revoke the current invitation (owner only)
+ */
+export const foldersControllerRemoveMember = (
+    id: string,
+    memberId: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/v1/folders/${id}/members/${memberId}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getFoldersControllerRemoveMemberMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerRemoveMember>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof foldersControllerRemoveMember>>, TError,{id: string;memberId: string}, TContext> => {
+
+const mutationKey = ['foldersControllerRemoveMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof foldersControllerRemoveMember>>, {id: string;memberId: string}> = (props) => {
+          const {id,memberId} = props ?? {};
+
+          return  foldersControllerRemoveMember(id,memberId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FoldersControllerRemoveMemberMutationResult = NonNullable<Awaited<ReturnType<typeof foldersControllerRemoveMember>>>
+
+    export type FoldersControllerRemoveMemberMutationError = unknown
+
+    /**
+ * @summary Remove a member and revoke the current invitation (owner only)
+ */
+export const useFoldersControllerRemoveMember = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof foldersControllerRemoveMember>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof foldersControllerRemoveMember>>,
+        TError,
+        {id: string;memberId: string},
+        TContext
+      > => {
+      return useMutation(getFoldersControllerRemoveMemberMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Get folder sharing status (owner only)
  */
 export const foldersControllerGetShare = (

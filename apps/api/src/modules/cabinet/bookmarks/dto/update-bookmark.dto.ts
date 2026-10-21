@@ -43,13 +43,19 @@ export class UpdateBookmarkDto {
   @IsOptional()
   description?: string
 
+  @ApiPropertyOptional({ description: 'Private bookmark notes' })
+  @IsString()
+  @IsOptional()
+  notes?: string
+
   @ApiPropertyOptional({
     example: "123e4567-e89b-12d3-a456-426614174000",
-    description: "Folder ID",
+    description: "Folder ID; null moves the bookmark to Unsorted",
+    nullable: true,
   })
   @IsUUID()
   @IsOptional()
-  folderId?: string
+  folderId?: string | null
 
   @ApiPropertyOptional({
     example: ["Next.js", "React"],
