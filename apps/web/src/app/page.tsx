@@ -6,7 +6,7 @@ export default function HomePage() {
       <header className="flex items-center justify-between border-b border-brand-border py-6">
         <Link
           href="/"
-          className="font-mono text-sm font-semibold tracking-widest uppercase"
+          className="font-serif text-2xl"
         >
           Cabinet
         </Link>
@@ -29,13 +29,13 @@ export default function HomePage() {
         <Link
           href="/cabinet"
           prefetch={false}
-          className="inline-flex min-h-11 w-fit items-center justify-center bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4"
+          className="inline-flex min-h-11 w-fit items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           Open Cabinet
         </Link>
       </section>
 
-      <footer className="flex flex-wrap justify-between gap-3 border-t border-brand-border py-6 font-mono text-xs text-brand-muted">
+      <footer className="flex flex-wrap justify-between gap-3 border-t border-brand-border py-6 text-xs text-muted-foreground">
         <span>Cabinet</span>
         <span>Bookmarks · Notes · Reading</span>
       </footer>

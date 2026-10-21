@@ -78,8 +78,8 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-[100dvh] grid-cols-1 bg-brand-canvas text-brand-charcoal md:grid-cols-12">
       <aside className="hidden flex-col justify-between border-r border-brand-border p-12 md:col-span-5 md:flex">
-        <div className="flex items-center gap-2 font-mono text-xs font-bold tracking-widest uppercase">
-          <span className="size-3 bg-brand-charcoal" aria-hidden="true" />
+        <div className="flex items-center gap-2 font-serif text-2xl">
+          <svg viewBox="0 0 24 28" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-6" aria-hidden="true"><rect x="2" y="2" width="20" height="24" rx="2" /><path d="M2 14h20M9 8h6M9 20h6" strokeLinecap="round" /></svg>
           Cabinet
         </div>
         <div className="flex max-w-sm flex-col gap-6">
@@ -91,18 +91,18 @@ export default function LoginPage() {
             without losing track.
           </p>
         </div>
-        <p className="border-t border-brand-border pt-6 font-mono text-xs text-brand-muted">
+        <p className="border-t border-border pt-6 text-sm text-muted-foreground">
           Bookmarks · Notes · Reading
         </p>
       </aside>
 
       <section className="flex flex-col justify-center px-6 py-12 md:col-span-7 md:px-16">
         <div className="mx-auto flex w-full max-w-sm flex-col gap-8">
-          <p className="font-mono text-xs font-bold tracking-widest uppercase md:hidden">
+          <p className="font-serif text-2xl md:hidden">
             Cabinet
           </p>
           <div className="flex flex-col gap-2">
-            <h2 className="font-serif text-3xl tracking-tight">
+            <h2 className="text-2xl font-semibold tracking-tight">
               Sign in to Cabinet
             </h2>
             <p className="text-sm leading-relaxed text-brand-muted">
@@ -119,7 +119,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-3">
             <Button
               variant="outline"
-              className="h-11 rounded-none"
+              className="h-11"
               disabled={isSigningIn}
               onClick={() => handleSocialSignIn("github")}
             >
@@ -128,7 +128,7 @@ export default function LoginPage() {
             </Button>
             <Button
               variant="outline"
-              className="h-11 rounded-none"
+              className="h-11"
               disabled={isSigningIn}
               onClick={() => handleSocialSignIn("google")}
             >

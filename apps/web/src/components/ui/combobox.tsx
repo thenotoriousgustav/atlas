@@ -146,7 +146,7 @@ function ComboboxContent({
       onOpenAutoFocus={(e) => e.preventDefault()}
       onCloseAutoFocus={(e) => e.preventDefault()}
       className={cn(
-        "z-50 min-w-32 rounded-none border bg-popover p-1 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        "z-50 min-w-32 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-sm outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
       )}
       {...props}
@@ -186,7 +186,7 @@ const ComboboxGroup = ({ className, ...props }: React.ComponentProps<"div">) => 
 const ComboboxLabel = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
-      className={cn("px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground", className)}
+      className={cn("px-2 py-1.5 text-xs font-medium text-muted-foreground", className)}
       {...props}
     />
   );
@@ -206,7 +206,7 @@ function ComboboxItem({
       role="option"
       aria-selected={isSelected}
       className={cn(
-        "relative flex w-full cursor-default items-center rounded-none py-1.5 px-3 text-xs outline-none select-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full min-h-9 cursor-default items-center rounded-md px-3 py-2 text-sm outline-none select-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
       {...props}

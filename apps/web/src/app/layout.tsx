@@ -1,17 +1,19 @@
 import "./globals.css"
 import React from "react"
 import type { Metadata } from "next"
-import { Instrument_Serif, Inter } from "next/font/google"
+import localFont from "next/font/local"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
-
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
+const geist = localFont({ src: "./fonts/geist.woff2", weight: "100 900", variable: "--font-geist-sans", display: "swap" })
+const geistMono = localFont({ src: "./fonts/geist-mono.woff2", weight: "100 900", variable: "--font-geist-mono", display: "swap", preload: false })
+const instrumentSerif = localFont({
+  src: [
+    { path: "./fonts/instrument-serif.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/instrument-serif-italic.woff2", weight: "400", style: "italic" },
+  ],
   variable: "--font-serif",
-  weight: ["400"],
-  style: ["normal", "italic"],
+  display: "swap",
 })
 
 const description = "Your personal library for bookmarks, notes, and saved reading."
@@ -42,7 +44,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("font-sans", inter.variable)}
+      className={cn("font-sans", geist.variable, geistMono.variable)}
     >
       <body
         className={cn(

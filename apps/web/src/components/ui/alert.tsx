@@ -3,12 +3,12 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative w-full rounded-none border p-4 text-xs font-mono [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  "relative w-full rounded-lg border p-4 text-sm [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground border-zinc-200 dark:border-zinc-800",
-        success: "border-[#346538]/30 bg-[#EDF3EC] dark:bg-emerald-950/30 text-[#346538] dark:text-emerald-400 [&>svg]:text-[#346538] dark:[&>svg]:text-emerald-400",
+        default: "border-border bg-card text-foreground",
+        success: "border-positive/20 bg-positive-muted text-positive [&>svg]:text-positive",
         destructive:
           "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
       },
@@ -38,7 +38,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("mb-1 font-semibold leading-none tracking-tight text-xs", className)}
+    className={cn("mb-1 font-medium leading-5 text-sm", className)}
     {...props}
   />
 ))
@@ -50,7 +50,7 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-[11px] opacity-90 [&_p]:leading-relaxed", className)}
+    className={cn("text-sm [&_p]:leading-relaxed", className)}
     {...props}
   />
 ))

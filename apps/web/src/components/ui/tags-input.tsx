@@ -10,7 +10,7 @@ function TagsInput({
   return (
     <TagsInputPrimitive.Root
       data-slot="tags-input"
-      className={cn("flex w-[380px] flex-col gap-2", className)}
+      className={cn("flex w-full min-w-0 flex-col gap-2", className)}
       {...props}
     />
   );
@@ -75,7 +75,7 @@ function TagsInputItem({
     <TagsInputPrimitive.Item
       data-slot="tags-input-item"
       className={cn(
-        "inline-flex max-w-[calc(100%-8px)] items-center gap-1.5 rounded border bg-transparent px-2.5 py-1 text-sm focus:outline-hidden data-disabled:cursor-not-allowed data-editable:select-none data-editing:bg-transparent data-disabled:opacity-50 data-editing:ring-1 data-editing:ring-ring [&:not([data-editing])]:pr-1.5 [&[data-highlighted]:not([data-editing])]:bg-accent [&[data-highlighted]:not([data-editing])]:text-accent-foreground",
+        "inline-flex max-w-[calc(100%-8px)] items-center gap-1.5 rounded-sm border bg-muted/40 px-2 py-1 text-xs focus:outline-hidden data-disabled:cursor-not-allowed data-editable:select-none data-editing:bg-transparent data-disabled:opacity-50 data-editing:ring-1 data-editing:ring-ring [&:not([data-editing])]:pr-1.5 [&[data-highlighted]:not([data-editing])]:bg-accent [&[data-highlighted]:not([data-editing])]:text-accent-foreground",
         className,
       )}
       {...props}
@@ -83,7 +83,7 @@ function TagsInputItem({
       <TagsInputPrimitive.ItemText className="truncate">
         {children}
       </TagsInputPrimitive.ItemText>
-      <TagsInputPrimitive.ItemDelete className="size-4 shrink-0 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100">
+      <TagsInputPrimitive.ItemDelete className="size-4 shrink-0 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100">
         <X className="size-3.5" />
       </TagsInputPrimitive.ItemDelete>
     </TagsInputPrimitive.Item>

@@ -19,7 +19,7 @@ export function ThemeToggle() {
       <Button
         variant="outline"
         size="sm"
-        className="size-8 p-0 rounded-none border-brand-border"
+        className="size-8 p-0"
         disabled
       >
         <span className="size-3.5" />
@@ -34,7 +34,7 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="size-8 p-0 rounded-none border-brand-border flex items-center justify-center text-brand-charcoal"
+      className="size-8 p-0"
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
     >
       {isDark ? (

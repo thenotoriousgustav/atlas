@@ -1,13 +1,4 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import type { InputHTMLAttributes } from "react"
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
-
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, ...props }, ref) => (
-    <input ref={ref} className={cn("ext-input", className)} {...props} />
-  )
-)
-Input.displayName = "Input"
-
-export { Input }
+export { Input } from "@/components/ui/input"
+export type InputProps = InputHTMLAttributes<HTMLInputElement>
