@@ -1,5 +1,5 @@
-import nextConfig from '@cabinet/eslint-config/next';
+import { nextJsConfig } from '@cabinet/eslint-config/next-js';
 
 export default [
-  ...nextConfig,
+  ...nextJsConfig,
 ];

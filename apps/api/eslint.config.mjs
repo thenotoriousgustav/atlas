@@ -1,5 +1,5 @@
-import nestConfig from '@cabinet/eslint-config/nest';
+import { config } from '@cabinet/eslint-config/base';
 
 export default [
-  ...nestConfig,
+  ...config,
 ];
