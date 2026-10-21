@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import {
-  X,
   ArrowSquareOut,
   Star,
   PushPin,
@@ -40,7 +39,8 @@ interface BookmarkInspectorProps {
   bookmark: any | null
   folders: any[]
   availableTags: any[]
-  onClose: () => void
+  /** @deprecated The preview header's panel toggle hides the details now. */
+  onClose?: () => void
   onCloseWithDraft?: () => void
   onUpdateBookmark: (id: string, data: any) => Promise<any>
   onDeleteBookmark: (id: string) => void
@@ -139,7 +139,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
       {/* Top Header */}
       <div className="flex min-h-14 items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
         <span className="text-sm font-semibold text-foreground">
-          {isNote ? "Note Details" : "Bookmark Inspector"}
+          {isNote ? "Note details" : "Details"}
         </span>
         <div className="flex items-center gap-1">
           {onTogglePin && !readOnly && (
@@ -156,7 +156,9 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
             size="icon-xs"
             disabled={readOnly}
             onClick={() => onToggleFavorite(bookmark)}
-            title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}
+            title={bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-label={bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={!!bookmark.isFavorite}
           >
             <Star
               className={cn("size-3.5", bookmark.isFavorite ? "text-library-olive" : "text-muted-foreground")}
@@ -169,16 +171,9 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
             disabled={readOnly}
             onClick={() => onToggleArchive(bookmark)}
             title={bookmark.isArchived ? "Unarchive" : "Archive"}
+            aria-label={bookmark.isArchived ? "Unarchive" : "Archive"}
           >
             <Archive className="size-3.5 text-muted-foreground" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={onClose}
-            title="Close inspector"
-          >
-            <X className="size-3.5" />
           </Button>
         </div>
       </div>
@@ -209,7 +204,8 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
               variant="ghost"
               size="icon-xs"
               onClick={handleCopyLink}
-              title="Copy URL"
+              title="Copy link"
+              aria-label="Copy link"
               className="size-6 shrink-0"
             >
               <LinkSimple className="size-3" />
@@ -237,11 +233,11 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           </FieldLabel>
           <Select value={folderId} onValueChange={(folderId) => update({ folderId })} disabled={disabled}>
             <SelectTrigger id={`${fieldId}-folder`} className="h-9 rounded-md text-sm">
-              <SelectValue placeholder="No Folder (Unsorted)" />
+              <SelectValue placeholder="Unfiled" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-              <SelectItem value="none">No Folder (Unsorted)</SelectItem>
+              <SelectItem value="none">Unfiled</SelectItem>
               {folders.map((f) => (
                 <SelectItem key={f.id} value={f.id}>
                   {f.name}
@@ -325,7 +321,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           onClick={() => onDeleteBookmark(bookmark.id)}
           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
-          <Trash data-icon="inline-start" /> Delete
+          <Trash data-icon="inline-start" /> Move to Trash
         </Button>
         {!readOnly && <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
           <span role="status" aria-live="polite">{recovery ? 'Choose a draft version' : status === 'saving' ? 'Saving…' : status === 'unsaved' ? 'Unsaved changes' : status === 'error' ? 'Not saved. Your changes are still here.' : 'All changes saved'}</span>
