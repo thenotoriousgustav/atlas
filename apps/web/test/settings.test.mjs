@@ -10,7 +10,7 @@ registerHooks({
   resolve(specifier, context, next) {
     if (specifier === "next/link") {
       return {
-        url: new URL("../node_modules/next/link.js", import.meta.url).href,
+        url: new URL("./fixtures/next-link.mjs", import.meta.url).href,
         shortCircuit: true,
       }
     }
