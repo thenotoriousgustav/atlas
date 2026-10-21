@@ -118,3 +118,4 @@ Thumbs.db
 cypress/videos/
 cypress/screenshots/
 .vercel
+.taste-skill/
