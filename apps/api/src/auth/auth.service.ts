@@ -4,7 +4,6 @@ import { betterAuth, type BetterAuthOptions } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { fromNodeHeaders } from "better-auth/node"
 import { APIError } from "better-auth/api"
-import * as argon2 from "argon2"
 import type { IncomingHttpHeaders } from "node:http"
 import { PrismaService } from "@/prisma/prisma.service"
 

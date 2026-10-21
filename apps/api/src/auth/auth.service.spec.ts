@@ -1,7 +1,6 @@
 import { ConfigService } from "@nestjs/config"
 import { Reflector } from "@nestjs/core"
 import { betterAuth } from "better-auth"
-import * as argon2 from "argon2"
 import { AuthService } from "./auth.service"
 import { AuthGuard } from "./guards/auth.guard"
 import { PrismaService } from "@/prisma/prisma.service"
