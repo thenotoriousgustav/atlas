@@ -1,5 +1,7 @@
 export interface NoteSnapshot {
   folderId?: string
+  /** Undefined leaves the saved tags untouched (older local drafts have none). */
+  tags?: string[]
   title: string
   notes: string
   noteDocument: Record<string, any>

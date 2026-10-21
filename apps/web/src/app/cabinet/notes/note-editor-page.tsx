@@ -14,7 +14,8 @@ import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
 import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
-import { ArrowLeft, Image, Table as TableIcon, FolderSimple } from "@phosphor-icons/react"
+import { ArrowLeft, Image, Table as TableIcon, FolderSimple, Tag } from "@phosphor-icons/react"
+import { TagsInput, TagsInputInput, TagsInputItem, TagsInputList } from "@/components/ui/tags-input"
 import {
   BlockEditor,
   SlashCommand,
@@ -133,6 +134,7 @@ export default function NoteEditorPage({ noteId }: { noteId: string }) {
             new URLSearchParams(window.location.search).get("folder") ||
             undefined,
           title: note?.title ?? "",
+          tags: note?.tags?.map((tag: any) => tag.name) ?? [],
           notes: note?.notes || note?.description || "",
           noteDocument:
             note?.noteDocument ??
@@ -230,6 +232,7 @@ function NoteCanvas({
   const { data: foldersData } = useFoldersControllerFindAll()
   const folders = (foldersData as any)?.data || foldersData || []
   const [title, setTitle] = useState(initial.title)
+  const [tags, setTags] = useState<string[]>(initial.tags ?? [])
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(initial.folderId)
   const [hasSaved, setHasSaved] = useState(initiallySaved)
   const [status, setStatus] = useState<NoteSaveStatus>(
@@ -243,7 +246,8 @@ function NoteCanvas({
     let active = true
     const queue = new NoteAutosave(
       async (snapshot) => {
-        await AXIOS_INSTANCE.put(`/v1/bookmarks/${noteId}/note`, snapshot)
+        // null moves the note to Unfiled; omitting the field would keep its old folder.
+        await AXIOS_INSTANCE.put(`/v1/bookmarks/${noteId}/note`, { ...snapshot, folderId: snapshot.folderId ?? null })
         if (current.current === snapshot) {
           try {
             localStorage.removeItem(draftKey)
@@ -257,6 +261,7 @@ function NoteCanvas({
           })
           queryClient.invalidateQueries({ queryKey: ["/v1/bookmarks/health"] })
           queryClient.invalidateQueries({ queryKey: ["/v1/folders"] })
+          queryClient.invalidateQueries({ queryKey: ["/v1/tags"] })
           if (new URLSearchParams(window.location.search).has("new")) {
             window.history.replaceState(
               window.history.state,
@@ -347,7 +352,7 @@ function NoteCanvas({
   const leave = async () => {
     if (await autosave.current?.flush()) {
       if (current.current.folderId) {
-        router.push(`/cabinet?folder=${encodeURIComponent(current.current.folderId)}`)
+        router.push(`/cabinet/folders/${encodeURIComponent(current.current.folderId)}`)
       } else {
         router.push("/cabinet")
       }
@@ -379,7 +384,7 @@ function NoteCanvas({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="__root__">Unfiled (Root)</SelectItem>
+                <SelectItem value="__root__">Unfiled</SelectItem>
                 {folders.map((f: any) => (
                   <SelectItem key={f.id} value={f.id}>
                     {f.name}
@@ -461,8 +466,30 @@ function NoteCanvas({
             setTitle(event.target.value)
             update({ ...current.current, title: event.target.value })
           }}
-          className="mb-8 w-full border-0 bg-transparent p-0 pl-8 text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/50 sm:text-4xl"
+          className="mb-3 w-full border-0 bg-transparent p-0 pl-8 text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/50 sm:text-4xl"
         />
+        <div className="mb-8 flex items-center gap-2 pl-8 text-sm text-muted-foreground">
+          <Tag className="size-4 shrink-0" aria-hidden="true" />
+          <TagsInput
+            value={tags}
+            disabled={!!draft}
+            onValueChange={(next) => {
+              const clean = [...new Set(next.map((tag) => tag.trim().replace(/^#/, "").toLowerCase()).filter(Boolean))]
+              setTags(clean)
+              update({ ...current.current, tags: clean })
+            }}
+            className="min-w-0 flex-1"
+          >
+            <TagsInputList className="min-h-8 border-none bg-transparent px-0 py-0 shadow-none">
+              {tags.map((tag) => (
+                <TagsInputItem key={tag} value={tag} className="h-6 rounded-sm px-1.5 py-0 text-xs">
+                  #{tag}
+                </TagsInputItem>
+              ))}
+              <TagsInputInput aria-label="Note tags" placeholder={tags.length ? "Add tag…" : "Add tags…"} maxLength={30} className="text-base md:text-sm" />
+            </TagsInputList>
+          </TagsInput>
+        </div>
         <BlockEditor editor={editor} />
         <TableHoverOverlay editor={editor} />
       </div>
