@@ -111,7 +111,7 @@ export function FolderTree({
                 onDrop={(e) => handleDrop(e, folder.id)}
                 style={{ paddingLeft: `${depth * 12 + 8}px` }}
                 className={cn(
-                  "group flex w-full cursor-pointer items-center justify-between rounded-md py-1 pr-2 text-left text-sm transition-colors",
+                  "group/folder flex w-full cursor-pointer items-center justify-between rounded-md py-1 pr-2 text-left text-sm transition-colors",
                   dragOverFolderId === folder.id
                     ? "bg-primary text-primary-foreground font-semibold shadow-xs scale-[1.02] ring-2 ring-primary/40 pl-3"
                     : isSelected
@@ -133,7 +133,7 @@ export function FolderTree({
                   )}
                 </button>
                 <div className="flex shrink-0 items-center gap-1">
-                  <div data-folder-actions className="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-focus-within:max-w-20 group-focus-within:opacity-100">
+                  <div data-folder-actions className="flex max-w-0 items-center gap-1 overflow-hidden opacity-0 group-hover/folder:max-w-20 group-hover/folder:opacity-100 group-focus-within/folder:max-w-20 group-focus-within/folder:opacity-100">
                     <Button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -205,7 +205,7 @@ export function FolderTree({
               onDrop={(e) => handleDrop(e, folder.id)}
               style={{ paddingLeft: `${depth * 12 + 8}px` }}
               className={cn(
-                "group flex w-full cursor-pointer items-center justify-between rounded-md py-1 pr-2 text-left text-sm transition-colors",
+                "group/folder flex w-full cursor-pointer items-center justify-between rounded-md py-1 pr-2 text-left text-sm transition-colors",
                 dragOverFolderId === folder.id
                   ? "bg-primary text-primary-foreground font-semibold shadow-xs scale-[1.02] ring-2 ring-primary/40 pl-3"
                   : isSelected
@@ -222,7 +222,7 @@ export function FolderTree({
                   </span>
                 )}
               </button>
-              <div data-folder-actions className="flex max-w-0 shrink-0 items-center gap-1 overflow-hidden opacity-0 group-hover:max-w-20 group-hover:opacity-100 group-focus-within:max-w-20 group-focus-within:opacity-100">
+              <div data-folder-actions className="flex max-w-0 shrink-0 items-center gap-1 overflow-hidden opacity-0 group-hover/folder:max-w-20 group-hover/folder:opacity-100 group-focus-within/folder:max-w-20 group-focus-within/folder:opacity-100">
                 <Button
                   onClick={(e) => {
                     e.stopPropagation()

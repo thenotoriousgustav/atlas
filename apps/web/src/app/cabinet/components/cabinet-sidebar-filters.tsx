@@ -444,7 +444,7 @@ export function CabinetSidebarFilters({
                     <div
                       key={tag.id}
                       className={cn(
-                        "group relative inline-flex items-center rounded-md border text-xs transition-colors",
+                        "group/tag relative inline-flex items-center rounded-md border text-xs transition-colors",
                         isSelected
                           ? "border-library-olive/30 bg-library-highlight text-library-olive"
                           : "border-border bg-card text-muted-foreground hover:text-foreground"
@@ -482,7 +482,7 @@ export function CabinetSidebarFilters({
                             <button
                               type="button"
                               onClick={(e) => e.stopPropagation()}
-                              className="hidden h-full items-center justify-center border-l border-border px-1 opacity-0 transition-opacity group-hover:flex group-hover:opacity-100 hover:text-foreground"
+                              className="hidden h-full items-center justify-center border-l border-border px-1 opacity-0 transition-opacity group-hover/tag:flex group-hover/tag:opacity-100 hover:text-foreground"
                               title="Tag options"
                               aria-label={`Options for #${tag.name}`}
                             >

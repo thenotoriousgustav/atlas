@@ -106,7 +106,7 @@ export function WorkspaceSidebarItem({
         }
       }}
       className={cn(
-        "group flex min-h-11 w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-9",
+        "group/ws flex min-h-11 w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-9",
         isActive
           ? "bg-secondary font-medium text-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -122,7 +122,7 @@ export function WorkspaceSidebarItem({
       <div className="flex shrink-0 items-center gap-1.5">
         {/* Cabinet-style Hover Action Icons */}
         {hoverActions && (
-          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/ws:opacity-100">
             {hoverActions}
           </div>
         )}
