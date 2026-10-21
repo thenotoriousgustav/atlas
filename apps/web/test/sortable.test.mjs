@@ -41,6 +41,7 @@ const { BookmarkListView } = await import("../src/app/cabinet/components/bookmar
 const { BookmarkList } = await import("../src/app/cabinet/components/bookmark-list.tsx")
 const { BookmarkInspector } = await import("../src/app/cabinet/components/bookmark-inspector.tsx")
 const { TooltipProvider } = await import("../src/components/ui/tooltip.tsx")
+const { defaultDisplayPreferences: defaultPrefs } = await import("../src/app/cabinet/components/display-preferences.ts")
 const bookmark = { id: "a", title: "Alpha", url: "https://example.com", createdAt: "2026-01-01" }
 const props = {
   bookmarks: [bookmark], activeColumnCount: 3, selectedBookmarkIds: [],
@@ -59,7 +60,11 @@ test("failed queries show a retryable error, never a misleading empty library", 
     assert.match(failed, /Try again/)
     assert.doesNotMatch(failed, /No bookmarks found|0 Items/)
     const empty = render(BookmarkList, base)
-    assert.match(empty, /No bookmarks found matching the filters/)
+    assert.match(empty, /Your library is empty/)
+    assert.match(render(BookmarkList, { ...base, filterFavorite: true }), /No favorites yet/)
+    assert.match(render(BookmarkList, { ...base, isTrashView: true }), /Trash is empty/)
+    assert.match(render(BookmarkList, { ...base, searchQuery: "zebra", onClearSearch() {} }), /No results for “zebra”[\s\S]*Clear search/)
+    assert.match(render(BookmarkList, { ...base, selectedFolderId: "f", folders: [{ id: "f", name: "Design" }] }), /This folder is empty/)
     assert.doesNotMatch(empty, /Could not load bookmarks/)
     const loading = render(BookmarkList, { ...base, isBookmarksLoading: true, isBookmarksError: true })
     assert.match(loading, /Loading bookmarks/)
@@ -107,3 +112,16 @@ test("other contributors' bookmarks cannot be dragged or edited in the UI", () =
   assert.doesNotMatch(html, /Save changes|Retry save|All changes saved/)
   assert.match(html, /<textarea[^>]*disabled/)
 })
+
+test("note cards always preview their content, even with descriptions hidden", () => {
+  const note = { id: "n", type: "NOTE", title: "Plan", createdAt: "2026-01-01",
+    noteDocument: { type: "doc", content: [
+      { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Weekly goals" }] },
+      { type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Ship tags" }] }] }] },
+    ] } }
+  const html = render(MoodboardCard, { bookmark: note, isSelected: false, onToggleSelect() {},
+    displayPreferences: { ...defaultPrefs, showDescription: false } })
+  assert.match(html, /Weekly goals/)
+  assert.match(html, /Ship tags/)
+})
+

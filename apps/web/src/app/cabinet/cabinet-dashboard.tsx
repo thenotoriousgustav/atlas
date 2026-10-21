@@ -20,7 +20,6 @@ import {
   useBookmarksControllerGetHealthSummary,
   useBookmarksControllerGetDuplicates,
   useBookmarksControllerCleanDuplicates,
-  useBookmarksControllerBulkAddTags,
   useBookmarksControllerTriggerHealthCheck,
   useBookmarksControllerReorder,
   AXIOS_INSTANCE,
@@ -40,9 +39,9 @@ import { Sortable } from "@/components/ui/sortable"
 import { bookmarkCollisionDetection, masonrySortingStrategy } from "@/lib/bookmark-sortable"
 import { Archive, Trash, ArrowCounterClockwise, Tag as TagIcon } from "@phosphor-icons/react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectTrigger,
@@ -62,6 +61,7 @@ import { MobileBottomNav, type MobileTab } from "./components/mobile-bottom-nav"
 import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer"
 import { DownloadMediaDialog } from "./components/download-media-dialog"
 import { CommandMenu } from "./components/command-menu"
+import { BulkActionsSheet, BulkTagForm } from "./components/bulk-actions-sheet"
 import {
   defaultDisplayPreferences,
   type DisplayPreferences,
@@ -145,8 +145,6 @@ function CabinetWorkspace() {
     setFilterDuplicates,
     filterTrash,
     setFilterTrash,
-    columnCount,
-    handleColumnCountChange,
     displayPreferences,
     handleDisplayPreferencesChange,
     mobileDrawerMode,
@@ -160,6 +158,7 @@ function CabinetWorkspace() {
     activeMobileTab,
     handleSelectMobileTab: rawHandleSelectMobileTab,
     activeFilterLabel,
+    showView,
   } = useCabinetFilters(folders)
 
   const selectedFolder = folders.find(
@@ -171,6 +170,8 @@ function CabinetWorkspace() {
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false)
   const [downloadBookmark, setDownloadBookmark] = useState<any | null>(null)
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
+  const [isBulkSheetOpen, setIsBulkSheetOpen] = useState(false)
+  const [previewBookmark, setPreviewBookmark] = useState<any | null>(null)
 
   const handleSelectMobileTab = (tab: MobileTab) => {
     rawHandleSelectMobileTab(tab, () => {
@@ -302,6 +303,10 @@ function CabinetWorkspace() {
     },
   })
 
+  const reorderMutation = useBookmarksControllerReorder({
+    mutation: { scope: { id: "bookmark-order" } },
+  })
+
   const {
     data: bookmarksInfiniteData,
     isLoading: isBookmarksLoading,
@@ -330,7 +335,8 @@ function CabinetWorkspace() {
       query: {
         enabled: !isMeLoading && !!user,
         initialPageParam: undefined,
-        refetchInterval: selectedFolderId && !filterTrash ? 15000 : false,
+        // Shared folders poll for collaborators' changes, but never mid-reorder.
+        refetchInterval: selectedFolderId && !filterTrash && !reorderMutation.isPending ? 15000 : false,
         getNextPageParam: (lastPage: any) =>
           lastPage?.data?.nextCursor || undefined,
       },
@@ -370,14 +376,12 @@ function CabinetWorkspace() {
     null
   )
 
-  // Reset optimistic order when query data updates
+  // Drop the optimistic order once the server's order arrives, but not from a
+  // refetch that started before the reorder was saved.
   React.useEffect(() => {
-    setOptimisticOrder(null)
+    if (!reorderMutation.isPending) setOptimisticOrder(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookmarksInfiniteData])
-
-  const reorderMutation = useBookmarksControllerReorder({
-    mutation: { scope: { id: "bookmark-order" } },
-  })
 
   const handleReorder = React.useCallback(
     (newOrder: any[]) => {
@@ -446,7 +450,6 @@ function CabinetWorkspace() {
 
   const scanHealthMutation = useBookmarksControllerTriggerHealthCheck()
   const cleanDuplicatesMutation = useBookmarksControllerCleanDuplicates()
-  const bulkAddTagsMutation = useBookmarksControllerBulkAddTags()
 
   // Sync mount status
   useEffect(() => {
@@ -484,6 +487,11 @@ function CabinetWorkspace() {
     handleEmptyTrash,
     handleBulkRestore,
     handleBulkPermanentDelete,
+    handleBulkTrash,
+    handleBulkArchive,
+    handleBulkMove,
+    handleBulkAddTags,
+    moveBookmarks,
   } = useBookmarkMutations({
     updateBookmarkMutation,
     createBookmarkMutation,
@@ -491,6 +499,9 @@ function CabinetWorkspace() {
     invalidateAllQueries,
     selectedBookmarkIds,
     setSelectedBookmarkIds,
+    getBookmark: (id) =>
+      bookmarks.find((item: any) => item.id === id) ??
+      duplicateGroups.flatMap((group: any) => group.bookmarks).find((item: any) => item.id === id),
   })
 
   const handleLogout = async () => {
@@ -591,9 +602,10 @@ function CabinetWorkspace() {
 
   const handleDeleteTag = async (id: string) => {
     try {
+      const tagToDelete = tags.find((t: any) => t.id === id)
       await removeTagMutation.mutateAsync({ id })
       invalidateAllQueries()
-      const tagToDelete = tags.find((t: any) => t.id === id)
+      toast.success(tagToDelete ? `Deleted #${tagToDelete.name}` : "Tag deleted")
       if (tagToDelete && selectedTag === tagToDelete.name) {
         setSelectedTag(undefined)
       }
@@ -624,6 +636,16 @@ function CabinetWorkspace() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
+      // Esc leaves selection mode unless a dialog, menu, or field handles it first.
+      if (
+        e.key === "Escape" &&
+        !e.defaultPrevented &&
+        selectedBookmarkIds.length > 0 &&
+        !target?.closest("input, textarea, [contenteditable='true'], [role='dialog'], [role='alertdialog'], [role='menu'], [role='listbox']")
+      ) {
+        setSelectedBookmarkIds([])
+        return
+      }
       if (
         !target ||
         target instanceof HTMLInputElement ||
@@ -703,6 +725,7 @@ function CabinetWorkspace() {
     isFolderModalOpen,
     isMobileAddOpen,
     downloadBookmark,
+    selectedBookmarkIds.length,
   ])
 
   const handleToggleSelectBookmark = (id: string) => {
@@ -715,12 +738,12 @@ function CabinetWorkspace() {
     setSelectedBookmarkIds([])
   }
 
-  const handleSelectAll = async () => {
-    const isAllSelected =
-      !hasNextPage &&
-      filteredBookmarks.length > 0 &&
-      filteredBookmarks.every((b: any) => selectedBookmarkIds.includes(b.id))
+  const isAllSelected =
+    !hasNextPage &&
+    filteredBookmarks.length > 0 &&
+    filteredBookmarks.every((b: any) => b.canEdit === false || selectedBookmarkIds.includes(b.id))
 
+  const handleSelectAll = async () => {
     if (isAllSelected) {
       setSelectedBookmarkIds([])
       return
@@ -729,7 +752,7 @@ function CabinetWorkspace() {
     let currentBookmarks = filteredBookmarks
 
     if (hasNextPage) {
-      const toastId = toast.loading("Loading all bookmarks...")
+      const toastId = toast.loading("Loading all items…")
       try {
         let result = await fetchNextPage()
         while (result.hasNextPage) {
@@ -746,7 +769,7 @@ function CabinetWorkspace() {
         currentBookmarks = loadedBookmarks
         toast.dismiss(toastId)
       } catch {
-        toast.error("Failed to load all bookmarks", { id: toastId })
+        toast.error("Failed to load all items", { id: toastId })
       }
     }
 
@@ -754,98 +777,14 @@ function CabinetWorkspace() {
     setSelectedBookmarkIds(allIds)
   }
 
-  const handleBulkDelete = async () => {
-    const isConfirmed = await confirm({
-      title: "Move Selected Bookmarks to Trash",
-      description: `Are you sure you want to move ${selectedBookmarkIds.length} selected bookmarks to Trash?`,
-      actionLabel: "Move to Trash",
-      variant: "destructive",
-    })
-    if (!isConfirmed) return
-    try {
-      await Promise.all(
-        selectedBookmarkIds.map((id) =>
-          removeBookmarkMutation.mutateAsync({ id })
-        )
-      )
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-      toast.success("Selected bookmarks moved to Trash")
-    } catch {
-      toast.error("Failed to delete some bookmarks")
-    }
-  }
-
-  const handleBulkArchive = async () => {
-    try {
-      await Promise.all(
-        selectedBookmarkIds.map((id) =>
-          updateBookmarkMutation.mutateAsync({
-            id,
-            data: { isArchived: true },
-          })
-        )
-      )
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-    } catch {
-      toast.error("Failed to archive some bookmarks")
-    }
-  }
-
-  const handleBulkMove = async (folderId: string | null) => {
-    try {
-      await Promise.all(
-        selectedBookmarkIds.map((id) =>
-          updateBookmarkMutation.mutateAsync({
-            id,
-            data: { folderId: folderId || undefined },
-          })
-        )
-      )
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-    } catch {
-      toast.error("Failed to move some bookmarks")
-    }
-  }
-
-  const handleBulkAddTags = async (tagsToAdd: string[]) => {
-    if (tagsToAdd.length === 0 || selectedBookmarkIds.length === 0) return
-    const toastId = toast.loading(`Adding tags to ${selectedBookmarkIds.length} item(s)...`)
-    try {
-      await bulkAddTagsMutation.mutateAsync({
-        data: {
-          ids: selectedBookmarkIds,
-          tags: tagsToAdd,
-        },
-      })
-      await invalidateAllQueries()
-      toast.success(`Tag applied to ${selectedBookmarkIds.length} item(s)`, { id: toastId })
-    } catch {
-      toast.error("Failed to add tags", { id: toastId })
-    }
-  }
-
-  const handleDropBookmarkToFolder = async (folderId: string, bookmarkIds: string[]) => {
+  const handleDropBookmarkToFolder = (folderId: string, bookmarkIds: string[]) => {
     const targetFolder = folders.find((f: any) => f.id === folderId)
-    const folderName = targetFolder ? targetFolder.name : "folder"
-    const toastId = toast.loading(`Moving ${bookmarkIds.length} item(s) to "${folderName}"...`)
-    try {
-      await Promise.all(
-        bookmarkIds.map((id) =>
-          updateBookmarkMutation.mutateAsync({
-            id,
-            data: { folderId },
-          })
-        )
-      )
-      invalidateAllQueries()
-      setSelectedBookmarkIds([])
-      toast.success(`Moved ${bookmarkIds.length} item(s) to "${folderName}"`, { id: toastId })
-    } catch {
-      toast.error("Failed to move item(s) to folder", { id: toastId })
-    }
+    void moveBookmarks(bookmarkIds, folderId, targetFolder?.name)
+  }
+
+  const handleOpenFromCommandMenu = (bookmark: any) => {
+    if (bookmark.type === "NOTE" || !bookmark.url) router.push(`/cabinet/notes/${encodeURIComponent(bookmark.id)}`)
+    else setPreviewBookmark(bookmark)
   }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -873,11 +812,20 @@ function CabinetWorkspace() {
   // Rendering Loader
   if (!mounted || isLoading || !user) {
     return (
-      <div
-        className="flex min-h-[100dvh] w-full items-center justify-center bg-brand-canvas text-sm text-brand-muted"
-        role="status"
-      >
-        Loading Cabinet...
+      <div className="flex h-dvh w-full gap-4 bg-background p-2 md:p-3" role="status" aria-label="Loading Cabinet">
+        <span className="sr-only">Loading Cabinet…</span>
+        <div aria-hidden="true" className="hidden w-64 shrink-0 flex-col gap-6 rounded-lg border border-border bg-card p-4 md:flex">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex flex-col gap-2">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-7 w-full" />)}</div>
+          <div className="flex flex-col gap-2">{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-7 w-4/5" />)}</div>
+        </div>
+        <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-6 px-2 py-4 sm:px-3">
+          <div className="flex items-center gap-3"><Skeleton className="size-9 shrink-0" /><Skeleton className="h-9 w-full max-w-xl" /></div>
+          <div className="flex flex-col gap-2"><Skeleton className="h-8 w-48" /><Skeleton className="h-4 w-28" /></div>
+          <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
+            {Array.from({ length: 6 }, (_, i) => <div key={i} className="flex h-16 items-center gap-3 px-4"><Skeleton className="size-5 shrink-0" /><Skeleton className="h-4 w-1/2" /></div>)}
+          </div>
+        </div>
       </div>
     )
   }
@@ -903,8 +851,6 @@ function CabinetWorkspace() {
               <CabinetSidebarFilters
                 user={user}
                 onLogout={handleLogout}
-                displayPreferences={displayPreferences}
-                onDisplayPreferencesChange={handleDisplayPreferencesChange}
                 selectedFolderId={selectedFolderId}
                 onSelectFolder={setSelectedFolderId}
                 selectedTag={selectedTag}
@@ -1037,8 +983,6 @@ function CabinetWorkspace() {
                   sortDisabled={!!filterDuplicates}
                   viewMode={viewMode}
                   onViewModeChange={handleViewModeChange}
-                  columnCount={columnCount}
-                  onColumnCountChange={handleColumnCountChange}
                   displayPreferences={displayPreferences}
                   onDisplayPreferencesChange={handleDisplayPreferencesChange}
                 />}
@@ -1072,7 +1016,6 @@ function CabinetWorkspace() {
                 onFormatFilterChange={handleFormatFilterChange}
                 folders={folders}
                 viewMode={viewMode}
-                columnCount={columnCount}
                 selectedBookmarkIds={selectedBookmarkIds}
                 onToggleSelect={handleToggleSelectBookmark}
                 onSelectTag={(tag) => {
@@ -1094,6 +1037,9 @@ function CabinetWorkspace() {
                 onEmptyTrash={handleEmptyTrash}
                 onOpenDownload={setDownloadBookmark}
                 availableTags={tags}
+                isBrokenView={filterBroken}
+                previewBookmark={previewBookmark}
+                onPreviewBookmarkChange={setPreviewBookmark}
                 onUpdateBookmark={async (id, data) => {
                   const result = await updateBookmarkMutation.mutateAsync({ id, data })
                   await invalidateAllQueries()
@@ -1131,61 +1077,15 @@ function CabinetWorkspace() {
         folders={folders}
         tags={tags}
         bookmarks={filteredBookmarks}
-        onSelectFolder={(id) => {
-          setSelectedFolderId(id)
-          setSelectedTag(undefined)
-          setFilterFavorite(undefined)
-          setFilterArchived(false)
-          setFilterTrash(undefined)
-          setFilterType(undefined)
-          setFilterContentType(undefined)
-          setFilterBroken(undefined)
-          setFilterDuplicates(undefined)
-        }}
-        onSelectTag={(name) => {
-          setSelectedTag(name)
-          setSelectedFolderId(undefined)
-          setFilterFavorite(undefined)
-          setFilterArchived(undefined)
-          setFilterTrash(undefined)
-        }}
-        onFilterFavorite={() => {
-          setFilterFavorite(true)
-          setSelectedFolderId(undefined)
-          setSelectedTag(undefined)
-          setFilterArchived(undefined)
-          setFilterTrash(undefined)
-        }}
-        onFilterArchived={() => {
-          setFilterArchived(true)
-          setSelectedFolderId(undefined)
-          setSelectedTag(undefined)
-          setFilterFavorite(undefined)
-          setFilterTrash(undefined)
-        }}
-        onFilterTrash={() => {
-          setFilterTrash(true)
-          setSelectedFolderId(undefined)
-          setSelectedTag(undefined)
-          setFilterFavorite(undefined)
-          setFilterArchived(undefined)
-        }}
-        onFilterVideo={() => {
-          setFilterContentType("VIDEO" as any)
-          setSelectedFolderId(undefined)
-          setSelectedTag(undefined)
-          setFilterFavorite(undefined)
-          setFilterArchived(undefined)
-          setFilterTrash(undefined)
-        }}
-        onFilterNotes={() => {
-          setFilterType("NOTE" as any)
-          setSelectedFolderId(undefined)
-          setSelectedTag(undefined)
-          setFilterFavorite(undefined)
-          setFilterArchived(undefined)
-          setFilterTrash(undefined)
-        }}
+        onSelectFolder={(id) => showView({ folderId: id })}
+        onSelectTag={(name) => showView({ tag: name })}
+        onFilterFavorite={() => showView({ view: "favorites" })}
+        onFilterArchived={() => showView({ view: "archive" })}
+        onFilterTrash={() => showView({ view: "trash" })}
+        onFilterVideo={() => showView({ format: "media" })}
+        onFilterNotes={() => showView({ format: "notes" })}
+        onShowAll={() => showView()}
+        onOpenBookmark={handleOpenFromCommandMenu}
         onOpenAddBookmark={() => {
           resetBookmarkForm()
           setIsBookmarkModalOpen(true)
@@ -1202,63 +1102,52 @@ function CabinetWorkspace() {
       <ActionBar
         open={selectedBookmarkIds.length > 0}
         align="center"
-        className="bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] max-w-[calc(100vw-1.5rem)] gap-1.5 overflow-x-auto rounded-lg border border-border bg-card p-1.5 shadow-sm md:bottom-6"
+        className="bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] max-w-[calc(100vw-1.5rem)] gap-1.5 rounded-lg border border-border bg-card p-1.5 shadow-sm md:bottom-6"
       >
-        <ActionBarSelection className="border-none bg-transparent px-2 py-0 text-xs font-medium text-brand-muted">
+        <ActionBarSelection className="border-none bg-transparent px-2 py-0 text-xs font-medium tabular-nums text-muted-foreground">
           {selectedBookmarkIds.length} selected
         </ActionBarSelection>
         <ActionBarSeparator />
         <ActionBarGroup className="gap-1.5">
-          <ActionBarItem
-            onClick={handleSelectAll}
-            variant="outline"
-            size="default"
-          >
-            {!hasNextPage &&
-            filteredBookmarks.length > 0 &&
-            filteredBookmarks.every((b: any) =>
-              selectedBookmarkIds.includes(b.id)
-            )
-              ? "Deselect all"
-              : "Select all"}
+          <ActionBarItem onClick={handleSelectAll} variant="outline" size="default">
+            {isAllSelected ? "Deselect all" : "Select all"}
           </ActionBarItem>
 
-          {filterTrash ? (
+          {isMobile ? (
+            <ActionBarItem onClick={() => setIsBulkSheetOpen(true)} size="default">
+              Actions
+            </ActionBarItem>
+          ) : filterTrash ? (
             <>
-              <ActionBarItem
-                onClick={handleBulkRestore}
-                variant="outline"
-                size="default"
-              >
-                <ArrowCounterClockwise className="mr-1 h-3.5 w-3.5" />
+              <ActionBarItem onClick={handleBulkRestore} variant="outline" size="default">
+                <ArrowCounterClockwise data-icon="inline-start" />
                 Restore
               </ActionBarItem>
-
-              <ActionBarItem
-                onClick={handleBulkPermanentDelete}
-                variant="destructive"
-                size="default"
-              >
-                <Trash className="mr-1 h-3.5 w-3.5" />
+              <ActionBarItem onClick={handleBulkPermanentDelete} variant="destructive" size="default">
+                <Trash data-icon="inline-start" />
                 Delete permanently
               </ActionBarItem>
             </>
           ) : (
             <>
               <Select
-                onValueChange={(folderId) => handleBulkMove(folderId === "__root__" ? null : folderId)}
+                value=""
+                onValueChange={(folderId) => {
+                  const target = folders.find((f: any) => f.id === folderId)
+                  void handleBulkMove(folderId === "__root__" ? null : folderId, target?.name)
+                }}
               >
-                <SelectTrigger className="h-11 w-auto gap-1 sm:h-9">
-                  <SelectValue placeholder="Move to folder..." />
+                <SelectTrigger className="h-9 w-auto gap-1" aria-label="Move selected items to folder">
+                  <SelectValue placeholder="Move to folder…" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                  <SelectItem value="__root__">Root (No Folder)</SelectItem>
-                  {folders.map((f: any) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}
-                    </SelectItem>
-                  ))}
+                    <SelectItem value="__root__">Unfiled</SelectItem>
+                    {folders.map((f: any) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -1266,87 +1155,48 @@ function CabinetWorkspace() {
               <Popover>
                 <PopoverTrigger asChild>
                   <ActionBarItem variant="outline" size="default">
-                    <TagIcon className="mr-1 h-3.5 w-3.5" />
+                    <TagIcon data-icon="inline-start" />
                     Tag
                   </ActionBarItem>
                 </PopoverTrigger>
                 <PopoverContent align="center" className="w-64 p-3">
-                  <div className="flex flex-col gap-2.5">
-                    <span className="text-xs font-medium text-foreground">Add tag to {selectedBookmarkIds.length} item{selectedBookmarkIds.length === 1 ? "" : "s"}</span>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        const form = e.currentTarget
-                        const input = form.elements.namedItem("tagInput") as HTMLInputElement
-                        const clean = input?.value.trim().replace(/^#/, "")
-                        if (clean) {
-                          void handleBulkAddTags([clean])
-                          input.value = ""
-                        }
-                      }}
-                      className="flex gap-1.5"
-                    >
-                      <Input
-                        name="tagInput"
-                        placeholder="tag name..."
-                        className="h-8 text-xs"
-                      />
-                      <Button type="submit" size="sm" className="h-8 px-2.5 text-xs">
-                        Add
-                      </Button>
-                    </form>
-                    {tags.length > 0 && (
-                      <div className="flex flex-col gap-1 border-t border-border pt-1.5">
-                        <span className="text-[11px] text-muted-foreground">Or pick existing:</span>
-                        <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
-                          {tags.map((tag: any) => (
-                            <button
-                              key={tag.id || tag.name}
-                              type="button"
-                              onClick={() => void handleBulkAddTags([tag.name])}
-                              className="cursor-pointer rounded-sm bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-library-highlight hover:text-library-olive"
-                            >
-                              #{tag.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <BulkTagForm tags={tags} count={selectedBookmarkIds.length} onAddTags={handleBulkAddTags} />
                 </PopoverContent>
               </Popover>
 
-              <ActionBarItem
-                onClick={handleBulkArchive}
-                variant="outline"
-                size="default"
-              >
-                <Archive className="mr-1 h-3.5 w-3.5" />
+              <ActionBarItem onClick={() => void handleBulkArchive(true)} variant="outline" size="default">
+                <Archive data-icon="inline-start" />
                 Archive
               </ActionBarItem>
 
-              <ActionBarItem
-                onClick={handleBulkDelete}
-                variant="destructive"
-                size="default"
-              >
-                <Trash className="mr-1 h-3.5 w-3.5" />
-                Move to trash
+              <ActionBarItem onClick={() => void handleBulkTrash()} variant="destructive" size="default">
+                <Trash data-icon="inline-start" />
+                Move to Trash
               </ActionBarItem>
             </>
           )}
 
           <ActionBarSeparator />
 
-          <Button
-            variant="ghost"
-            size="default"
-            onClick={handleClearSelection}
-          >
+          <Button variant="ghost" size="default" onClick={handleClearSelection} title="Clear selection (Esc)">
             Cancel
           </Button>
         </ActionBarGroup>
       </ActionBar>
+
+      <BulkActionsSheet
+        open={isMobile && isBulkSheetOpen && selectedBookmarkIds.length > 0}
+        onOpenChange={setIsBulkSheetOpen}
+        count={selectedBookmarkIds.length}
+        isTrashView={!!filterTrash}
+        folders={folders}
+        onMove={(folderId, folderName) => handleBulkMove(folderId, folderName)}
+        onArchive={() => handleBulkArchive(true)}
+        onTrash={handleBulkTrash}
+        onRestore={handleBulkRestore}
+        onPermanentDelete={handleBulkPermanentDelete}
+        tagForm={<BulkTagForm tags={tags} count={selectedBookmarkIds.length} onAddTags={handleBulkAddTags} />}
+      />
 
       {/* Mobile Add Bookmark Drawer */}
       <MobileAddBookmarkDrawer

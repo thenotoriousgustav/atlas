@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { MagnifyingGlass, FolderSimple, Tag, Plus, Star, Archive, Trash, VideoCamera, FileText, ArrowsClockwise, List, SquaresFour, SidebarSimple } from "@phosphor-icons/react"
 import { CommandDialog, CommandInput, CommandList, CommandGroup, CommandItem, CommandShortcut, CommandSeparator } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
@@ -22,6 +21,9 @@ interface CommandMenuProps {
   onFilterTrash: () => void
   onFilterVideo: () => void
   onFilterNotes: () => void
+  onShowAll: () => void
+  /** Opens a saved item the same way clicking its card does. */
+  onOpenBookmark: (bookmark: any) => void
   onOpenAddBookmark: () => void
   onOpenAddFolder: () => void
   onScanHealth: () => void
@@ -32,7 +34,6 @@ interface CommandMenuProps {
 type Action = { label: string; icon: typeof Plus; run: () => void; shortcut?: string }
 
 export function CommandMenu(props: CommandMenuProps) {
-  const router = useRouter()
   const { toggleSidebar } = useSidebar()
   const [search, setSearch] = React.useState('')
   const query = useBookmarkSearch(search, props.open)
@@ -53,16 +54,16 @@ export function CommandMenu(props: CommandMenuProps) {
   }, [props.open, props.onOpenChange])
 
   const actions: Action[] = [
-    { label: 'Add new bookmark', icon: Plus, run: props.onOpenAddBookmark, shortcut: 'B' },
+    { label: 'Add bookmark', icon: Plus, run: props.onOpenAddBookmark, shortcut: 'B' },
     { label: 'Create note', icon: FileText, run: props.onCreateNote, shortcut: 'N' },
     { label: 'Create new folder', icon: FolderSimple, run: props.onOpenAddFolder },
     { label: 'Check broken links & duplicates', icon: ArrowsClockwise, run: props.onScanHealth },
   ]
   const views: Action[] = [
-    { label: 'All Bookmarks', icon: FolderSimple, run: () => { props.onSelectFolder(undefined); props.onSelectTag(undefined) } },
+    { label: 'All items', icon: FolderSimple, run: props.onShowAll },
     { label: 'Favorites', icon: Star, run: props.onFilterFavorite },
-    { label: 'Notes Only', icon: FileText, run: props.onFilterNotes },
-    { label: 'Videos & Media', icon: VideoCamera, run: props.onFilterVideo },
+    { label: 'Notes', icon: FileText, run: props.onFilterNotes },
+    { label: 'Videos & media', icon: VideoCamera, run: props.onFilterVideo },
     { label: 'Archive', icon: Archive, run: props.onFilterArchived },
     { label: 'Trash', icon: Trash, run: props.onFilterTrash },
     { label: 'List view', icon: List, run: () => props.onViewModeChange('list'), shortcut: '1' },
@@ -90,10 +91,11 @@ export function CommandMenu(props: CommandMenuProps) {
       {items.length > 0 && <><CommandSeparator /><CommandGroup heading={searching ? 'Across your library' : 'In this view'}>
         {items.map((bookmark) => {
           const safe = safeHttpUrl(bookmark.url || '')
-          return <CommandItem key={bookmark.id} value={`bookmark ${bookmark.id}`} disabled={!safe && bookmark.type !== 'NOTE'} onSelect={() => select(() => {
-            if (bookmark.type === 'NOTE') router.push(`/cabinet/notes/${encodeURIComponent(bookmark.id)}`)
-            else if (safe) window.open(safe.href, '_blank', 'noopener,noreferrer')
-          })}><MagnifyingGlass /><span className="truncate">{bookmark.title || safe?.hostname || 'Untitled'}</span></CommandItem>
+          const isNote = bookmark.type === 'NOTE' || !bookmark.url
+          return <CommandItem key={bookmark.id} value={`bookmark ${bookmark.id}`} disabled={!safe && !isNote} onSelect={() => select(() => props.onOpenBookmark(bookmark))}>
+            {isNote ? <FileText /> : <MagnifyingGlass />}<span className="truncate">{bookmark.title || safe?.hostname || 'Untitled'}</span>
+            {safe && <span className="ml-auto max-w-40 shrink-0 truncate text-xs text-muted-foreground">{safe.hostname.replace(/^www\./, '')}</span>}
+          </CommandItem>
         })}
       </CommandGroup></>}
       {searching && !waiting && !query.isError && items.length === 0 && folders.length === 0 && tags.length === 0 && groups.every(([, actions]) => actions.length === 0) && <p role="status" className="px-3 py-4 text-sm text-muted-foreground">No matching results.</p>}

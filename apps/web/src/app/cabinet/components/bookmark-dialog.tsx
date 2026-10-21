@@ -180,12 +180,12 @@ export function BookmarkDialog({
                                 {isScraping ? (
                                   <>
                                     <Spinner className="size-3.5" />
-                                    Scraping...
+                                    Fetching…
                                   </>
                                 ) : (
                                   <>
                                     <Sparkle className="size-3.5" />
-                                    Auto Fill
+                                    Auto-fill
                                   </>
                                 )}
                               </Button>
@@ -283,11 +283,11 @@ export function BookmarkDialog({
                           aria-invalid={isInvalid}
                           className="h-10 w-full rounded-md border border-input bg-background px-3 text-base text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none md:text-sm"
                         >
-                          <SelectValue placeholder="None (Root)" />
+                          <SelectValue placeholder="Unfiled" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                          <SelectItem value="__root__">None (Root)</SelectItem>
+                          <SelectItem value="__root__">Unfiled</SelectItem>
                           {folders.map((f: any) => (
                             <SelectItem key={f.id} value={f.id}>
                               {f.name}
@@ -428,7 +428,7 @@ export function BookmarkDialog({
                   className="flex flex-1 items-center justify-center gap-1.5"
                 >
                   {isSubmitting && <Spinner className="h-3.5 w-3.5" />}
-                  Save bookmark
+                  {bookmarkToEdit ? "Save changes" : "Save bookmark"}
                 </Button>
               )}
             />

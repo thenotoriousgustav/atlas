@@ -22,15 +22,13 @@ interface ViewControlsProps {
   sortDisabled?: boolean
   viewMode: "list" | "moodboard"
   onViewModeChange: (mode: "list" | "moodboard") => void
-  columnCount?: number
-  onColumnCountChange?: (count: number) => void
   displayPreferences?: DisplayPreferences
   onDisplayPreferencesChange?: (preferences: DisplayPreferences) => void
 }
 
 export function BookmarkViewControls({
   sort = "custom", onSortChange, sortDisabled = false, viewMode, onViewModeChange,
-  columnCount = 4, onColumnCountChange, displayPreferences = defaultDisplayPreferences, onDisplayPreferencesChange,
+  displayPreferences = defaultDisplayPreferences, onDisplayPreferencesChange,
 }: ViewControlsProps) {
   return (
     <div className="flex items-center gap-2" aria-label="Collection display controls">
@@ -66,15 +64,6 @@ export function BookmarkViewControls({
               <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuGroup>
-          {viewMode === "moodboard" && <>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Maximum columns</DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={String(columnCount)} onValueChange={(value) => onColumnCountChange?.(Number(value))}>
-                {[1, 2, 3, 4].map((count) => <DropdownMenuRadioItem key={count} value={String(count)}>{count} {count === 1 ? "column" : "columns"}</DropdownMenuRadioItem>)}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuGroup>
-          </>}
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuLabel>Visible details</DropdownMenuLabel>
@@ -130,9 +119,9 @@ export function Toolbar({ searchQuery, onSearchChange, isBookmarkModalOpen, setI
           <Button onClick={() => handleCreate("BOOKMARK")}><Plus data-icon="inline-start" /> Add bookmark</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button className="border-l border-primary-foreground/20" size="icon-lg" aria-label="Choose what to add"><CaretDown /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end"><DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => handleCreate("BOOKMARK")}><BookmarkSimple /> Add bookmark</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleCreate("NOTE")}><FileText /> Create note</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="min-w-44"><DropdownMenuGroup>
+              <DropdownMenuItem className="whitespace-nowrap" onSelect={() => handleCreate("BOOKMARK")}><BookmarkSimple /> Add bookmark</DropdownMenuItem>
+              <DropdownMenuItem className="whitespace-nowrap" onSelect={() => handleCreate("NOTE")}><FileText /> Create note</DropdownMenuItem>
             </DropdownMenuGroup></DropdownMenuContent>
           </DropdownMenu>
         </ButtonGroup>

@@ -27,6 +27,7 @@ interface MobileBottomNavProps {
   onCreateNote: () => void
   onOpenCollections: () => void
   onOpenLibrary: () => void
+  /** @deprecated No longer shown; kept so existing callers compile. */
   trashCount?: number
 }
 
@@ -37,17 +38,17 @@ export function MobileBottomNav({
   onCreateNote,
   onOpenCollections,
   onOpenLibrary,
-  trashCount = 0,
 }: MobileBottomNavProps) {
   return (
     <nav
-      aria-label="Mobile Bottom Navigation"
+      aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 block border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <div className="flex h-14 items-center justify-around px-2">
         {/* Tab 1: All Bookmarks */}
         <button
           type="button"
+          aria-current={activeTab === "all" ? "page" : undefined}
           onClick={() => onSelectTab("all")}
           className={cn(
             "flex min-w-[56px] flex-1 flex-col items-center justify-center gap-1 py-1 transition-colors active:scale-95",
@@ -68,6 +69,7 @@ export function MobileBottomNav({
         {/* Tab 2: Folders */}
         <button
           type="button"
+          aria-current={activeTab === "folders" ? "page" : undefined}
           onClick={() => {
             onSelectTab("folders")
             onOpenCollections()
@@ -116,11 +118,12 @@ export function MobileBottomNav({
         {/* Tab 4: Favorites */}
         <button
           type="button"
+          aria-current={activeTab === "favorites" ? "page" : undefined}
           onClick={() => onSelectTab("favorites")}
           className={cn(
             "flex min-w-[56px] flex-1 flex-col items-center justify-center gap-1 py-1 transition-colors active:scale-95",
             activeTab === "favorites"
-              ? "text-foreground"
+              ? "text-brand-charcoal"
               : "text-brand-muted hover:text-brand-charcoal"
           )}
         >
@@ -129,13 +132,14 @@ export function MobileBottomNav({
             weight={activeTab === "favorites" ? "fill" : "regular"}
           />
           <span className="text-xs font-medium">
-            Favs
+            Favorites
           </span>
         </button>
 
         {/* Tab 5: Library / Filters */}
         <button
           type="button"
+          aria-current={activeTab === "library" ? "page" : undefined}
           onClick={() => {
             onSelectTab("library")
             onOpenLibrary()
@@ -154,9 +158,6 @@ export function MobileBottomNav({
           <span className="text-xs font-medium">
             Library
           </span>
-          {trashCount > 0 && (
-            <span className="absolute top-1 right-3 flex size-1.5 rounded-full bg-brand-charcoal" />
-          )}
         </button>
       </div>
     </nav>

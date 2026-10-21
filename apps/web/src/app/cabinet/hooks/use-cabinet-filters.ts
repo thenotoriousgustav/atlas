@@ -7,32 +7,19 @@ import {
 } from "../components/display-preferences"
 import type { MobileTab } from "../components/mobile-bottom-nav"
 import { isBookmarkSort, type BookmarkSort } from "@/lib/bookmark-order"
+import { buildCabinetUrl, parseCabinetLocation, type CabinetFormat, type CabinetView } from "@/lib/cabinet-url"
 
 function parseUrlFilters() {
   if (typeof window === "undefined") return {}
-  const params = new URLSearchParams(window.location.search)
-  const folder = params.get("folder")
-  const tag = params.get("tag")
-  const view = params.get("view")
-  const format =
-    params.get("format") ||
-    (view === "notes" ? "notes" : view === "bookmarks" ? "links" : view === "media" ? "media" : undefined)
-  const q = params.get("q")
-  const sort = params.get("sort")
-
+  const { folderId, tag, view, format, q, sort } = parseCabinetLocation(
+    window.location.pathname,
+    window.location.search
+  )
   return {
-    folderId:
-      folder &&
-      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
-        folder
-      )
-        ? folder
-        : undefined,
-    tag: tag ? tag.trim().replace(/^#/, "") : undefined,
-    view: view && !["notes", "bookmarks", "media"].includes(view) ? view : undefined,
-    format: ["all", "links", "notes", "media"].includes(format || "")
-      ? (format as "all" | "links" | "notes" | "media")
-      : undefined,
+    folderId,
+    tag,
+    view,
+    format,
     searchQuery: q || "",
     sort: isBookmarkSort(sort) ? sort : undefined,
   }
@@ -70,7 +57,6 @@ export function useCabinetFilters(folders: any[]) {
   const [filterTrash, setFilterTrashState] = useState<boolean | undefined>(
     initialUrl.view === "trash" ? true : undefined
   )
-  const [columnCount, setColumnCount] = useState<number>(4)
   const [displayPreferences, setDisplayPreferences] =
     useState<DisplayPreferences>(defaultDisplayPreferences)
   const [mobileDrawerMode, setMobileDrawerMode] = useState<
@@ -88,8 +74,6 @@ export function useCabinetFilters(folders: any[]) {
   const [filterContentType, setFilterContentTypeState] = useState<
     string | undefined
   >(initialUrl.format === "media" ? "VIDEO" : undefined)
-
-  const isNavigatingRef = useRef(false)
 
   const formatFilter: "all" | "links" | "notes" | "media" = useMemo(() => {
     if (filterContentType === "VIDEO") return "media"
@@ -113,76 +97,49 @@ export function useCabinetFilters(folders: any[]) {
     filterDuplicates,
   ])
 
-  // Sync URL search params helper
-  const syncUrl = useCallback(
-    ({
-      folderId,
-      tag,
-      view,
-      format,
-      q,
-      sortMode,
-      replace = false,
-    }: {
-      folderId?: string
-      tag?: string
-      view?: string
-      format?: string
-      q?: string
-      sortMode?: string
-      replace?: boolean
-    }) => {
-      if (typeof window === "undefined" || isNavigatingRef.current) return
-      const params = new URLSearchParams()
-      if (folderId) params.set("folder", folderId)
-      if (tag) params.set("tag", tag)
-      if (view && !["notes", "bookmarks", "media"].includes(view)) params.set("view", view)
-      if (format && format !== "all") params.set("format", format)
-      if (q && q.trim()) params.set("q", q.trim())
-      if (sortMode && sortMode !== "custom") params.set("sort", sortMode)
-
-      const qs = params.toString()
-      const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname
-      const currentUrl = `${window.location.pathname}${window.location.search}`
-      if (newUrl !== currentUrl) {
-        if (replace) {
-          window.history.replaceState(null, "", newUrl)
-        } else {
-          window.history.pushState(null, "", newUrl)
-        }
-      }
-    },
-    []
-  )
+  // Single source of truth: URL is derived from state in one effect, so a click
+  // that calls many setters (batched into one render) writes exactly one URL.
+  const committedPath = useRef<string | null>(null)
+  useEffect(() => {
+    const { path, url } = buildCabinetUrl({
+      folderId: selectedFolderId,
+      tag: selectedTag,
+      view: currentView,
+      format: formatFilter,
+      q: searchDebounced,
+      sort,
+    })
+    const current = `${window.location.pathname}${window.location.search}`
+    const previousPath = committedPath.current
+    committedPath.current = path
+    if (url === current) return
+    // First render, popstate, and query-only refinements replace; navigation pushes.
+    if (previousPath === null || previousPath === path) window.history.replaceState(window.history.state, "", url)
+    else window.history.pushState(null, "", url)
+  }, [selectedFolderId, selectedTag, currentView, formatFilter, searchDebounced, sort])
 
   // Debounce search query input
   useEffect(() => {
     if (searchQuery === searchDebounced) return
-    const handler = setTimeout(() => {
-      setSearchDebounced(searchQuery)
-      syncUrl({
-        folderId: selectedFolderId,
-        tag: selectedTag,
-        view: currentView,
-        format: formatFilter !== "all" ? formatFilter : undefined,
-        q: searchQuery,
-        sortMode: sort,
-        replace: true,
-      })
-    }, 200)
+    const handler = setTimeout(() => setSearchDebounced(searchQuery), 200)
     return () => clearTimeout(handler)
-  }, [searchQuery, searchDebounced, selectedFolderId, selectedTag, currentView, formatFilter, sort, syncUrl])
+  }, [searchQuery, searchDebounced])
 
   // Browser Back / Forward (popstate) event listener
   useEffect(() => {
     const handlePopState = () => {
-      isNavigatingRef.current = true
       const parsed = parseUrlFilters()
+      committedPath.current = buildCabinetUrl({
+        folderId: parsed.folderId,
+        tag: parsed.tag,
+        view: parsed.view,
+        format: parsed.format,
+      }).path
       setSelectedFolderIdState(parsed.folderId)
       setSelectedTagState(parsed.tag)
       setSearchQuery(parsed.searchQuery || "")
       setSearchDebounced(parsed.searchQuery || "")
-      if (parsed.sort) setSortState(parsed.sort)
+      setSortState(parsed.sort || "custom")
 
       // Apply view mode
       setFilterFavoriteState(parsed.view === "favorites" ? true : undefined)
@@ -198,10 +155,6 @@ export function useCabinetFilters(folders: any[]) {
             : undefined
       )
       setFilterContentTypeState(parsed.format === "media" ? "VIDEO" : undefined)
-
-      setTimeout(() => {
-        isNavigatingRef.current = false
-      }, 50)
     }
 
     window.addEventListener("popstate", handlePopState)
@@ -230,14 +183,6 @@ export function useCabinetFilters(folders: any[]) {
         localStorage.removeItem("cabinet_display_preferences")
       }
     }
-
-    const savedCols = localStorage.getItem("cabinet_column_count")
-    if (savedCols) {
-      const parsed = parseInt(savedCols, 10)
-      if (parsed >= 1 && parsed <= 4) {
-        setColumnCount(parsed)
-      }
-    }
   }, [initialUrl.sort])
 
   const setSelectedFolderId = useCallback(
@@ -253,132 +198,64 @@ export function useCabinetFilters(folders: any[]) {
         setFilterTypeState(undefined)
         setFilterContentTypeState(undefined)
       }
-      syncUrl({
-        folderId: id,
-        tag: undefined,
-        view: undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [searchDebounced, sort, syncUrl]
+    []
   )
 
   const setSelectedTag = useCallback(
     (tag: string | undefined) => {
       setSelectedTagState(tag)
-      syncUrl({
-        folderId: selectedFolderId,
-        tag,
-        view: currentView,
-        format: formatFilter !== "all" ? formatFilter : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [selectedFolderId, currentView, formatFilter, searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterFavorite = useCallback(
     (fav: boolean | undefined) => {
       setFilterFavoriteState(fav)
-      syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: fav ? "favorites" : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterArchived = useCallback(
     (archived: boolean | undefined) => {
       setFilterArchivedState(archived)
-      syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: archived ? "archive" : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterBroken = useCallback(
     (broken: boolean | undefined) => {
       setFilterBrokenState(broken)
-      syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: broken ? "broken" : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterDuplicates = useCallback(
     (duplicates: boolean | undefined) => {
       setFilterDuplicatesState(duplicates)
-      syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: duplicates ? "duplicates" : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterTrash = useCallback(
     (trash: boolean | undefined) => {
       setFilterTrashState(trash)
-      syncUrl({
-        folderId: undefined,
-        tag: undefined,
-        view: trash ? "trash" : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterType = useCallback(
     (type: "BOOKMARK" | "NOTE" | undefined) => {
       setFilterTypeState(type)
-      const format = type === "NOTE" ? "notes" : type === "BOOKMARK" ? "links" : "all"
-      syncUrl({
-        folderId: selectedFolderId,
-        tag: selectedTag,
-        view: currentView,
-        format: format !== "all" ? format : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [selectedFolderId, selectedTag, currentView, searchDebounced, sort, syncUrl]
+    []
   )
 
   const setFilterContentType = useCallback(
     (ct: string | undefined) => {
       setFilterContentTypeState(ct)
-      const format = ct === "VIDEO" ? "media" : "all"
-      syncUrl({
-        folderId: selectedFolderId,
-        tag: selectedTag,
-        view: currentView,
-        format: format !== "all" ? format : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-      })
     },
-    [selectedFolderId, selectedTag, currentView, searchDebounced, sort, syncUrl]
+    []
   )
 
   const handleFormatFilterChange = useCallback(
@@ -387,17 +264,8 @@ export function useCabinetFilters(folders: any[]) {
       const nextContentType = format === "media" ? "VIDEO" : undefined
       setFilterTypeState(nextType)
       setFilterContentTypeState(nextContentType)
-      syncUrl({
-        folderId: selectedFolderId,
-        tag: selectedTag,
-        view: currentView,
-        format: format !== "all" ? format : undefined,
-        q: searchDebounced,
-        sortMode: sort,
-        replace: true,
-      })
     },
-    [selectedFolderId, selectedTag, currentView, searchDebounced, sort, syncUrl]
+    []
   )
 
   const handleSortChange = useCallback(
@@ -406,16 +274,8 @@ export function useCabinetFilters(folders: any[]) {
       try {
         localStorage.setItem("cabinet_sort", value)
       } catch {}
-      syncUrl({
-        folderId: selectedFolderId,
-        tag: selectedTag,
-        view: currentView,
-        q: searchDebounced,
-        sortMode: value,
-        replace: true,
-      })
     },
-    [selectedFolderId, selectedTag, currentView, searchDebounced, syncUrl]
+    []
   )
 
   const handleDisplayPreferencesChange = useCallback(
@@ -438,13 +298,6 @@ export function useCabinetFilters(folders: any[]) {
     } catch {}
   }, [])
 
-  const handleColumnCountChange = useCallback((count: number) => {
-    setColumnCount(count)
-    try {
-      localStorage.setItem("cabinet_column_count", count.toString())
-    } catch {}
-  }, [])
-
   const activeMobileTab = useMemo<MobileTab>(() => {
     if (filterFavorite) return "favorites"
     if (selectedFolderId) return "folders"
@@ -460,50 +313,49 @@ export function useCabinetFilters(folders: any[]) {
     filterArchived,
   ])
 
-  const handleSelectMobileTab = useCallback(
-    (tab: MobileTab, onAdd?: () => void) => {
-      if (tab === "all") {
-        setSelectedFolderId(undefined)
-        setSelectedTag(undefined)
-        setFilterFavorite(undefined)
-        setFilterArchived(false)
-        setFilterBroken(undefined)
-        setFilterDuplicates(undefined)
-        setFilterTrash(undefined)
-      } else if (tab === "favorites") {
-        setSelectedFolderId(undefined)
-        setSelectedTag(undefined)
-        setFilterFavorite(true)
-        setFilterArchived(undefined)
-        setFilterBroken(undefined)
-        setFilterDuplicates(undefined)
-        setFilterTrash(undefined)
-      } else if (tab === "folders") {
-        setMobileDrawerMode("folders")
-      } else if (tab === "library") {
-        setMobileDrawerMode("library")
-      } else if (tab === "add") {
-        onAdd?.()
-      }
+  /** Switches to one primary location and clears every filter that does not belong to it. */
+  const showView = useCallback(
+    (next: { folderId?: string; tag?: string; view?: CabinetView; format?: CabinetFormat } = {}) => {
+      setSelectedFolderIdState(next.folderId)
+      setSelectedTagState(next.tag)
+      setFilterFavoriteState(next.view === "favorites" ? true : undefined)
+      setFilterArchivedState(next.view === "archive" ? true : next.view === "trash" ? undefined : false)
+      setFilterBrokenState(next.view === "broken" ? true : undefined)
+      setFilterDuplicatesState(next.view === "duplicates" ? true : undefined)
+      setFilterTrashState(next.view === "trash" ? true : undefined)
+      setFilterTypeState(next.format === "notes" ? "NOTE" : next.format === "links" ? "BOOKMARK" : undefined)
+      setFilterContentTypeState(next.format === "media" ? "VIDEO" : undefined)
     },
-    [setSelectedFolderId, setSelectedTag, setFilterFavorite, setFilterArchived, setFilterBroken, setFilterDuplicates, setFilterTrash]
+    []
   )
 
+  const handleSelectMobileTab = useCallback(
+    (tab: MobileTab, onAdd?: () => void) => {
+      if (tab === "all") showView()
+      else if (tab === "favorites") showView({ view: "favorites" })
+      else if (tab === "folders") setMobileDrawerMode("folders")
+      else if (tab === "library") setMobileDrawerMode("library")
+      else if (tab === "add") onAdd?.()
+    },
+    [showView]
+  )
+
+  // The primary location names the page; format and tag stay visible as refinements below it.
   const activeFilterLabel = useMemo(() => {
     if (filterTrash) return "Trash"
-    if (filterType === "NOTE") return "Notes"
-    if (filterType === "BOOKMARK") return "Bookmarks"
-    if (filterContentType === "VIDEO") return "Videos & Media"
     if (selectedFolderId) {
       const folder = folders.find((f: any) => f.id === selectedFolderId)
       return folder ? folder.name : "Folder"
     }
-    if (selectedTag) return `#${selectedTag}`
     if (filterFavorite) return "Favorites"
     if (filterArchived) return "Archive"
-    if (filterBroken) return "Broken"
+    if (filterBroken) return "Broken links"
     if (filterDuplicates) return "Duplicates"
-    return undefined
+    if (selectedTag) return `#${selectedTag}`
+    if (filterType === "NOTE") return "Notes"
+    if (filterType === "BOOKMARK") return "Links"
+    if (filterContentType === "VIDEO") return "Videos & media"
+    return "All items"
   }, [
     filterTrash,
     filterType,
@@ -528,9 +380,7 @@ export function useCabinetFilters(folders: any[]) {
     setFilterType(undefined)
     setFilterContentType(undefined)
     setSearchQuery("")
-    if (typeof window !== "undefined") {
-      window.history.pushState(null, "", window.location.pathname)
-    }
+    setSearchDebounced("")
   }, [setSelectedFolderId, setSelectedTag, setFilterFavorite, setFilterArchived, setFilterBroken, setFilterDuplicates, setFilterTrash, setFilterType, setFilterContentType])
 
   return {
@@ -556,9 +406,6 @@ export function useCabinetFilters(folders: any[]) {
     setFilterDuplicates,
     filterTrash,
     setFilterTrash,
-    columnCount,
-    setColumnCount,
-    handleColumnCountChange,
     displayPreferences,
     setDisplayPreferences,
     handleDisplayPreferencesChange,
@@ -574,5 +421,6 @@ export function useCabinetFilters(folders: any[]) {
     handleSelectMobileTab,
     activeFilterLabel,
     resetAllFilters,
+    showView,
   }
 }

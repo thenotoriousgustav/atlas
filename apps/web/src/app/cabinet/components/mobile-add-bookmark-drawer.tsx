@@ -106,7 +106,7 @@ export function MobileAddBookmarkDrawer({
           <div className="flex items-center justify-between">
             <div>
               <DrawerTitle className="text-lg font-medium text-foreground">
-                {bookmarkToEdit ? "Edit Bookmark" : "New Bookmark"}
+                {bookmarkToEdit ? "Edit bookmark" : "New bookmark"}
               </DrawerTitle>
               <DrawerDescription className="text-sm text-muted-foreground">
                 Save link with auto-extracted metadata
@@ -133,7 +133,7 @@ export function MobileAddBookmarkDrawer({
               className="mb-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <ClipboardText className="size-4 text-brand-muted" />
-              <span>Paste from Clipboard & Auto-Fill</span>
+              <span>Paste link and auto-fill</span>
             </button>
           )}
 
@@ -179,12 +179,12 @@ export function MobileAddBookmarkDrawer({
                                   {isScraping ? (
                                     <>
                                       <Spinner className="size-3" />
-                                      <span>Scraping...</span>
+                                      <span>Fetching…</span>
                                     </>
                                   ) : (
                                     <>
                                       <Sparkle className="size-3" />
-                                      <span>Fetch Info</span>
+                                      <span>Auto-fill</span>
                                     </>
                                   )}
                                 </button>
@@ -314,11 +314,11 @@ export function MobileAddBookmarkDrawer({
                           id="mobile-folder"
                           className="h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground"
                         >
-                          <SelectValue placeholder="Root (No Folder)" />
+                          <SelectValue placeholder="Unfiled" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                          <SelectItem value="__root__">Root (No Folder)</SelectItem>
+                          <SelectItem value="__root__">Unfiled</SelectItem>
                           {folders.map((f: any) => (
                             <SelectItem key={f.id} value={f.id}>
                               {f.name}
@@ -382,7 +382,7 @@ export function MobileAddBookmarkDrawer({
               <bookmarkForm.Subscribe selector={(state: any) => state.isSubmitting}>
                 {(isSubmitting: boolean) => <Button type="submit" disabled={isSubmitting} className="h-11 w-full">
                   {isSubmitting && <Spinner />}
-                  {bookmarkToEdit ? "Update Bookmark" : "Save Bookmark"}
+                  {bookmarkToEdit ? "Save changes" : "Save bookmark"}
                 </Button>}
               </bookmarkForm.Subscribe>
             </div>

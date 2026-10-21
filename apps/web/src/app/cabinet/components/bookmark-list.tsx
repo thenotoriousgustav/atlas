@@ -51,7 +51,6 @@ interface BookmarkListProps {
   duplicateGroups?: Array<{ url: string; bookmarks: any[] }>
   onCleanDuplicates?: () => void
   totalBookmarks?: number
-  columnCount?: number
   onReorder?: (newOrder: any[]) => void
   isTrashView?: boolean
   onRestoreBookmark?: (id: string) => void
@@ -63,6 +62,10 @@ interface BookmarkListProps {
   onUpdateBookmark?: (id: string, data: any) => Promise<any>
   formatFilter?: "all" | "links" | "notes" | "media"
   onFormatFilterChange?: (format: "all" | "links" | "notes" | "media") => void
+  isBrokenView?: boolean
+  /** Lets the page open a preview from outside the list, such as the command menu. */
+  previewBookmark?: any | null
+  onPreviewBookmarkChange?: React.Dispatch<React.SetStateAction<any | null>>
 }
 
 export function BookmarkList({
@@ -97,7 +100,6 @@ export function BookmarkList({
   duplicateGroups,
   onCleanDuplicates,
   totalBookmarks,
-  columnCount = 4,
   onReorder,
   isTrashView,
   onRestoreBookmark,
@@ -109,11 +111,16 @@ export function BookmarkList({
   onUpdateBookmark,
   formatFilter = "all",
   onFormatFilterChange,
+  isBrokenView,
+  previewBookmark: controlledPreview,
+  onPreviewBookmarkChange,
 }: BookmarkListProps) {
   const onToggleSelect = (id: string) => {
     if (bookmarks.find((bookmark) => bookmark.id === id)?.canEdit !== false) toggleSelect(id)
   }
-  const [previewBookmark, setPreviewBookmark] = React.useState<any | null>(null)
+  const [localPreview, setLocalPreview] = React.useState<any | null>(null)
+  const previewBookmark = onPreviewBookmarkChange ? controlledPreview ?? null : localPreview
+  const setPreviewBookmark = onPreviewBookmarkChange ?? setLocalPreview
   const [showPreviewDetails, setShowPreviewDetails] = React.useState(true)
   const inspectorRef = React.useRef<BookmarkInspectorHandle>(null)
   const navigating = React.useRef(false)
@@ -167,7 +174,7 @@ export function BookmarkList({
     return () => observer.disconnect()
   }, [])
 
-  const activeColumnCount = moodboardColumnCount(containerWidth, columnCount)
+  const activeColumnCount = moodboardColumnCount(containerWidth)
 
   const getHeaderTitle = () => {
     if (isTrashView) {
@@ -183,12 +190,12 @@ export function BookmarkList({
       return `Tag: ${selectedTag}`
     }
     if (filterFavorite) {
-      return "Favorite Bookmarks"
+      return "Favorites"
     }
     if (filterArchived) {
-      return "Archived Bookmarks"
+      return "Archive"
     }
-    return "All Bookmarks"
+    return "All items"
   }
 
   const getHostname = (url: string) => {
@@ -216,6 +223,47 @@ export function BookmarkList({
     return { bg: "bg-[#FDEBEC]", text: "text-[#9F2F2D]" }
   }
 
+  const formatNames = { links: "links", notes: "notes", media: "videos or media" } as const
+  const emptyState: { title: string; description: string; action?: React.ReactNode } = searchQuery
+    ? {
+        title: `No results for “${searchQuery}”`,
+        description: "Try another word, or press ⌘K to search your whole library.",
+        action: onClearSearch && <Button variant="outline" onClick={onClearSearch}>Clear search</Button>,
+      }
+    : isTrashView
+      ? { title: "Trash is empty", description: "Items you delete stay here until you empty the trash." }
+      : isDuplicatesView
+        ? { title: "No duplicates", description: "Every saved link in your library is unique." }
+        : isBrokenView
+          ? { title: "No broken links", description: "Every checked link is working. Use the refresh button next to Health to check again." }
+          : selectedTag
+            ? {
+                title: `Nothing tagged #${selectedTag} here`,
+                description: "Remove the tag filter to see everything in this view.",
+                action: <Button variant="outline" onClick={() => onSelectTag("")}>Clear tag filter</Button>,
+              }
+            : formatFilter !== "all"
+              ? {
+                  title: `No ${formatNames[formatFilter]} here`,
+                  description: "Switch back to all formats to see everything in this view.",
+                  action: onFormatFilterChange && <Button variant="outline" onClick={() => onFormatFilterChange("all")}>Show all formats</Button>,
+                }
+              : filterFavorite
+                ? { title: "No favorites yet", description: "Star an item to keep it here for quick access." }
+                : filterArchived
+                  ? { title: "Archive is empty", description: "Archive items you want to keep but do not need every day." }
+                  : selectedFolderId
+                    ? {
+                        title: "This folder is empty",
+                        description: "Add a bookmark here, or drag items onto this folder in the sidebar.",
+                        action: onAddBookmark && <Button onClick={onAddBookmark}><BookmarkSimple data-icon="inline-start" />Add bookmark</Button>,
+                      }
+                    : {
+                        title: "Your library is empty",
+                        description: "Save your first link, or press B to add one from anywhere.",
+                        action: onAddBookmark && <Button onClick={onAddBookmark}><BookmarkSimple data-icon="inline-start" />Add bookmark</Button>,
+                      }
+
   return (
     <div ref={containerRef} className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-3">
@@ -227,7 +275,7 @@ export function BookmarkList({
             <p className="mt-1 break-words text-sm tabular-nums text-muted-foreground" aria-live="polite">
               {isBookmarksLoading ? "Loading your collection…" : isBookmarksError ? "Collection unavailable" : isDuplicatesView
                 ? `${duplicateGroups?.length || 0} duplicate URL groups`
-                : `${(totalBookmarks ?? bookmarks.length).toLocaleString()} saved items${searchQuery ? ` matching “${searchQuery}”` : ""}`}
+                : `${(totalBookmarks ?? bookmarks.length).toLocaleString()} ${(totalBookmarks ?? bookmarks.length) === 1 ? "item" : "items"}${searchQuery ? ` matching “${searchQuery}”` : ""}`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -238,7 +286,7 @@ export function BookmarkList({
 
         {!isDuplicatesView ? (
           <div className="flex flex-wrap items-center justify-between gap-2.5 pt-0.5">
-            {onFormatFilterChange && (
+            {onFormatFilterChange && !isTrashView && (
               <ToggleGroup
                 type="single"
                 value={formatFilter}
@@ -375,19 +423,13 @@ export function BookmarkList({
           </EmptyHeader>
           {onRetryBookmarks && <Button variant="outline" onClick={onRetryBookmarks}>Try again</Button>}
         </Empty>
-      ) : bookmarks.length === 0 ? (
+      ) : (isDuplicatesView ? !duplicateGroups?.length : bookmarks.length === 0) ? (
         <Empty className="rounded-lg border border-dashed border-border bg-card p-10">
           <EmptyHeader>
-            <EmptyTitle role="heading" aria-level={2}>
-              {isTrashView ? "Trash is empty" : "No bookmarks found"}
-            </EmptyTitle>
-            <EmptyDescription>
-              {isTrashView
-                ? "No bookmarks in the trash."
-                : "No bookmarks found matching the filters. Use Add to save a link, or try different filters."}
-            </EmptyDescription>
+            <EmptyTitle role="heading" aria-level={2}>{emptyState.title}</EmptyTitle>
+            <EmptyDescription>{emptyState.description}</EmptyDescription>
           </EmptyHeader>
-          {!isTrashView && onAddBookmark && <Button onClick={onAddBookmark}><BookmarkSimple data-icon="inline-start" />Add bookmark</Button>}
+          {emptyState.action}
         </Empty>
       ) : isDuplicatesView ? (
         <div className="space-y-6">
@@ -533,10 +575,9 @@ export function BookmarkList({
               bookmark={bookmarks.find((item) => item.id === previewBookmark.id) || previewBookmark}
               folders={folders}
               availableTags={availableTags}
-              onClose={() => void closeDetails()}
               onCloseWithDraft={() => setPreviewBookmark(null)}
               onUpdateBookmark={updatePreview}
-              onDeleteBookmark={onDeleteBookmark}
+              onDeleteBookmark={(id) => { setPreviewBookmark(null); onDeleteBookmark(id) }}
               onToggleFavorite={onToggleFavorite}
               onTogglePin={onTogglePin}
               onToggleArchive={onToggleArchive}
