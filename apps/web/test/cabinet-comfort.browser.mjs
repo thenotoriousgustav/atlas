@@ -168,7 +168,6 @@ try {
   await page.getByRole("button", { name: "Toggle Sidebar", exact: true }).click()
   const mobileSidebar = page.getByRole("dialog", { name: "Sidebar", exact: true })
   await expect(mobileSidebar.getByText("Cabinet", { exact: true })).toBeVisible()
-  await expect(mobileSidebar.getByText("Bookmarks · Notes · Reading", { exact: true })).toBeVisible()
   await page.screenshot({ path: `${directory}/sidebar-mobile.png`, animations: "disabled" })
   await mobileSidebar.getByRole("button", { name: "Favorites", exact: true }).click()
   await expect(mobileSidebar).toHaveCount(0)

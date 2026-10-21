@@ -6,6 +6,6 @@ export function CabinetBrand({ className }: { className?: string }) {
       <rect x="2" y="2" width="20" height="24" rx="2" />
       <path d="M2 14h20M9 8h6M9 20h6" strokeLinecap="round" />
     </svg>
-    <div className="min-w-0"><span className="font-serif text-2xl leading-none tracking-tight text-foreground">Cabinet</span><p className="mt-1 truncate text-xs leading-4 text-muted-foreground">Bookmarks · Notes · Reading</p></div>
+    <span className="font-serif text-2xl leading-none tracking-tight text-foreground">Cabinet</span>
   </div>
 }
