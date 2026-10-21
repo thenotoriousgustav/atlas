@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
-import type { DisplayPreferences } from "./display-preferences"
 import { Button } from "@/components/ui/button"
 import { useForm } from "@tanstack/react-form"
 import { useQueryClient } from "@tanstack/react-query"
@@ -16,9 +15,7 @@ import {
   Star,
   Archive,
   FolderPlus,
-  Tag as TagIcon,
   DownloadSimple,
-  X,
   Copy,
   Warning,
   ArrowClockwise,
@@ -31,7 +28,6 @@ import {
   Moon,
   Desktop,
   SignOut,
-  Sliders,
 } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { toast } from "@/components/ui/sonner"
@@ -44,6 +40,7 @@ import {
   SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar"
 import { CabinetBrand } from "@/components/cabinet-brand"
+import { SidebarTags } from "./sidebar-tags"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,15 +52,12 @@ import {
   DropdownMenuSubContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuCheckboxItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
 interface SidebarFiltersProps {
   user?: any
   onLogout?: () => void
-  displayPreferences?: DisplayPreferences
-  onDisplayPreferencesChange?: (prefs: DisplayPreferences) => void
   selectedFolderId?: string
   onSelectFolder: (id: string | undefined) => void
   selectedTag?: string
@@ -127,8 +121,6 @@ const tagSchema = z.object({
 export function CabinetSidebarFilters({
   user: userProp,
   onLogout: onLogoutProp,
-  displayPreferences,
-  onDisplayPreferencesChange,
   selectedFolderId,
   onSelectFolder,
   selectedTag,
@@ -235,7 +227,7 @@ export function CabinetSidebarFilters({
           <WorkspaceSidebarGroup title="Library" menu>
             <WorkspaceSidebarItem
               icon={<BookmarkSimple className="h-3.5 w-3.5" />}
-              label="All Items"
+              label="All items"
               isActive={
                 selectedFolderId === undefined &&
                 filterFavorite === undefined &&
@@ -321,8 +313,10 @@ export function CabinetSidebarFilters({
             menu
             action={
               <button
+                type="button"
                 onClick={onScan}
-                title="Scan links status now"
+                title="Check links now"
+                aria-label="Check links now"
                 className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 <ArrowClockwise className="h-3 w-3" />
@@ -331,7 +325,7 @@ export function CabinetSidebarFilters({
           >
             <WorkspaceSidebarItem
               icon={<Warning className={cn("size-4", healthSummary?.broken > 0 && "text-destructive")} />}
-              label="Broken Links"
+              label="Broken links"
               badge={healthSummary?.broken || undefined}
               isActive={filterBroken === true}
               onClick={() => {
@@ -380,6 +374,7 @@ export function CabinetSidebarFilters({
                 }}
                 className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                 title="Create folder"
+                aria-label="Create folder"
               >
                 <FolderPlus className="h-3.5 w-3.5" />
               </button>
@@ -415,84 +410,25 @@ export function CabinetSidebarFilters({
             onClose={() => setIsFolderModalOpen(false)}
           />
 
-          {/* Tags Group */}
-          <WorkspaceSidebarGroup
-            title="Tags"
-            action={
-              <button
-                type="button"
-                onClick={() => {
-                  tagForm.reset()
-                  setIsTagModalOpen(true)
-                }}
-                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                title="Manage & create tags"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            }
-          >
-            <div className="flex flex-wrap gap-1 px-2 pt-1">
-              {tags.length === 0 ? (
-                <span className="text-xs text-muted-foreground">
-                  No tags yet
-                </span>
-              ) : (
-                tags.map((tag: any) => {
-                  const isSelected = selectedTag === tag.name
-                  return (
-                    <div
-                      key={tag.id}
-                      className={cn(
-                        "inline-flex items-center rounded-md border text-xs transition-colors",
-                        isSelected
-                          ? "border-library-olive/30 bg-library-highlight text-library-olive"
-                          : "border-border bg-card text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newTag = isSelected ? undefined : tag.name
-                          onSelectTag(newTag)
-                          onItemSelect?.()
-                        }}
-                        className="flex items-center gap-1 px-2 py-1"
-                      >
-                        <TagIcon className="size-2.5 opacity-60" />
-                        <span>{tag.name}</span>
-                      </button>
+          <SidebarTags
+            tags={tags}
+            selectedTag={selectedTag}
+            onSelectTag={onSelectTag}
+            onCreateTag={() => {
+              tagForm.reset()
+              setIsTagModalOpen(true)
+            }}
+            onDeleteTag={onDeleteTag}
+            onItemSelect={onItemSelect}
+          />
 
-                      {isSelected && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onSelectTag(undefined)
-                            onItemSelect?.()
-                          }}
-                          className="flex h-full items-center justify-center border-l border-library-olive/20 px-1.5 transition-colors hover:bg-library-highlight hover:text-library-olive"
-                          title="Clear tag filter"
-                          aria-label={`Clear #${tag.name} filter`}
-                        >
-                          <X className="size-2.5" />
-                        </button>
-                      )}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </WorkspaceSidebarGroup>
 
-          {/* Tag Form & Management Dialog */}
+          {/* New tag dialog */}
           <TagDialog
             isOpen={isTagModalOpen}
             onOpenChange={setIsTagModalOpen}
             tagForm={tagForm}
             isCreatingTag={isCreatingTag}
-            tags={tags}
-            onDeleteTag={onDeleteTag}
             onClose={() => setIsTagModalOpen(false)}
           />
         </>
@@ -583,42 +519,6 @@ export function CabinetSidebarFilters({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
-              {displayPreferences && onDisplayPreferencesChange && (
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className="flex cursor-pointer items-center gap-2 text-xs">
-                    <Sliders className="size-3.5" />
-                    <span>Display details</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-44">
-                    {(
-                      [
-                        ["showTitle", "Title"],
-                        ["showDescription", "Description"],
-                        ["showImage", "Image"],
-                        ["showWebsite", "Website URL"],
-                        ["showFolder", "Folder"],
-                        ["showDate", "Date added"],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <DropdownMenuCheckboxItem
-                        key={key}
-                        className="text-xs"
-                        checked={displayPreferences?.[key] ?? true}
-                        onCheckedChange={(checked) => {
-                          onDisplayPreferencesChange({
-                            ...displayPreferences,
-                            [key]: checked,
-                          })
-                        }}
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        {label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              )}
-
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
@@ -627,7 +527,7 @@ export function CabinetSidebarFilters({
                 className="flex cursor-pointer items-center gap-2 text-xs"
               >
                 <SignOut className="size-3.5" />
-                <span>Log Out</span>
+                <span>Sign out</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
