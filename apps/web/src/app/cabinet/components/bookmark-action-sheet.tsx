@@ -18,12 +18,11 @@ import {
   Trash,
   ArrowCounterClockwise,
   DownloadSimple,
-  FileText,
   Star,
   CheckSquare,
 } from "@phosphor-icons/react"
 import { toast } from "@/components/ui/sonner"
-import { canDownloadMedia, isNoteBookmark } from "@/lib/bookmark-kind"
+import { canDownloadMedia, isDrawingBookmark, isNoteBookmark, itemAccess } from "@/lib/bookmark-kind"
 
 interface BookmarkActionSheetProps {
   open: boolean
@@ -60,8 +59,12 @@ export function BookmarkActionSheet({
 }: BookmarkActionSheetProps) {
   if (!bookmark) return null
 
-  const isNote = isNoteBookmark(bookmark)
+  // Notes and drawings have no outside page to open or link to copy.
+  const isNote = isNoteBookmark(bookmark) || isDrawingBookmark(bookmark)
+  const isDrawing = isDrawingBookmark(bookmark)
   const canDownload = canDownloadMedia(bookmark)
+  // Others' items in a folder you edit: content edits and Trash only.
+  const own = itemAccess(bookmark) === "owner"
 
   const getHostname = (url: string) => {
     try {
@@ -146,7 +149,7 @@ export function BookmarkActionSheet({
             <span>Copy link</span>
           </button>}
 
-          {onSelectBookmark && <button type="button" onClick={() => { onSelectBookmark(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted"><CheckSquare className="size-4" /><span>Select</span></button>}
+          {onSelectBookmark && own && <button type="button" onClick={() => { onSelectBookmark(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted"><CheckSquare className="size-4" /><span>Select</span></button>}
           {isTrashView ? (
             <>
               {/* Restore */}
@@ -177,7 +180,7 @@ export function BookmarkActionSheet({
             </>
           ) : (
             <>
-              {onToggleFavorite && <button type="button" onClick={() => { onToggleFavorite(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted">
+              {onToggleFavorite && own && <button type="button" onClick={() => { onToggleFavorite(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted">
                 <Star className="size-4" weight={bookmark.isFavorite ? "fill" : "regular"} />
                 <span>{bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}</span>
               </button>}
@@ -194,8 +197,8 @@ export function BookmarkActionSheet({
                 <span>Edit details</span>
               </button>
 
-              {/* Duplicate */}
-              <button
+              {/* Duplicate (a drawing's scene is not in the list, so it cannot be copied from here) */}
+              {!isDrawing && <button
                 type="button"
                 onClick={() => {
                   onDuplicateBookmark(bookmark)
@@ -205,9 +208,9 @@ export function BookmarkActionSheet({
               >
                 <Copy className="size-4 text-brand-muted" />
                 <span>Duplicate</span>
-              </button>
+              </button>}
 
-              {onTogglePin && (
+              {onTogglePin && own && (
                 <button type="button"
                   onClick={() => { onTogglePin(bookmark); onOpenChange(false) }}
                   className="flex h-12 w-full items-center gap-3 px-5 text-left text-sm hover:bg-muted"
@@ -217,7 +220,7 @@ export function BookmarkActionSheet({
                 </button>
               )}
               {/* Archive / Unarchive */}
-              <button
+              {own && <button
                 type="button"
                 onClick={() => {
                   onToggleArchive(bookmark)
@@ -227,7 +230,7 @@ export function BookmarkActionSheet({
               >
                 <Archive className="size-4 text-brand-muted" />
                 <span>{bookmark.isArchived ? "Unarchive" : "Archive"}</span>
-              </button>
+              </button>}
 
               <div className="my-1 border-t border-brand-border" />
 

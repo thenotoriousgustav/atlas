@@ -6,7 +6,34 @@ export type SharedBookmark = {
   imageUrl: string | null
 }
 
-export type SharedCollection = { name: string; bookmarks: SharedBookmark[] }
+export type SharedNote = { id: string; title: string; text: string }
+
+export type SharedDrawing = { id: string; title: string; preview: string | null }
+
+export type SharedCollection = { name: string; bookmarks: SharedBookmark[]; notes?: SharedNote[]; drawings?: SharedDrawing[] }
+
+/** Shared drawings show only an embedded image preview; any other address is dropped. */
+export function sharedDrawingItems(drawings: SharedDrawing[] = []) {
+  return drawings.map((drawing) => ({
+    ...drawing,
+    title: drawing.title || "Untitled drawing",
+    preview: drawing.preview && /^data:image\/(png|webp|jpeg);base64,/.test(drawing.preview) ? drawing.preview : null,
+    searchText: (drawing.title || "").toLowerCase(),
+  }))
+}
+
+export type SharedDrawingItem = ReturnType<typeof sharedDrawingItems>[number]
+
+/** Notes shared with a public collection, indexed for the page's local search. */
+export function sharedNoteItems(notes: SharedNote[] = []) {
+  return notes.map((note) => ({
+    ...note,
+    title: note.title || "Untitled note",
+    searchText: `${note.title} ${note.text}`.toLowerCase(),
+  }))
+}
+
+export type SharedNoteItem = ReturnType<typeof sharedNoteItems>[number]
 
 export function safeHttpUrl(url: string) {
   try {

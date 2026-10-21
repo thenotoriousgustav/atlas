@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowsMerge, DotsThree, MagnifyingGlass, PencilSimple, Tag as TagIcon, Trash } from "@phosphor-icons/react"
+import { ArrowsMerge, DotsThree, MagnifyingGlass, PencilSimple, Hash as TagIcon, Trash } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE, useTagsControllerFindAll } from "@/lib/api-client"
 import { toast } from "@/components/ui/sonner"
 import { useConfirm } from "@/hooks/use-confirm"

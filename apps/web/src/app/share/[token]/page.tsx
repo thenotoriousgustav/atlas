@@ -2,7 +2,7 @@ import { cache } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import { sharedCollectionItems, type SharedCollection } from "@/lib/shared-collection"
+import { sharedCollectionItems, sharedDrawingItems, sharedNoteItems, type SharedCollection } from "@/lib/shared-collection"
 import { SharedCollectionBrowser } from "./shared-collection-browser"
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
@@ -20,10 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const { token } = await params
   const collection = await getSharedCollection(token)
   const title = collection ? `${collection.name} — Cabinet` : "Shared collection — Cabinet"
-  const count = collection ? sharedCollectionItems(collection.bookmarks, apiUrl).length : 0
+  const count = collection ? sharedCollectionItems(collection.bookmarks, apiUrl).length + (collection.notes?.length ?? 0) + (collection.drawings?.length ?? 0) : 0
   const description = collection
-    ? `${count} saved bookmark${count === 1 ? "" : "s"} shared from Cabinet.`
-    : "Shared bookmark collection on Cabinet."
+    ? `${count} saved item${count === 1 ? "" : "s"} shared from Cabinet.`
+    : "Shared collection on Cabinet."
   return {
     title, description, referrer: "no-referrer",
     robots: { index: false, follow: false },
@@ -36,6 +36,9 @@ export default async function SharedCollectionPage({ params }: { params: Promise
   const collection = await getSharedCollection(token)
   if (!collection) notFound()
   const items = sharedCollectionItems(collection.bookmarks, apiUrl)
+  const notes = sharedNoteItems(collection.notes)
+  const drawings = sharedDrawingItems(collection.drawings)
+  const total = items.length + notes.length + drawings.length
 
   return (
     <main className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col px-6 sm:px-10">
@@ -44,10 +47,10 @@ export default async function SharedCollectionPage({ params }: { params: Promise
         <span className="text-xs text-muted-foreground">Shared collection · Read only</span>
       </header>
       <section className="flex flex-col gap-3 border-b border-border py-10">
-        <p className="text-xs text-muted-foreground">{items.length} bookmark{items.length === 1 ? "" : "s"}</p>
+        <p className="text-xs text-muted-foreground">{total} item{total === 1 ? "" : "s"}</p>
         <h1 className="max-w-4xl break-words font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{collection.name}</h1>
       </section>
-      <SharedCollectionBrowser token={token} items={items} />
+      <SharedCollectionBrowser token={token} items={items} notes={notes} drawings={drawings} />
     </main>
   )
 }

@@ -2,7 +2,7 @@
 
 import React from "react"
 import Link from "next/link"
-import { CaretRight, Gear, MagnifyingGlass, PencilSimple, Plus, Tag as TagIcon, Trash } from "@phosphor-icons/react"
+import { CaretRight, Gear, MagnifyingGlass, PencilSimple, Plus, Hash as TagIcon, Trash } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/use-confirm"
 import {
@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command"
 import { RenameTagDialog } from "./rename-tag-dialog"
 import { SidebarItemActionsButton } from "./sidebar-item-actions"
 import { SIDEBAR_TAG_LIMIT, visibleSidebarTags } from "@/lib/tag-list"
@@ -138,7 +138,7 @@ export function SidebarTags({ tags, selectedTag, onSelectTag, onCreateTag, onDel
                     <span>{hiddenCount > 0 ? `Show all ${tags.length} tags` : "Search tags"}</span>
                   </SidebarMenuButton>
                 </PopoverTrigger>
-                <PopoverContent side={isMobile ? "bottom" : "right"} align="start" className="w-72 p-0">
+                <PopoverContent side={isMobile ? "bottom" : "right"} align="end" sideOffset={12} className="w-64 overflow-hidden p-0">
                   <Command>
                     <CommandInput placeholder="Search tags…" aria-label="Search tags" />
                     <CommandList className="max-h-72">
@@ -147,12 +147,14 @@ export function SidebarTags({ tags, selectedTag, onSelectTag, onCreateTag, onDel
                         <CommandItem
                           key={tag.id}
                           value={tag.name}
-                          data-checked={selectedTag === tag.name}
+                          aria-current={selectedTag === tag.name ? "true" : undefined}
                           onSelect={() => { setAllOpen(false); select(tag.name) }}
+                          className={cn(selectedTag === tag.name && "font-medium text-foreground")}
                         >
-                          <TagIcon />
-                          <span className="truncate">{tag.name}</span>
-                          <span className="ml-auto text-xs tabular-nums text-muted-foreground">{tag.bookmarkCount ?? 0}</span>
+                          <TagIcon className="text-muted-foreground" />
+                          <span className="min-w-0 truncate">{tag.name}</span>
+                          {/* The shortcut slot keeps the count flush right and replaces the check mark. */}
+                          <CommandShortcut className="pl-3 tabular-nums">{tag.bookmarkCount ?? 0}</CommandShortcut>
                         </CommandItem>
                       ))}
                     </CommandList>

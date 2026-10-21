@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowSquareOut, Copy, FolderSimple, List, MagnifyingGlass, SquaresFour, X } from "@phosphor-icons/react"
+import { ArrowSquareOut, Copy, FileText, FolderSimple, Scribble, List, MagnifyingGlass, SquaresFour, X } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -9,7 +9,7 @@ import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "@/
 import { Masonry, MasonryItem } from "@/components/ui/masonry"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
-import type { SharedCollectionItem } from "@/lib/shared-collection"
+import type { SharedCollectionItem, SharedDrawingItem, SharedNoteItem } from "@/lib/shared-collection"
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
@@ -42,7 +42,37 @@ function SharedBookmarkLink({ item, view }: { item: SharedCollectionItem; view: 
   )
 }
 
-export function SharedCollectionBrowser({ token, items }: { token: string; items: SharedCollectionItem[] }) {
+function SharedNoteCard({ note, view }: { note: SharedNoteItem; view: "grid" | "list" }) {
+  return (
+    <article className={cn("flex w-full flex-col gap-2 bg-card text-card-foreground", view === "grid" ? "rounded-lg border border-border p-4" : "py-4")}>
+      <h2 className="flex items-start gap-1.5 break-words text-sm leading-snug font-semibold">
+        <FileText aria-label="Note" className="mt-px size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0">{note.title}</span>
+      </h2>
+      {note.text && (
+        <p className={cn("whitespace-pre-line break-words text-xs leading-relaxed text-muted-foreground", view === "grid" ? "line-clamp-[12]" : "line-clamp-3")}>{note.text}</p>
+      )}
+    </article>
+  )
+}
+
+function SharedDrawingCard({ drawing, view }: { drawing: SharedDrawingItem; view: "grid" | "list" }) {
+  return (
+    <article className={cn("flex w-full bg-card text-card-foreground", view === "grid" ? "flex-col overflow-hidden rounded-lg border border-border" : "items-center gap-4 py-4")}>
+      {drawing.preview && (
+        <div className={cn("bg-white dark:hue-rotate-180 dark:invert", view === "grid" ? "border-b border-border p-3" : "w-24 shrink-0 rounded-md border border-border p-1")}>
+          <img src={drawing.preview} alt="" loading="lazy" decoding="async" className="block max-h-80 w-full object-contain" />
+        </div>
+      )}
+      <h2 className={cn("flex items-start gap-1.5 break-words text-sm leading-snug font-semibold", view === "grid" && "p-4")}>
+        <Scribble aria-label="Drawing" className="mt-px size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0">{drawing.title}</span>
+      </h2>
+    </article>
+  )
+}
+
+export function SharedCollectionBrowser({ token, items, notes = [], drawings = [] }: { token: string; items: SharedCollectionItem[]; notes?: SharedNoteItem[]; drawings?: SharedDrawingItem[] }) {
   const [query, setQuery] = React.useState("")
   const [view, setView] = React.useState<"grid" | "list">("grid")
   const [columns, setColumns] = React.useState(1)
@@ -53,6 +83,10 @@ export function SharedCollectionBrowser({ token, items }: { token: string; items
   const [copied, setCopied] = React.useState<{ folderId: string; count: number } | null>(null)
   const search = query.trim().toLowerCase()
   const filtered = React.useMemo(() => items.filter((item) => item.searchText.includes(search)), [items, search])
+  const filteredNotes = React.useMemo(() => notes.filter((note) => note.searchText.includes(search)), [notes, search])
+  const filteredDrawings = React.useMemo(() => drawings.filter((drawing) => drawing.searchText.includes(search)), [drawings, search])
+  const total = items.length + notes.length + drawings.length
+  const shown = filtered.length + filteredNotes.length + filteredDrawings.length
 
   React.useEffect(() => {
     const container = containerRef.current
@@ -117,28 +151,32 @@ export function SharedCollectionBrowser({ token, items }: { token: string; items
           )}
           {copyError && <p role="alert" className="max-w-sm text-xs text-destructive">{copyError}</p>}
           <p className="text-xs text-muted-foreground" role={copied ? "status" : undefined}>
-            {copied ? `${copied.count} bookmarks copied to your Cabinet.` : `Save all ${items.length} bookmarks as a private copy.`}
+            {copied ? `${copied.count} ${copied.count === 1 ? "item" : "items"} copied to your Cabinet.` : `Save all ${total} ${total === 1 ? "item" : "items"} as a private copy.`}
           </p>
         </div>
       </div>
       <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
-        {search ? `${filtered.length} of ${items.length}` : items.length} bookmark{(search ? filtered.length : items.length) === 1 ? "" : "s"}
+        {search ? `${shown} of ${total}` : total} item{(search ? shown : total) === 1 ? "" : "s"}
       </p>
-      {!filtered.length ? (
+      {!shown ? (
         <Empty className="border border-border py-16">
           <EmptyHeader>
             <EmptyMedia variant="icon"><FolderSimple /></EmptyMedia>
-            <EmptyTitle>{items.length ? "No matching bookmarks" : "No bookmarks in this collection"}</EmptyTitle>
-            <EmptyDescription>{items.length ? "Try a different title, description, or website." : "Shared links added directly to this folder will appear here."}</EmptyDescription>
+            <EmptyTitle>{total ? "Nothing matches" : "This collection is empty"}</EmptyTitle>
+            <EmptyDescription>{total ? "Try a different title, description, website, or note text." : "Links, notes, and drawings added directly to this folder will appear here."}</EmptyDescription>
           </EmptyHeader>
           {search && <Button variant="outline" onClick={() => setQuery("")}>Clear search</Button>}
         </Empty>
       ) : view === "grid" ? (
         <Masonry columnCount={columns} gap={16} linear virtualize={false} role="list" aria-label="Bookmarks" data-view="grid">
+          {filteredNotes.map((note) => <MasonryItem key={note.id} role="listitem"><SharedNoteCard note={note} view="grid" /></MasonryItem>)}
+          {filteredDrawings.map((drawing) => <MasonryItem key={drawing.id} role="listitem"><SharedDrawingCard drawing={drawing} view="grid" /></MasonryItem>)}
           {filtered.map((item) => <MasonryItem key={item.id} role="listitem"><SharedBookmarkLink item={item} view="grid" /></MasonryItem>)}
         </Masonry>
       ) : (
         <ul aria-label="Bookmarks" data-view="list" className="flex flex-col divide-y divide-border">
+          {filteredNotes.map((note) => <li key={note.id}><SharedNoteCard note={note} view="list" /></li>)}
+          {filteredDrawings.map((drawing) => <li key={drawing.id}><SharedDrawingCard drawing={drawing} view="list" /></li>)}
           {filtered.map((item) => <li key={item.id}><SharedBookmarkLink item={item} view="list" /></li>)}
         </ul>
       )}

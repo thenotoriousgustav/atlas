@@ -16,13 +16,11 @@ import {
   useBookmarksControllerRemove,
   useTagsControllerFindAll,
   useTagsControllerRemove,
-  useBookmarksControllerImport,
   useBookmarksControllerGetHealthSummary,
   useBookmarksControllerGetDuplicates,
   useBookmarksControllerCleanDuplicates,
   useBookmarksControllerTriggerHealthCheck,
   useBookmarksControllerReorder,
-  AXIOS_INSTANCE,
 } from "@/lib/api-client"
 import { authClient } from "@/lib/auth-client"
 import { useConfirm } from "@/hooks/use-confirm"
@@ -33,11 +31,12 @@ import { CabinetContainer } from "@/components/cabinet-container"
 import { CabinetSidebarFilters } from "./components/cabinet-sidebar-filters"
 import { Toolbar, BookmarkViewControls } from "./components/toolbar"
 import { ShareFolderDialog } from "./components/share-folder-dialog"
-import { FolderCollaborationDialog } from "./components/folder-collaboration-dialog"
+import { canAddToFolder, describeFolderAccess, folderAccess } from "@/lib/folder-roles"
+import { editorPath, itemAccess } from "@/lib/bookmark-kind"
 import { BookmarkList } from "./components/bookmark-list"
 import { Sortable } from "@/components/ui/sortable"
 import { bookmarkCollisionDetection, masonrySortingStrategy } from "@/lib/bookmark-sortable"
-import { Archive, Trash, ArrowCounterClockwise, Tag as TagIcon } from "@phosphor-icons/react"
+import { Archive, Trash, ArrowCounterClockwise, Hash as TagIcon } from "@phosphor-icons/react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -62,10 +61,6 @@ import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer
 import { DownloadMediaDialog } from "./components/download-media-dialog"
 import { CommandMenu } from "./components/command-menu"
 import { BulkActionsSheet, BulkTagForm } from "./components/bulk-actions-sheet"
-import {
-  defaultDisplayPreferences,
-  type DisplayPreferences,
-} from "./components/display-preferences"
 import { useCabinetFilters } from "./hooks/use-cabinet-filters"
 import { useBookmarkMutations } from "./hooks/use-bookmark-mutations"
 import { useClipboardPaste } from "./hooks/use-clipboard-paste"
@@ -164,6 +159,10 @@ function CabinetWorkspace() {
   const selectedFolder = folders.find(
     (folder: any) => folder.id === selectedFolderId
   )
+  // Folders shared as view only cannot receive new or moved items.
+  const writableFolders = folders.filter((folder: any) => canAddToFolder(folder))
+  const canAddHere = canAddToFolder(selectedFolder)
+  const addTargetFolderId = canAddHere ? selectedFolderId : undefined
 
   const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>([])
   const { isMobile, setOpenMobile } = useSidebar()
@@ -266,14 +265,17 @@ function CabinetWorkspace() {
         if (bookmarkToEdit) {
           await updateBookmarkMutation.mutateAsync({
             id: bookmarkToEdit.id,
-            data: {
-              type: "BOOKMARK" as any,
-              url: targetUrl,
-              title: value.title,
-              description: value.description,
-              folderId: value.folderId || null,
-              tags: tagsArray,
-            },
+            // Someone else's link in a folder you edit: only its shared content can change.
+            data: itemAccess(bookmarkToEdit) === "owner"
+              ? {
+                  type: "BOOKMARK" as any,
+                  url: targetUrl,
+                  title: value.title,
+                  description: value.description,
+                  folderId: value.folderId || null,
+                  tags: tagsArray,
+                }
+              : { url: targetUrl, title: value.title, description: value.description },
           })
           toast.success("Bookmark updated", {
             id: toastId,
@@ -446,7 +448,6 @@ function CabinetWorkspace() {
   const updateBookmarkMutation = useBookmarksControllerUpdate()
   const removeBookmarkMutation = useBookmarksControllerRemove()
   const removeTagMutation = useTagsControllerRemove()
-  const importBookmarksMutation = useBookmarksControllerImport()
 
   const scanHealthMutation = useBookmarksControllerTriggerHealthCheck()
   const cleanDuplicatesMutation = useBookmarksControllerCleanDuplicates()
@@ -471,7 +472,7 @@ function CabinetWorkspace() {
   useClipboardPaste({
     createBookmarkMutation,
     invalidateAllQueries,
-    selectedFolderId,
+    selectedFolderId: addTargetFolderId,
     isModalOpen: isBookmarkModalOpen || isFolderModalOpen || isMobileAddOpen || isCommandMenuOpen,
     onEditBookmark: (bookmark) => handleEditBookmark(bookmark),
   })
@@ -584,8 +585,10 @@ function CabinetWorkspace() {
   }
 
   const handleEditBookmark = (bookmark: any) => {
-    if (bookmark.type === "NOTE") {
-      router.push(`/cabinet/notes/${bookmark.id}`)
+    // Notes and drawings open in their own editors.
+    const path = editorPath(bookmark)
+    if (path) {
+      router.push(path)
       return
     }
     setBookmarkToEdit(bookmark)
@@ -620,15 +623,21 @@ function CabinetWorkspace() {
     bookmarkForm.setFieldValue("url", "")
     bookmarkForm.setFieldValue("title", "")
     bookmarkForm.setFieldValue("description", "")
-    bookmarkForm.setFieldValue("folderId", selectedFolderId || "")
+    bookmarkForm.setFieldValue("folderId", addTargetFolderId || "")
     bookmarkForm.setFieldValue("tags", [])
   }
 
   const handleCreateNote = () => {
     resetBookmarkForm()
     const params = new URLSearchParams({ new: '1' })
-    if (selectedFolderId) params.set('folder', selectedFolderId)
+    if (addTargetFolderId) params.set('folder', addTargetFolderId)
     router.push(`/cabinet/notes/${crypto.randomUUID()}?${params}`)
+  }
+
+  const handleCreateDrawing = () => {
+    const params = new URLSearchParams({ new: '1' })
+    if (addTargetFolderId) params.set('folder', addTargetFolderId)
+    router.push(`/cabinet/drawings/${crypto.randomUUID()}?${params}`)
   }
 
   // Productivity Keyboard Shortcuts (Linear / Superhuman style):
@@ -679,6 +688,13 @@ function CabinetWorkspace() {
         return
       }
 
+      // D: New drawing
+      if (e.key.toLowerCase() === "d") {
+        e.preventDefault()
+        handleCreateDrawing()
+        return
+      }
+
       // B: Add New Bookmark
       if (e.key.toLowerCase() === "b") {
         e.preventDefault()
@@ -726,6 +742,9 @@ function CabinetWorkspace() {
     isMobileAddOpen,
     downloadBookmark,
     selectedBookmarkIds.length,
+    // New notes and drawings land in the current folder when it accepts them.
+    handleCreateNote,
+    handleCreateDrawing,
   ])
 
   const handleToggleSelectBookmark = (id: string) => {
@@ -779,34 +798,17 @@ function CabinetWorkspace() {
 
   const handleDropBookmarkToFolder = (folderId: string, bookmarkIds: string[]) => {
     const targetFolder = folders.find((f: any) => f.id === folderId)
+    if (!canAddToFolder(targetFolder)) {
+      toast.error(`You can only view "${targetFolder?.name ?? "this folder"}"`)
+      return
+    }
     void moveBookmarks(bookmarkIds, folderId, targetFolder?.name)
   }
 
   const handleOpenFromCommandMenu = (bookmark: any) => {
-    if (bookmark.type === "NOTE" || !bookmark.url) router.push(`/cabinet/notes/${encodeURIComponent(bookmark.id)}`)
-    else setPreviewBookmark(bookmark)
-  }
-
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = async (evt) => {
-      const content = evt.target?.result as string
-      try {
-        await importBookmarksMutation.mutateAsync({
-          data: { htmlContent: content },
-        })
-        invalidateAllQueries()
-        toast.success("Bookmarks imported successfully!")
-      } catch {
-        toast.error(
-          "Failed to import bookmarks. Ensure it is a valid Netscape Bookmark HTML file."
-        )
-      }
-    }
-    reader.readAsText(file)
+    const path = editorPath(bookmark)
+    if (path) router.push(path)
+    else if (bookmark.url) setPreviewBookmark(bookmark)
   }
 
   // Rendering Loader
@@ -907,7 +909,6 @@ function CabinetWorkspace() {
                     setFilterContentType(undefined)
                   }
                 }}
-                filterType={filterType}
                 onSelectType={(val) => {
                   setFilterType(val)
                   if (val) {
@@ -921,7 +922,6 @@ function CabinetWorkspace() {
                     setFilterContentType(undefined)
                   }
                 }}
-                filterContentType={filterContentType}
                 onSelectContentType={(val) => {
                   setFilterContentType(val)
                   if (val) {
@@ -937,7 +937,6 @@ function CabinetWorkspace() {
                 }}
                 healthSummary={healthSummary}
                 onScan={handleScan}
-                onImport={handleImport}
                 resetFolderForm={resetFolderForm}
                 onDropBookmarkToFolder={handleDropBookmarkToFolder}
                 viewSection={isMobile ? mobileDrawerMode || "all" : "all"}
@@ -954,9 +953,10 @@ function CabinetWorkspace() {
               setIsBookmarkModalOpen={setIsBookmarkModalOpen}
               bookmarkToEdit={bookmarkToEdit}
               bookmarkForm={bookmarkForm}
-              folders={folders}
+              folders={writableFolders}
               tags={tags}
               resetBookmarkForm={resetBookmarkForm}
+              onCreateDrawing={handleCreateDrawing}
               onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
             />
           </WorkspaceHeader>
@@ -971,7 +971,7 @@ function CabinetWorkspace() {
                 title={activeFilterLabel}
                 searchQuery={searchQuery}
                 onClearSearch={() => setSearchQuery("")}
-                onAddBookmark={() => { resetBookmarkForm(); setIsBookmarkModalOpen(true) }}
+                onAddBookmark={canAddHere ? () => { resetBookmarkForm(); setIsBookmarkModalOpen(true) } : undefined}
                 viewControls={<BookmarkViewControls
                   sort={sort}
                   onSortChange={(value) => {
@@ -987,12 +987,9 @@ function CabinetWorkspace() {
                   onDisplayPreferencesChange={handleDisplayPreferencesChange}
                 />}
                 headerActions={selectedFolder && !filterTrash ? (
-                  selectedFolder.isOwner !== false ? (
-                    <div className="flex flex-wrap gap-2">
-                      <FolderCollaborationDialog key={`collaboration-${selectedFolder.id}`} folder={selectedFolder} />
-                      <ShareFolderDialog key={selectedFolder.id} folder={selectedFolder} />
-                    </div>
-                  ) : <span className="text-xs text-muted-foreground">Shared folder · Manage only bookmarks you add</span>
+                  folderAccess(selectedFolder) === "OWNER"
+                    ? <ShareFolderDialog key={selectedFolder.id} folder={selectedFolder} />
+                    : <span className="text-xs text-muted-foreground">{describeFolderAccess(folderAccess(selectedFolder))}</span>
                 ) : undefined}
                 sortableInParent
                 displayPreferences={displayPreferences}
@@ -1036,7 +1033,6 @@ function CabinetWorkspace() {
                 onPermanentDeleteBookmark={handlePermanentDeleteBookmark}
                 onEmptyTrash={handleEmptyTrash}
                 onOpenDownload={setDownloadBookmark}
-                availableTags={tags}
                 isBrokenView={filterBroken}
                 previewBookmark={previewBookmark}
                 onPreviewBookmarkChange={setPreviewBookmark}
@@ -1096,6 +1092,7 @@ function CabinetWorkspace() {
         }}
         onScanHealth={handleScan}
         onCreateNote={handleCreateNote}
+        onCreateDrawing={handleCreateDrawing}
         onViewModeChange={handleViewModeChange}
       />
 
@@ -1143,7 +1140,7 @@ function CabinetWorkspace() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectItem value="__root__">Unfiled</SelectItem>
-                    {folders.map((f: any) => (
+                    {writableFolders.map((f: any) => (
                       <SelectItem key={f.id} value={f.id}>
                         {f.name}
                       </SelectItem>
@@ -1189,7 +1186,7 @@ function CabinetWorkspace() {
         onOpenChange={setIsBulkSheetOpen}
         count={selectedBookmarkIds.length}
         isTrashView={!!filterTrash}
-        folders={folders}
+        folders={writableFolders}
         onMove={(folderId, folderName) => handleBulkMove(folderId, folderName)}
         onArchive={() => handleBulkArchive(true)}
         onTrash={handleBulkTrash}
@@ -1204,8 +1201,7 @@ function CabinetWorkspace() {
         onOpenChange={setIsMobileAddOpen}
         bookmarkForm={bookmarkForm}
         bookmarkToEdit={bookmarkToEdit}
-        folders={folders}
-        tags={tags}
+        folders={writableFolders}
       />
 
       {/* Mobile Bottom Navigation Bar */}
@@ -1217,6 +1213,7 @@ function CabinetWorkspace() {
           setIsMobileAddOpen(true)
         }}
         onCreateNote={handleCreateNote}
+        onCreateDrawing={handleCreateDrawing}
         onOpenCollections={() => { setMobileDrawerMode("folders"); setOpenMobile(true) }}
         onOpenLibrary={() => { setMobileDrawerMode("library"); setOpenMobile(true) }}
         trashCount={healthSummary?.trash || 0}

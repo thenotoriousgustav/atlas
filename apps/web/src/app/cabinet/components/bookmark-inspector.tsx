@@ -8,7 +8,7 @@ import {
   Archive,
   Trash,
   FolderSimple,
-  Tag,
+  Hash as Tag,
   LinkSimple,
   CalendarBlank,
   FileText,
@@ -32,15 +32,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { NoteAutosave, type NoteSaveStatus } from "@/lib/note-autosave"
 import { bookmarkDraft, parseBookmarkDraft, type BookmarkDraft } from "@/lib/bookmark-draft"
 import { safeHttpUrl } from "@/lib/shared-collection"
+import { itemAccess } from "@/lib/bookmark-kind"
+import { canAddToFolder } from "@/lib/folder-roles"
 
 export interface BookmarkInspectorHandle { flush: () => Promise<boolean> }
 
 interface BookmarkInspectorProps {
   bookmark: any | null
   folders: any[]
-  availableTags: any[]
-  /** @deprecated The preview header's panel toggle hides the details now. */
-  onClose?: () => void
   onCloseWithDraft?: () => void
   onUpdateBookmark: (id: string, data: any) => Promise<any>
   onDeleteBookmark: (id: string) => void
@@ -53,8 +52,6 @@ interface BookmarkInspectorProps {
 export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, BookmarkInspectorProps>(function BookmarkInspector({
   bookmark,
   folders,
-  availableTags,
-  onClose,
   onCloseWithDraft,
   onUpdateBookmark,
   onDeleteBookmark,
@@ -72,7 +69,10 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
   const updater = React.useRef(onUpdateBookmark)
   updater.current = onUpdateBookmark
   const queue = React.useRef<NoteAutosave<BookmarkDraft> | null>(null)
-  const readOnly = bookmark?.canEdit === false
+  const access = bookmark ? itemAccess(bookmark) : "viewer"
+  const readOnly = access === "viewer"
+  // Editors of a shared folder may change another person's title and description only.
+  const limited = access === "editor"
   const draftKey = bookmark?.userId ? `cabinet:inspector-draft:v1:${bookmark.userId}:${bookmark.id}` : null
 
   React.useEffect(() => {
@@ -80,11 +80,13 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
     let active = true
     try { setRecovery(draftKey ? parseBookmarkDraft(localStorage.getItem(draftKey)) : null) } catch { setBackupUnavailable(true) }
     const autosave = new NoteAutosave<BookmarkDraft>(async (snapshot) => {
-      await updater.current(bookmark.id, {
-        title: snapshot.title.trim(), description: snapshot.description, notes: snapshot.notes,
-        folderId: snapshot.folderId === 'none' ? null : snapshot.folderId,
-        tags: snapshot.tags.map((tag) => tag.trim().replace(/^#/, '').toLowerCase()).filter(Boolean),
-      })
+      await updater.current(bookmark.id, limited
+        ? { title: snapshot.title.trim(), description: snapshot.description }
+        : {
+            title: snapshot.title.trim(), description: snapshot.description, notes: snapshot.notes,
+            folderId: snapshot.folderId === 'none' ? null : snapshot.folderId,
+            tags: snapshot.tags.map((tag) => tag.trim().replace(/^#/, '').toLowerCase()).filter(Boolean),
+          })
       if (draftKey && current.current === snapshot) {
         try {
           if (localStorage.getItem(draftKey) === JSON.stringify(snapshot)) localStorage.removeItem(draftKey)
@@ -103,7 +105,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
       autosave.dispose()
       if (queue.current === autosave) queue.current = null
     }
-  }, [bookmark?.id, draftKey, readOnly])
+  }, [bookmark?.id, draftKey, readOnly, limited])
 
   React.useImperativeHandle(ref, () => ({ flush: () => queue.current?.flush() ?? Promise.resolve(true) }), [])
   const update = (patch: Partial<BookmarkDraft>) => {
@@ -121,6 +123,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
   const { title, description, notes, folderId, tags } = draft
   if (!bookmark) return null
   const disabled = readOnly || !!recovery
+  const personalDisabled = disabled || limited
   const isNote = bookmark.type === 'NOTE' || !bookmark.url
   const hostname = safeHttpUrl(bookmark.url || '')?.hostname || ''
 
@@ -142,7 +145,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           {isNote ? "Note details" : "Details"}
         </span>
         <div className="flex items-center gap-1">
-          {onTogglePin && !readOnly && (
+          {onTogglePin && access === "owner" && (
             <Button variant="ghost" size="icon-xs" onClick={() => onTogglePin(bookmark)}
               title={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
               aria-label={bookmark.isPinned ? "Unpin bookmark" : "Pin to top"}
@@ -154,7 +157,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           <Button
             variant="ghost"
             size="icon-xs"
-            disabled={readOnly}
+            disabled={access !== "owner"}
             onClick={() => onToggleFavorite(bookmark)}
             title={bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}
             aria-label={bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -168,7 +171,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           <Button
             variant="ghost"
             size="icon-xs"
-            disabled={readOnly}
+            disabled={access !== "owner"}
             onClick={() => onToggleArchive(bookmark)}
             title={bookmark.isArchived ? "Unarchive" : "Archive"}
             aria-label={bookmark.isArchived ? "Unarchive" : "Archive"}
@@ -180,7 +183,8 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
 
       {/* The website is already visible beside this editor. Keep the form in view. */}
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain p-5 text-sm">
-        {readOnly && <p role="status" className="text-muted-foreground">Shared bookmark. Only its contributor can edit or delete it.</p>}
+        {readOnly && <p role="status" className="text-muted-foreground">You can view this shared item. Only its author or a folder editor can change it.</p>}
+        {limited && <p role="status" className="text-muted-foreground">Someone else saved this link. You can edit its title and description or move it to Trash. Its folder, tags, and personal note stay with its author.</p>}
         {recovery && <Alert><AlertDescription><p>An unsaved draft is available on this device. Restore it or keep the server version.</p><div className="flex gap-2">
           <Button size="sm" onClick={() => { update(recovery); setRecovery(null) }}>Restore draft</Button>
           <Button size="sm" variant="outline" onClick={() => { if (draftKey) { try { localStorage.removeItem(draftKey) } catch {} } setRecovery(null) }}>Discard draft</Button>
@@ -231,14 +235,14 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           <FieldLabel htmlFor={`${fieldId}-folder`} className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
             <FolderSimple className="size-3" /> Folder
           </FieldLabel>
-          <Select value={folderId} onValueChange={(folderId) => update({ folderId })} disabled={disabled}>
+          <Select value={folderId} onValueChange={(folderId) => update({ folderId })} disabled={personalDisabled}>
             <SelectTrigger id={`${fieldId}-folder`} className="h-9 rounded-md text-sm">
               <SelectValue placeholder="Unfiled" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
               <SelectItem value="none">Unfiled</SelectItem>
-              {folders.map((f) => (
+              {folders.filter((f) => canAddToFolder(f) || f.id === folderId).map((f) => (
                 <SelectItem key={f.id} value={f.id}>
                   {f.name}
                 </SelectItem>
@@ -253,7 +257,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
           <FieldLabel htmlFor={`${fieldId}-tags`} className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
             <Tag className="size-3" /> Tags
           </FieldLabel>
-          <TagsInput value={tags} onValueChange={(tags) => update({ tags })} disabled={disabled} className="w-full">
+          <TagsInput value={tags} onValueChange={(tags) => update({ tags })} disabled={personalDisabled} className="w-full">
             <TagsInputList className="min-h-9 px-2 py-1">
               {tags.map((t) => (
                 <TagsInputItem key={t} value={t} className="h-6 rounded-sm px-1.5 py-0 text-xs">
@@ -285,7 +289,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
             <FileText className="size-3" /> Personal Note
           </FieldLabel>
           <Textarea
-            disabled={disabled}
+            disabled={personalDisabled}
             id={`${fieldId}-notes`}
             value={notes}
             onChange={(e) => update({ notes: e.target.value })}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { sharedCollectionItems, safeHttpUrl } from "../src/lib/shared-collection.ts"
+import { sharedCollectionItems, sharedDrawingItems, sharedNoteItems, safeHttpUrl } from "../src/lib/shared-collection.ts"
 import { loginReturnPath } from "../src/lib/login-redirect.ts"
 
 test("public collection items filter unsafe URLs and index title, description and website for local search", () => {
@@ -17,6 +17,23 @@ test("public collection items filter unsafe URLs and index title, description an
   assert.equal(items[0].preview, "https://api.test/v1/bookmarks/proxy-image?v=2&url=https%3A%2F%2Fexample.com%2Fpreview.jpg")
   assert.equal(items[1].preview, null)
   for (const url of ["/relative", "data:text/html,test", "file:///etc/passwd", "not a url"]) assert.equal(safeHttpUrl(url), null)
+})
+
+test("public collections index shared notes by title and text", () => {
+  const notes = sharedNoteItems([{ id: "n", title: "", text: "Meeting agenda\nShip tags" }])
+  assert.equal(notes[0].title, "Untitled note")
+  assert.ok(notes[0].searchText.includes("ship tags"))
+  assert.deepEqual(sharedNoteItems(undefined), [])
+})
+
+test("public collections show drawings by their embedded preview only", () => {
+  const drawings = sharedDrawingItems([
+    { id: "a", title: "Flow", preview: "data:image/webp;base64,AAAA" },
+    { id: "b", title: "", preview: "https://tracker.example/pixel.png" },
+  ])
+  assert.equal(drawings[0].preview, "data:image/webp;base64,AAAA")
+  assert.equal(drawings[1].preview, null)
+  assert.equal(drawings[1].title, "Untitled drawing")
 })
 
 test("login can return to a shared collection but cannot become an open redirect", () => {

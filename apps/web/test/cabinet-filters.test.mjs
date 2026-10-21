@@ -30,3 +30,8 @@ test("parse round-trips build and accepts legacy query URLs", () => {
   assert.equal(parseCabinetLocation("/cabinet/tags/a%20b", "").tag, "a b")
   assert.equal(parseCabinetLocation("/cabinet/folders/nope", "").folderId, undefined)
 })
+
+test("the drawings format round-trips through the URL", () => {
+  assert.equal(buildCabinetUrl({ format: "drawings" }).url, "/cabinet?format=drawings")
+  assert.equal(parseCabinetLocation("/cabinet", "?format=drawings").format, "drawings")
+})

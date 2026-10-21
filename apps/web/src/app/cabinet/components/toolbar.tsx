@@ -10,7 +10,7 @@ import {
   DropdownMenuRadioGroup, DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { SortAscending, MagnifyingGlass, Plus, SquaresFour, List, CaretDown, BookmarkSimple, FileText, X, Sliders, Command } from "@phosphor-icons/react"
+import { SortAscending, MagnifyingGlass, Plus, SquaresFour, List, CaretDown, BookmarkSimple, FileText, Scribble, X, Sliders, Command } from "@phosphor-icons/react"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { bookmarkSortOptions, isBookmarkSort, type BookmarkSort } from "@/lib/bookmark-order"
 import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
@@ -88,9 +88,10 @@ interface ToolbarProps {
   tags?: any[]
   resetBookmarkForm: () => void
   onOpenCommandMenu?: () => void
+  onCreateDrawing?: () => void
 }
 
-export function Toolbar({ searchQuery, onSearchChange, isBookmarkModalOpen, setIsBookmarkModalOpen, bookmarkToEdit, bookmarkForm, folders, tags = [], resetBookmarkForm, onOpenCommandMenu }: ToolbarProps) {
+export function Toolbar({ searchQuery, onSearchChange, isBookmarkModalOpen, setIsBookmarkModalOpen, bookmarkToEdit, bookmarkForm, folders, tags = [], resetBookmarkForm, onOpenCommandMenu, onCreateDrawing }: ToolbarProps) {
   const router = useRouter()
   const handleCreate = (type: "BOOKMARK" | "NOTE") => {
     resetBookmarkForm()
@@ -122,6 +123,7 @@ export function Toolbar({ searchQuery, onSearchChange, isBookmarkModalOpen, setI
             <DropdownMenuContent align="end" className="min-w-44"><DropdownMenuGroup>
               <DropdownMenuItem className="whitespace-nowrap" onSelect={() => handleCreate("BOOKMARK")}><BookmarkSimple /> Add bookmark</DropdownMenuItem>
               <DropdownMenuItem className="whitespace-nowrap" onSelect={() => handleCreate("NOTE")}><FileText /> Create note</DropdownMenuItem>
+              {onCreateDrawing && <DropdownMenuItem className="whitespace-nowrap" onSelect={onCreateDrawing}><Scribble /> New drawing</DropdownMenuItem>}
             </DropdownMenuGroup></DropdownMenuContent>
           </DropdownMenu>
         </ButtonGroup>

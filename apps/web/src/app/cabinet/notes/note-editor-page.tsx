@@ -14,7 +14,7 @@ import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
 import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
-import { ArrowLeft, Image, Table as TableIcon, FolderSimple, Tag } from "@phosphor-icons/react"
+import { ArrowLeft, Image, Table as TableIcon, FolderSimple, Hash as Tag } from "@phosphor-icons/react"
 import { TagsInput, TagsInputInput, TagsInputItem, TagsInputList } from "@/components/ui/tags-input"
 import {
   BlockEditor,
@@ -49,6 +49,7 @@ import {
   type NoteSaveStatus,
 } from "@/lib/note-autosave"
 import { legacyNoteToDocument, parseNoteDraft } from "@/lib/note-document"
+import { canAddToFolder } from "@/lib/folder-roles"
 import "@/components/block-editor/style.css"
 import "@/components/extensions/table/style.css"
 import "@/components/extensions/image-placeholder/style.css"
@@ -98,6 +99,8 @@ export default function NoteEditorPage({ noteId }: { noteId: string }) {
   const [draft, setDraft] = useState<NoteSnapshot | null>(null)
   const [restored, setRestored] = useState(false)
   const [isNew, setIsNew] = useState(false)
+  // "owner" edits everything; "editor" edits title and content; "viewer" reads.
+  const [access, setAccess] = useState<"owner" | "editor" | "viewer">("owner")
   const [loadError, setLoadError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
   const userId = session?.user.id
@@ -143,6 +146,7 @@ export default function NoteEditorPage({ noteId }: { noteId: string }) {
         const local = readDraft(draftKey)
         // A server-backed note requires an explicit choice before an old draft can overwrite it.
         setIsNew(!note)
+        setAccess(note?.access ?? "owner")
         setDraft(note ? local : null)
         setRestored(!note && !!local)
         setLoaded(!note && local ? local : saved)
@@ -190,6 +194,7 @@ export default function NoteEditorPage({ noteId }: { noteId: string }) {
       noteId={noteId}
       draftKey={draftKey}
       initial={loaded}
+      access={access}
       initiallySaved={!isNew}
       recovered={restored}
       draft={draft}
@@ -212,6 +217,7 @@ function NoteCanvas({
   noteId,
   draftKey,
   initial,
+  access,
   initiallySaved,
   recovered,
   draft,
@@ -221,6 +227,7 @@ function NoteCanvas({
   noteId: string
   draftKey: string
   initial: NoteSnapshot
+  access: "owner" | "editor" | "viewer"
   initiallySaved: boolean
   recovered: boolean
   draft: NoteSnapshot | null
@@ -292,6 +299,8 @@ function NoteCanvas({
   }, [noteId, draftKey, recovered, queryClient])
 
   const update = (snapshot: NoteSnapshot) => {
+    // Viewers read shared notes; nothing is saved for them.
+    if (access === "viewer") return
     current.current = snapshot
     try {
       localStorage.setItem(draftKey, JSON.stringify(snapshot))
@@ -335,7 +344,7 @@ function NoteCanvas({
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
-    editable: !draft,
+    editable: !draft && access !== "viewer",
     content: initial.noteDocument as JSONContent,
     onUpdate: ({ editor }) =>
       update({
@@ -346,8 +355,8 @@ function NoteCanvas({
   })
 
   useEffect(() => {
-    editor?.setEditable(!draft, false)
-  }, [editor, draft])
+    editor?.setEditable(!draft && access !== "viewer", false)
+  }, [editor, draft, access])
 
   const leave = async () => {
     if (await autosave.current?.flush()) {
@@ -370,7 +379,7 @@ function NoteCanvas({
             <span className="max-w-32 truncate sm:max-w-xs">{currentFolder ? currentFolder.name : "Cabinet"}</span>
           </Button>
 
-          <Select
+          {access === "owner" && <Select
             value={selectedFolderId || "__root__"}
             onValueChange={(val) => {
               const next = val === "__root__" ? undefined : val
@@ -385,14 +394,14 @@ function NoteCanvas({
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="__root__">Unfiled</SelectItem>
-                {folders.map((f: any) => (
+                {folders.filter((f: any) => canAddToFolder(f) || f.id === selectedFolderId).map((f: any) => (
                   <SelectItem key={f.id} value={f.id}>
                     {f.name}
                   </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
-          </Select>
+          </Select>}
         </div>
 
         <div className="flex items-center gap-3">
@@ -401,7 +410,9 @@ function NoteCanvas({
             role="status"
             aria-live="polite"
           >
-            {status === "saving"
+            {access === "viewer"
+              ? "View only"
+              : status === "saving"
               ? "Saving..."
               : status === "unsaved"
                 ? "Unsaved changes"
@@ -462,13 +473,15 @@ function NoteCanvas({
           maxLength={1000}
           value={title}
           disabled={!!draft}
+          readOnly={access === "viewer"}
           onChange={(event) => {
             setTitle(event.target.value)
             update({ ...current.current, title: event.target.value })
           }}
           className="mb-3 w-full border-0 bg-transparent p-0 pl-8 text-3xl font-semibold tracking-tight text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/50 sm:text-4xl"
         />
-        <div className="mb-8 flex items-center gap-2 pl-8 text-sm text-muted-foreground">
+        {/* Tags are personal to the note's author. */}
+        {access === "owner" ? <div className="mb-8 flex items-center gap-2 pl-8 text-sm text-muted-foreground">
           <Tag className="size-4 shrink-0" aria-hidden="true" />
           <TagsInput
             value={tags}
@@ -489,7 +502,7 @@ function NoteCanvas({
               <TagsInputInput aria-label="Note tags" placeholder={tags.length ? "Add tag…" : "Add tags…"} maxLength={30} className="text-base md:text-sm" />
             </TagsInputList>
           </TagsInput>
-        </div>
+        </div> : <div className="mb-5" />}
         <BlockEditor editor={editor} />
         <TableHoverOverlay editor={editor} />
       </div>

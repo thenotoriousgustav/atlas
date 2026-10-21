@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
-import { Button } from "@/components/ui/button"
 import { useForm } from "@tanstack/react-form"
 import { useQueryClient } from "@tanstack/react-query"
 import * as z from "zod"
@@ -15,13 +14,10 @@ import {
   Star,
   Archive,
   FolderPlus,
-  DownloadSimple,
   Copy,
   Warning,
   ArrowClockwise,
-  Plus,
   Trash,
-  DotsThreeVertical,
   Gear,
   CaretUpDown,
   Sun,
@@ -32,7 +28,6 @@ import {
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { toast } from "@/components/ui/sonner"
 import { FolderTree } from "./folder-tree"
-import { useConfirm } from "@/hooks/use-confirm"
 import {
   SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup,
   SidebarGroupLabel, SidebarGroupAction, SidebarGroupContent,
@@ -83,13 +78,10 @@ interface SidebarFiltersProps {
   onSelectDuplicates: (dup: boolean | undefined) => void
   filterTrash?: boolean
   onSelectTrash?: (trash: boolean | undefined) => void
-  filterType?: "BOOKMARK" | "NOTE" | undefined
-  onSelectType?: (type: "BOOKMARK" | "NOTE" | undefined) => void
-  filterContentType?: string | undefined
+  onSelectType?: (type: "BOOKMARK" | "NOTE" | "DRAWING" | undefined) => void
   onSelectContentType?: (type: string | undefined) => void
   healthSummary?: any
   onScan: () => void
-  onImport?: (e: React.ChangeEvent<HTMLInputElement>) => void
   resetFolderForm: () => void
   onItemSelect?: () => void
   viewSection?: "all" | "folders" | "library"
@@ -146,13 +138,10 @@ export function CabinetSidebarFilters({
   onSelectDuplicates,
   filterTrash,
   onSelectTrash,
-  filterType,
   onSelectType,
-  filterContentType,
   onSelectContentType,
   healthSummary,
   onScan,
-  onImport,
   resetFolderForm,
   onItemSelect,
   viewSection = "all",
@@ -180,7 +169,6 @@ export function CabinetSidebarFilters({
     }
   }
 
-  const confirm = useConfirm()
   const queryClient = useQueryClient()
   const [isTagModalOpen, setIsTagModalOpen] = React.useState(false)
   const [isCreatingTag, setIsCreatingTag] = React.useState(false)
@@ -216,7 +204,7 @@ export function CabinetSidebarFilters({
 
   return (
     <nav data-bookmark-sidebar aria-label="Library navigation" className="flex h-full min-h-0 w-full flex-col">
-      <SidebarHeader className="flex min-h-20 flex-row items-center justify-between px-4 py-3">
+      <SidebarHeader className="flex min-h-16 flex-row items-center justify-between px-4 py-3">
         <CabinetBrand />
         <SidebarTrigger className="size-11 shrink-0 md:hidden" />
       </SidebarHeader>

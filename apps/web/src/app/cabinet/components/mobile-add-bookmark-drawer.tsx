@@ -41,7 +41,6 @@ interface MobileAddBookmarkDrawerProps {
   bookmarkForm: any
   bookmarkToEdit: any
   folders: any[]
-  tags?: any[]
 }
 
 export function MobileAddBookmarkDrawer({
@@ -50,7 +49,6 @@ export function MobileAddBookmarkDrawer({
   bookmarkForm,
   bookmarkToEdit,
   folders,
-  tags = [],
 }: MobileAddBookmarkDrawerProps) {
   const [isScraping, setIsScraping] = useState(false)
 

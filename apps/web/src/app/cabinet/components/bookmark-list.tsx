@@ -9,7 +9,7 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@/components/ui/empty"
-import { BookmarkSimple, Trash, LinkSimple, FileText, VideoCamera, X } from "@phosphor-icons/react"
+import { BookmarkSimple, Trash, LinkSimple, FileText, Scribble, VideoCamera, X } from "@phosphor-icons/react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { BookmarkListView } from "./bookmark-list-view"
 import { BookmarkMoodboardView, MoodboardCard } from "./bookmark-moodboard-view"
@@ -18,6 +18,7 @@ import { BookmarkWebview } from "./bookmark-webview"
 import { BookmarkInspector, type BookmarkInspectorHandle } from "./bookmark-inspector"
 import type { DisplayPreferences } from "./display-preferences"
 import { adjacentPreviewBookmark, moodboardColumnCount } from "@/lib/bookmark-view"
+import { editorPath } from "@/lib/bookmark-kind"
 
 interface BookmarkListProps {
   title?: string
@@ -57,11 +58,9 @@ interface BookmarkListProps {
   onPermanentDeleteBookmark?: (id: string) => void
   onEmptyTrash?: () => void
   onOpenDownload?: (bookmark: any) => void
-  onInspectBookmark?: (bookmark: any) => void
-  availableTags?: any[]
   onUpdateBookmark?: (id: string, data: any) => Promise<any>
-  formatFilter?: "all" | "links" | "notes" | "media"
-  onFormatFilterChange?: (format: "all" | "links" | "notes" | "media") => void
+  formatFilter?: "all" | "links" | "notes" | "drawings" | "media"
+  onFormatFilterChange?: (format: "all" | "links" | "notes" | "drawings" | "media") => void
   isBrokenView?: boolean
   /** Lets the page open a preview from outside the list, such as the command menu. */
   previewBookmark?: any | null
@@ -106,8 +105,6 @@ export function BookmarkList({
   onPermanentDeleteBookmark,
   onEmptyTrash,
   onOpenDownload,
-  onInspectBookmark,
-  availableTags = [],
   onUpdateBookmark,
   formatFilter = "all",
   onFormatFilterChange,
@@ -147,7 +144,7 @@ export function BookmarkList({
     return result
   }
   const openBookmark = (bookmark: any) => {
-    if (bookmark.type === "NOTE" || !bookmark.url) {
+    if (editorPath(bookmark) || !bookmark.url) {
       onEditBookmark(bookmark)
     } else {
       setPreviewBookmark(bookmark)
@@ -206,24 +203,7 @@ export function BookmarkList({
     }
   }
 
-  const getPastelColor = (str: string): { bg: string; text: string } => {
-    const pastels = [
-      { bg: "bg-[#FDEBEC]", text: "text-[#9F2F2D]" },
-      { bg: "bg-[#E1F3FE]", text: "text-[#1F6C9F]" },
-      { bg: "bg-[#EDF3EC]", text: "text-[#346538]" },
-      { bg: "bg-[#FBF3DB]", text: "text-[#956400]" },
-    ]
-    let hash = 0
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash)
-    }
-    const index = Math.abs(hash) % pastels.length
-    const color = pastels[index]
-    if (color) return color
-    return { bg: "bg-[#FDEBEC]", text: "text-[#9F2F2D]" }
-  }
-
-  const formatNames = { links: "links", notes: "notes", media: "videos or media" } as const
+  const formatNames = { links: "links", notes: "notes", drawings: "drawings", media: "videos or media" } as const
   const emptyState: { title: string; description: string; action?: React.ReactNode } = searchQuery
     ? {
         title: `No results for “${searchQuery}”`,
@@ -308,6 +288,10 @@ export function BookmarkList({
                 <ToggleGroupItem value="notes" className="h-8 px-2.5 text-xs font-medium" aria-label="Notes only">
                   <FileText className="size-3.5" data-icon="inline-start" />
                   <span>Notes</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="drawings" className="h-8 px-2.5 text-xs font-medium" aria-label="Drawings only">
+                  <Scribble className="size-3.5" data-icon="inline-start" />
+                  <span>Drawings</span>
                 </ToggleGroupItem>
                 <ToggleGroupItem value="media" className="h-8 px-2.5 text-xs font-medium" aria-label="Media only">
                   <VideoCamera className="size-3.5" data-icon="inline-start" />
@@ -479,7 +463,6 @@ export function BookmarkList({
                       onDeleteBookmark={onDeleteBookmark}
                       onDuplicateBookmark={onDuplicateBookmark}
                       getHostname={getHostname}
-                      getPastelColor={getPastelColor}
                       onInspectBookmark={openBookmark}
                       hasSelectedItems={selectedBookmarkIds.length > 0}
                       isSelected={selectedBookmarkIds.includes(bookmark.id)}
@@ -548,7 +531,6 @@ export function BookmarkList({
               onDeleteBookmark={onDeleteBookmark}
               onDuplicateBookmark={onDuplicateBookmark}
               getHostname={getHostname}
-              getPastelColor={getPastelColor}
               onReorder={onReorder}
               isTrashView={isTrashView}
               onRestoreBookmark={onRestoreBookmark}
@@ -574,7 +556,6 @@ export function BookmarkList({
               key={previewBookmark.id}
               bookmark={bookmarks.find((item) => item.id === previewBookmark.id) || previewBookmark}
               folders={folders}
-              availableTags={availableTags}
               onCloseWithDraft={() => setPreviewBookmark(null)}
               onUpdateBookmark={updatePreview}
               onDeleteBookmark={(id) => { setPreviewBookmark(null); onDeleteBookmark(id) }}

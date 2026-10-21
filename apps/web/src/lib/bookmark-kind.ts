@@ -33,6 +33,28 @@ export function canDownloadMedia(bookmark: BookmarkLike): boolean {
   return (hostIs(host, "x.com") || hostIs(host, "twitter.com")) && /\/status\/\d+/.test(url.pathname)
 }
 
+export function isDrawingBookmark(bookmark: BookmarkLike): boolean {
+  return bookmark.type === "DRAWING"
+}
+
+/** Notes, plus items without a link that are not drawings (older notes predate the type field). */
 export function isNoteBookmark(bookmark: BookmarkLike): boolean {
-  return bookmark.type === "NOTE" || !bookmark.url
+  return bookmark.type === "NOTE" || (!bookmark.url && bookmark.type !== "DRAWING")
+}
+
+/** Items that open in Cabinet's own editor rather than on another website. */
+export function editorPath(bookmark: BookmarkLike & { id: string }): string | null {
+  if (isDrawingBookmark(bookmark)) return `/cabinet/drawings/${encodeURIComponent(bookmark.id)}`
+  if (isNoteBookmark(bookmark)) return `/cabinet/notes/${encodeURIComponent(bookmark.id)}`
+  return null
+}
+
+export type ItemAccess = "owner" | "editor" | "viewer"
+
+/**
+ * What the current user may do with an item. "editor" may change its title, description and link
+ * and move it to Trash; personal fields (favorite, pin, archive, tags, folder, notes) stay with the author.
+ */
+export function itemAccess(bookmark: { access?: ItemAccess; canEdit?: boolean }): ItemAccess {
+  return bookmark.access ?? (bookmark.canEdit === false ? "viewer" : "owner")
 }

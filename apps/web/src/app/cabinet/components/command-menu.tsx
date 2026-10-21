@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { MagnifyingGlass, FolderSimple, Tag, Plus, Star, Archive, Trash, VideoCamera, FileText, ArrowsClockwise, List, SquaresFour, SidebarSimple } from "@phosphor-icons/react"
+import { MagnifyingGlass, FolderSimple, Hash as Tag, Plus, Scribble, Star, Archive, Trash, VideoCamera, FileText, ArrowsClockwise, List, SquaresFour, SidebarSimple } from "@phosphor-icons/react"
 import { CommandDialog, CommandInput, CommandList, CommandGroup, CommandItem, CommandShortcut, CommandSeparator } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
 import { safeHttpUrl } from "@/lib/shared-collection"
 import { useBookmarkSearch } from "../hooks/use-bookmark-search"
+import { editorPath, isDrawingBookmark } from "@/lib/bookmark-kind"
 
 interface CommandMenuProps {
   open: boolean
@@ -28,6 +29,7 @@ interface CommandMenuProps {
   onOpenAddFolder: () => void
   onScanHealth: () => void
   onCreateNote: () => void
+  onCreateDrawing: () => void
   onViewModeChange: (mode: 'list' | 'moodboard') => void
 }
 
@@ -56,6 +58,7 @@ export function CommandMenu(props: CommandMenuProps) {
   const actions: Action[] = [
     { label: 'Add bookmark', icon: Plus, run: props.onOpenAddBookmark, shortcut: 'B' },
     { label: 'Create note', icon: FileText, run: props.onCreateNote, shortcut: 'N' },
+    { label: 'New drawing', icon: Scribble, run: props.onCreateDrawing, shortcut: 'D' },
     { label: 'Create new folder', icon: FolderSimple, run: props.onOpenAddFolder },
     { label: 'Check broken links & duplicates', icon: ArrowsClockwise, run: props.onScanHealth },
   ]
@@ -85,15 +88,15 @@ export function CommandMenu(props: CommandMenuProps) {
         </CommandItem>)}
       </CommandGroup>)}
       {folders.length > 0 && <CommandGroup heading="Folders">{folders.map((folder) => <CommandItem key={folder.id} value={`folder ${folder.id}`} onSelect={() => select(() => props.onSelectFolder(folder.id))}><FolderSimple /><span>{folder.name}</span></CommandItem>)}</CommandGroup>}
-      {tags.length > 0 && <CommandGroup heading="Tags">{tags.map((tag) => <CommandItem key={tag.id} value={`tag ${tag.id}`} onSelect={() => select(() => props.onSelectTag(tag.name))}><Tag /><span>#{tag.name}</span></CommandItem>)}</CommandGroup>}
+      {tags.length > 0 && <CommandGroup heading="Tags">{tags.map((tag) => <CommandItem key={tag.id} value={`tag ${tag.id}`} onSelect={() => select(() => props.onSelectTag(tag.name))}><Tag /><span>{tag.name}</span></CommandItem>)}</CommandGroup>}
       {waiting && <p role="status" className="px-3 py-4 text-sm text-muted-foreground">Searching your library…</p>}
       {searching && query.isError && !query.isDebouncing && <div role="alert" className="px-3 py-3 text-sm">Could not search your library. <Button size="sm" variant="outline" onClick={() => void query.refetch()}>Retry search</Button></div>}
       {items.length > 0 && <><CommandSeparator /><CommandGroup heading={searching ? 'Across your library' : 'In this view'}>
         {items.map((bookmark) => {
           const safe = safeHttpUrl(bookmark.url || '')
-          const isNote = bookmark.type === 'NOTE' || !bookmark.url
-          return <CommandItem key={bookmark.id} value={`bookmark ${bookmark.id}`} disabled={!safe && !isNote} onSelect={() => select(() => props.onOpenBookmark(bookmark))}>
-            {isNote ? <FileText /> : <MagnifyingGlass />}<span className="truncate">{bookmark.title || safe?.hostname || 'Untitled'}</span>
+          const inCabinet = !!editorPath(bookmark)
+          return <CommandItem key={bookmark.id} value={`bookmark ${bookmark.id}`} disabled={!safe && !inCabinet} onSelect={() => select(() => props.onOpenBookmark(bookmark))}>
+            {isDrawingBookmark(bookmark) ? <Scribble /> : inCabinet ? <FileText /> : <MagnifyingGlass />}<span className="truncate">{bookmark.title || safe?.hostname || 'Untitled'}</span>
             {safe && <span className="ml-auto max-w-40 shrink-0 truncate text-xs text-muted-foreground">{safe.hostname.replace(/^www\./, '')}</span>}
           </CommandItem>
         })}

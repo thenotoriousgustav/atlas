@@ -5,13 +5,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, PaintBrush, User, Database, Wrench, Keyboard, Sun, Moon, Desktop, DownloadSimple, UploadSimple, GithubLogo, GoogleLogo, SignOut, Trash, ArrowCounterClockwise, SquaresFour, List, Tag } from "@phosphor-icons/react"
+import { ArrowLeft, PaintBrush, User, Database, Wrench, Keyboard, Sun, Moon, Desktop, DownloadSimple, UploadSimple, GithubLogo, GoogleLogo, SignOut, Trash, ArrowCounterClockwise, SquaresFour, List, Hash as Tag } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/sonner"
 import { useConfirm } from "@/hooks/use-confirm"
@@ -214,7 +213,7 @@ export default function SettingsPage() {
             <h2 className="text-base font-medium">Display preview</h2>
             <p className="text-xs leading-5 text-muted-foreground">From your saved library. Changes appear here immediately.</p>
             {previewBookmark ? <div inert aria-hidden="true" className="max-w-sm">
-              <MoodboardCard showActions={false} nativeDrag={false} displayPreferences={displayPrefs} bookmark={previewBookmark} folders={previewBookmark.folder ? [previewBookmark.folder] : []} isSelected={false} onToggleSelect={noop} onSelectTag={noop} onToggleFavorite={noop} onToggleArchive={noop} onEditBookmark={noop} onDeleteBookmark={noop} onDuplicateBookmark={noop} getHostname={getHostname} getPastelColor={() => ({ bg: "", text: "" })} />
+              <MoodboardCard showActions={false} nativeDrag={false} displayPreferences={displayPrefs} bookmark={previewBookmark} folders={previewBookmark.folder ? [previewBookmark.folder] : []} isSelected={false} onToggleSelect={noop} onSelectTag={noop} onToggleFavorite={noop} onToggleArchive={noop} onEditBookmark={noop} onDeleteBookmark={noop} onDuplicateBookmark={noop} getHostname={getHostname} />
             </div> : <p className="text-sm text-muted-foreground">{isPreviewLoading ? "Loading display preview…" : isPreviewError ? "Could not load the display preview. Reload to try again." : "Save a bookmark to see your preferences applied here."}</p>}
           </aside>
         </TabsContent>
@@ -250,7 +249,7 @@ export default function SettingsPage() {
         <TabsContent value="shortcuts" className="flex flex-col gap-8">
           <SettingsSection title="Keyboard shortcuts" description="Move through your library without leaving the keyboard.">
             <dl className="flex flex-col divide-y divide-border/70">{[
-              ["/", "Focus search"], ["N", "Create note"], ["B", "Add bookmark"], ["1", "List view"], ["2", "Moodboard view"], ["⌘B", "Toggle sidebar"], ["⌘K", "Command menu"], ["Space / Enter", "Pick up or drop an item"], ["Arrow keys", "Move a sortable item"], ["Esc", "Clear selection, cancel drag, or close dialog"], ["Click", "Open an item in Cabinet"], ["Shift + Click", "Select items"], ["⌘ / Ctrl + Click", "Open the original in a new tab"], ["← / →", "Previous or next item in preview"],
+              ["/", "Focus search"], ["N", "Create note"], ["D", "New drawing"], ["B", "Add bookmark"], ["1", "List view"], ["2", "Moodboard view"], ["⌘B", "Toggle sidebar"], ["⌘K", "Command menu"], ["Space / Enter", "Pick up or drop an item"], ["Arrow keys", "Move a sortable item"], ["Esc", "Clear selection, cancel drag, or close dialog"], ["Click", "Open an item in Cabinet"], ["Shift + Click", "Select items"], ["⌘ / Ctrl + Click", "Open the original in a new tab"], ["← / →", "Previous or next item in preview"],
             ].map(([keys, label]) => <div key={keys} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"><dt className="text-sm">{label}</dt><dd className="shrink-0"><kbd className="rounded-sm border border-border bg-muted px-2 py-1 text-xs">{keys}</kbd></dd></div>)}</dl>
           </SettingsSection>
         </TabsContent>

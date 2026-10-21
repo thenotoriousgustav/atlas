@@ -8,6 +8,7 @@ import {
   FileText,
   Star,
   Faders,
+  Scribble,
 } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import {
@@ -25,6 +26,7 @@ interface MobileBottomNavProps {
   onSelectTab: (tab: MobileTab) => void
   onOpenAdd: () => void
   onCreateNote: () => void
+  onCreateDrawing?: () => void
   onOpenCollections: () => void
   onOpenLibrary: () => void
   /** @deprecated No longer shown; kept so existing callers compile. */
@@ -36,6 +38,7 @@ export function MobileBottomNav({
   onSelectTab,
   onOpenAdd,
   onCreateNote,
+  onCreateDrawing,
   onOpenCollections,
   onOpenLibrary,
 }: MobileBottomNavProps) {
@@ -110,6 +113,11 @@ export function MobileBottomNav({
               <DropdownMenuItem onSelect={onCreateNote}>
                 <FileText /> Create note
               </DropdownMenuItem>
+              {onCreateDrawing && (
+                <DropdownMenuItem onSelect={onCreateDrawing}>
+                  <Scribble /> New drawing
+                </DropdownMenuItem>
+              )}
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>

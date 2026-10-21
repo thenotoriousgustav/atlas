@@ -29,3 +29,20 @@ test("X posts can still offer media download without being labeled video", () =>
   assert.equal(canDownloadMedia({ url: "https://x.com/a/status/123" }), true)
   assert.equal(canDownloadMedia({ url: "https://x.com/a" }), false)
 })
+
+test("drawings open in their own editor and are not mistaken for notes", async () => {
+  const { editorPath, isNoteBookmark, isDrawingBookmark } = await import("../src/lib/bookmark-kind.ts")
+  assert.equal(isNoteBookmark({ type: "DRAWING", url: null }), false)
+  assert.equal(isDrawingBookmark({ type: "DRAWING" }), true)
+  assert.equal(isNoteBookmark({ url: null }), true)
+  assert.equal(editorPath({ id: "d1", type: "DRAWING" }), "/cabinet/drawings/d1")
+  assert.equal(editorPath({ id: "n1", type: "NOTE" }), "/cabinet/notes/n1")
+  assert.equal(editorPath({ id: "b1", type: "BOOKMARK", url: "https://example.com" }), null)
+})
+
+test("item access falls back to the older canEdit flag", async () => {
+  const { itemAccess } = await import("../src/lib/bookmark-kind.ts")
+  assert.equal(itemAccess({ access: "editor", canEdit: false }), "editor")
+  assert.equal(itemAccess({ canEdit: false }), "viewer")
+  assert.equal(itemAccess({}), "owner")
+})

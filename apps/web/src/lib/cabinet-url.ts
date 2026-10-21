@@ -3,7 +3,7 @@
 // secondary refinements stay in the query (?tag, ?format, ?q, ?sort).
 export const cabinetViews = ["favorites", "archive", "trash", "broken", "duplicates"] as const
 export type CabinetView = (typeof cabinetViews)[number]
-export type CabinetFormat = "all" | "links" | "notes" | "media"
+export type CabinetFormat = "all" | "links" | "notes" | "drawings" | "media"
 
 export interface CabinetLocation {
   folderId?: string
@@ -15,7 +15,7 @@ export interface CabinetLocation {
 }
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
-const formats = ["all", "links", "notes", "media"]
+const formats = ["all", "links", "notes", "drawings", "media"]
 const isView = (value: unknown): value is CabinetView => cabinetViews.includes(value as CabinetView)
 const cleanTag = (tag?: string | null) => tag?.trim().replace(/^#/, "") || undefined
 const decode = (value: string) => {

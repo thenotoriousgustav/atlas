@@ -45,7 +45,7 @@ const { defaultDisplayPreferences: defaultPrefs } = await import("../src/app/cab
 const bookmark = { id: "a", title: "Alpha", url: "https://example.com", createdAt: "2026-01-01" }
 const props = {
   bookmarks: [bookmark], activeColumnCount: 3, selectedBookmarkIds: [],
-  getHostname: () => "example.com", getPastelColor: () => ({}),
+  getHostname: () => "example.com",
 }
 const render = (Component, extra) => renderToStaticMarkup(
   React.createElement(TooltipProvider, null, React.createElement(Component, { ...props, ...extra }))
@@ -107,10 +107,23 @@ test("other contributors' bookmarks cannot be dragged or edited in the UI", () =
     assert.doesNotMatch(html, /draggable="true"/)
   }
   const html = render(BookmarkInspector, { bookmark: shared, folders: [], availableTags: [] })
-  assert.match(html, /Only its contributor can edit or delete it/)
+  assert.match(html, /You can view this shared item/)
   assert.match(html, /<input[^>]*disabled/)
   assert.doesNotMatch(html, /Save changes|Retry save|All changes saved/)
   assert.match(html, /<textarea[^>]*disabled/)
+})
+
+test("editors may edit another person's link content, but not personal fields", () => {
+  const theirs = { ...bookmark, canEdit: false, access: "editor", userId: "author" }
+  const card = render(MoodboardCard, { bookmark: theirs, isSelected: false, onToggleSelect() {}, onTogglePin() {} })
+  assert.doesNotMatch(card, /data-readonly="true"/)
+  assert.doesNotMatch(card, /aria-label="Select Alpha"/)
+  assert.doesNotMatch(card, /Pin to top|Add to favorites/)
+  const inspector = render(BookmarkInspector, { bookmark: theirs, folders: [], availableTags: [] })
+  assert.match(inspector, /You can edit its title and description/)
+  assert.match(inspector, /<input[^>]*id="[^"]*-title"[^>]*value="Alpha"/)
+  assert.doesNotMatch(inspector, /<input[^>]*disabled=""[^>]*id="[^"]*-title"/)
+  assert.match(inspector, /<textarea[^>]*disabled=""[^>]*id="[^"]*-notes"/)
 })
 
 test("note cards always preview their content, even with descriptions hidden", () => {

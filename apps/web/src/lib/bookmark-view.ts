@@ -1,4 +1,4 @@
-export function moodboardColumnCount(width: number, _legacy?: unknown): number {
+export function moodboardColumnCount(width: number): number {
   if (width > 0 && width < 480) return 1
   if (width > 0 && width < 768) return 2
   if (width > 0 && width < 1024) return 3

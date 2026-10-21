@@ -1,11 +1,10 @@
 import type React from "react"
-import { isNoteBookmark } from "./bookmark-kind"
+import { editorPath } from "./bookmark-kind"
 import { safeHttpUrl } from "./shared-collection"
 
 /** Where ⌘/Ctrl-click sends an item: the original page, or the note editor. */
 export function bookmarkOriginalHref(bookmark: { id: string; url?: string | null; type?: string | null }) {
-  if (isNoteBookmark(bookmark)) return `/cabinet/notes/${encodeURIComponent(bookmark.id)}`
-  return safeHttpUrl(bookmark.url || "")?.href
+  return editorPath(bookmark) ?? safeHttpUrl(bookmark.url || "")?.href
 }
 
 /**

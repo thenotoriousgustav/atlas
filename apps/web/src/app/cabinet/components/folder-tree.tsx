@@ -1,6 +1,5 @@
 import React from "react"
 import { useDroppable } from "@dnd-kit/core"
-import { Button } from "@/components/ui/button"
 import { FolderSimple, PencilSimple, Trash, Plus } from "@phosphor-icons/react"
 import { SidebarItemActionsButton } from "./sidebar-item-actions"
 import {
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { useSidebar } from "@/components/ui/sidebar"
+import { canAddToFolder } from "@/lib/folder-roles"
 
 function FolderDropTarget({ folderId, disabled, className, ...props }: React.ComponentProps<"div"> & {
   folderId: string
@@ -100,6 +100,7 @@ export function FolderTree({
   if (list.length === 0) return null
 
   const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    if (!canAddToFolder(folders.find((f: any) => f.id === folderId))) return
     if (e.dataTransfer.types.includes("application/json") || e.dataTransfer.types.includes("text/plain")) {
       e.preventDefault()
       e.stopPropagation()
@@ -135,7 +136,7 @@ export function FolderTree({
     return (
       <FolderDropTarget
         folderId={folder.id}
-        disabled={!onDropBookmarkToFolder}
+        disabled={!onDropBookmarkToFolder || !canAddToFolder(folder)}
         onDragOver={(e) => handleDragOver(e, folder.id)}
         onDragLeave={(e) => handleDragLeave(e, folder.id)}
         onDrop={(e) => handleDrop(e, folder.id)}

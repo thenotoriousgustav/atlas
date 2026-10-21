@@ -63,21 +63,24 @@ export function useCabinetFilters(folders: any[]) {
     "folders" | "library" | null
   >(null)
   const [filterType, setFilterTypeState] = useState<
-    "BOOKMARK" | "NOTE" | undefined
+    "BOOKMARK" | "NOTE" | "DRAWING" | undefined
   >(
     initialUrl.format === "notes"
       ? "NOTE"
-      : initialUrl.format === "links"
-        ? "BOOKMARK"
-        : undefined
+      : initialUrl.format === "drawings"
+        ? "DRAWING"
+        : initialUrl.format === "links"
+          ? "BOOKMARK"
+          : undefined
   )
   const [filterContentType, setFilterContentTypeState] = useState<
     string | undefined
   >(initialUrl.format === "media" ? "VIDEO" : undefined)
 
-  const formatFilter: "all" | "links" | "notes" | "media" = useMemo(() => {
+  const formatFilter: "all" | "links" | "notes" | "drawings" | "media" = useMemo(() => {
     if (filterContentType === "VIDEO") return "media"
     if (filterType === "NOTE") return "notes"
+    if (filterType === "DRAWING") return "drawings"
     if (filterType === "BOOKMARK") return "links"
     return "all"
   }, [filterContentType, filterType])
@@ -150,9 +153,11 @@ export function useCabinetFilters(folders: any[]) {
       setFilterTypeState(
         parsed.format === "notes"
           ? "NOTE"
-          : parsed.format === "links"
-            ? "BOOKMARK"
-            : undefined
+          : parsed.format === "drawings"
+            ? "DRAWING"
+            : parsed.format === "links"
+              ? "BOOKMARK"
+              : undefined
       )
       setFilterContentTypeState(parsed.format === "media" ? "VIDEO" : undefined)
     }
@@ -245,7 +250,7 @@ export function useCabinetFilters(folders: any[]) {
   )
 
   const setFilterType = useCallback(
-    (type: "BOOKMARK" | "NOTE" | undefined) => {
+    (type: "BOOKMARK" | "NOTE" | "DRAWING" | undefined) => {
       setFilterTypeState(type)
     },
     []
@@ -259,8 +264,8 @@ export function useCabinetFilters(folders: any[]) {
   )
 
   const handleFormatFilterChange = useCallback(
-    (format: "all" | "links" | "notes" | "media") => {
-      const nextType = format === "links" ? "BOOKMARK" : format === "notes" ? "NOTE" : undefined
+    (format: "all" | "links" | "notes" | "drawings" | "media") => {
+      const nextType = format === "links" ? "BOOKMARK" : format === "notes" ? "NOTE" : format === "drawings" ? "DRAWING" : undefined
       const nextContentType = format === "media" ? "VIDEO" : undefined
       setFilterTypeState(nextType)
       setFilterContentTypeState(nextContentType)
@@ -323,7 +328,7 @@ export function useCabinetFilters(folders: any[]) {
       setFilterBrokenState(next.view === "broken" ? true : undefined)
       setFilterDuplicatesState(next.view === "duplicates" ? true : undefined)
       setFilterTrashState(next.view === "trash" ? true : undefined)
-      setFilterTypeState(next.format === "notes" ? "NOTE" : next.format === "links" ? "BOOKMARK" : undefined)
+      setFilterTypeState(next.format === "notes" ? "NOTE" : next.format === "drawings" ? "DRAWING" : next.format === "links" ? "BOOKMARK" : undefined)
       setFilterContentTypeState(next.format === "media" ? "VIDEO" : undefined)
     },
     []
@@ -353,6 +358,7 @@ export function useCabinetFilters(folders: any[]) {
     if (filterDuplicates) return "Duplicates"
     if (selectedTag) return `#${selectedTag}`
     if (filterType === "NOTE") return "Notes"
+    if (filterType === "DRAWING") return "Drawings"
     if (filterType === "BOOKMARK") return "Links"
     if (filterContentType === "VIDEO") return "Videos & media"
     return "All items"

@@ -44,6 +44,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { ClipboardText, Sparkle } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { DuplicateBookmarkNotice } from "./duplicate-bookmark-notice"
+import { itemAccess } from "@/lib/bookmark-kind"
 
 interface BookmarkDialogProps {
   isOpen: boolean
@@ -65,6 +66,8 @@ export function BookmarkDialog({
   onClose,
 }: BookmarkDialogProps) {
   const [isScraping, setIsScraping] = useState(false)
+  // Others' links in a folder you edit: folder and tags belong to the author.
+  const limited = !!bookmarkToEdit && itemAccess(bookmarkToEdit) !== "owner"
   const [tagInputValue, setTagInputValue] = useState("")
 
   const filteredTags = useMemo(() => {
@@ -121,7 +124,9 @@ export function BookmarkDialog({
             {bookmarkToEdit ? "Edit bookmark" : "New bookmark"}
           </DialogTitle>
           <DialogDescription>
-            Save a link with auto-extracted metadata.
+            {limited
+              ? "Someone else saved this link. You can edit its link, title, and description."
+              : "Save a link with auto-extracted metadata."}
           </DialogDescription>
         </DialogHeader>
 
@@ -265,7 +270,7 @@ export function BookmarkDialog({
               }}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {!limited && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <bookmarkForm.Field
                 name="folderId"
                 children={(field: any) => {
@@ -407,7 +412,7 @@ export function BookmarkDialog({
                   )
                 }}
               />
-            </div>
+            </div>}
           </FieldGroup>
 
           <div className="flex gap-2.5 pt-2">

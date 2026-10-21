@@ -32,6 +32,7 @@ import {
   Clock,
   FolderSimple,
   Check,
+  Scribble,
 } from "@phosphor-icons/react"
 import {
   DropdownMenu,
@@ -42,7 +43,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "@/components/ui/sonner"
-import { canDownloadMedia, isVideoBookmark } from "@/lib/bookmark-kind"
+import { canDownloadMedia, isDrawingBookmark, isNoteBookmark, isVideoBookmark, itemAccess } from "@/lib/bookmark-kind"
 import { activateBookmark, bookmarkOriginalHref } from "@/lib/bookmark-click"
 import { getProxiedImageUrl } from "@/lib/bookmark-image"
 import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
@@ -67,7 +68,6 @@ interface MoodboardCardProps {
   onDeleteBookmark: (id: string) => void
   onDuplicateBookmark: (bookmark: any) => void
   getHostname: (url: string) => string
-  getPastelColor: (str: string) => { bg: string; text: string }
   isSelected: boolean
   hasSelectedItems?: boolean
   selectedBookmarkIds?: string[]
@@ -240,7 +240,6 @@ export function MoodboardCard({
   onDeleteBookmark,
   onDuplicateBookmark,
   getHostname,
-  getPastelColor,
   isSelected,
   hasSelectedItems = false,
   selectedBookmarkIds = [],
@@ -255,8 +254,14 @@ export function MoodboardCard({
   const hostname = getHostname(bookmark.url)
   const folderName = folders.find((folder) => folder.id === bookmark.folderId)?.name
   const preferences = displayPreferences ?? defaultDisplayPreferences
-  const isNote = bookmark.type === "NOTE" || !bookmark.url
+  const isNote = isNoteBookmark(bookmark)
+  const isDrawing = isDrawingBookmark(bookmark)
+  // Notes and drawings live in Cabinet; everything link-specific skips them.
+  const inCabinet = isNote || isDrawing
   const isVideo = isVideoBookmark(bookmark)
+  // Personal actions (select, pin, favorite, archive) belong to the item's author.
+  const access = itemAccess(bookmark)
+  const own = access === "owner"
   const canDownload = canDownloadMedia(bookmark)
   const originalHref = bookmarkOriginalHref(bookmark)
   const activate = (event: React.MouseEvent) =>
@@ -269,7 +274,7 @@ export function MoodboardCard({
 
   const rawImageUrl = bookmark.imageUrl || ""
   const isPendingEnrichment =
-    !isNote &&
+    !inCabinet &&
     (bookmark.metadataStatus === "PENDING" ||
       bookmark.metadataStatus === "PROCESSING")
 
@@ -316,7 +321,7 @@ export function MoodboardCard({
   return (
     <Card
       draggable={nativeDrag && bookmark.canEdit !== false}
-      data-readonly={bookmark.canEdit === false}
+      data-readonly={access === "viewer"}
       onDragStart={(e) => {
         if (!nativeDrag) {
           e.preventDefault()
@@ -335,9 +340,9 @@ export function MoodboardCard({
       )}
     >
       {/* Top Visual Image Header Container */}
-      <div className={cn("relative w-full shrink-0 overflow-hidden bg-muted/30", showActions && !isNote && !preferences.showImage && (hasSelectedItems ? "min-h-10" : "sm:min-h-10"))}>
+      <div className={cn("relative w-full shrink-0 overflow-hidden bg-muted/30", showActions && !inCabinet && !preferences.showImage && (hasSelectedItems ? "min-h-10" : "sm:min-h-10"))}>
         {/* Checkbox Overlay (Top Left) */}
-        {showActions && <div data-bookmark-actions
+        {showActions && own && <div data-bookmark-actions
           onClick={(e) => e.stopPropagation()}
           className={cn(
             "absolute top-2.5 left-2.5 z-20 flex items-center gap-1 rounded-sm bg-card p-1 transition-opacity",
@@ -396,7 +401,7 @@ export function MoodboardCard({
             </>
           ) : (
             <>
-              {onTogglePin && (
+              {onTogglePin && own && (
                 <Button
                   className="hidden sm:inline-flex"
                   variant="ghost"
@@ -410,7 +415,7 @@ export function MoodboardCard({
                 </Button>
               )}
               {/* Star / Favorite */}
-              <Tooltip>
+              {own && <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => onToggleFavorite(bookmark)}
@@ -429,7 +434,7 @@ export function MoodboardCard({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}</TooltipContent>
-              </Tooltip>
+              </Tooltip>}
 
               {/* Download Video Media if available */}
               {canDownload && onOpenDownload && (
@@ -464,7 +469,7 @@ export function MoodboardCard({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuGroup>
-                    {!isNote && originalHref && (
+                    {!inCabinet && originalHref && (
                       <DropdownMenuItem asChild className="flex items-center gap-2 text-xs">
                         <a href={originalHref} target="_blank" rel="noopener noreferrer">
                           <ArrowSquareOut className="size-3.5" />
@@ -488,27 +493,27 @@ export function MoodboardCard({
                       <PencilSimple className="size-3.5" />
                       <span>Edit details</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
+                    {!inCabinet && <DropdownMenuItem
                       onClick={handleCopyUrl}
                       className="flex items-center gap-2 text-xs"
                     >
                       <LinkSimple className="size-3.5" />
                       <span>Copy link</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
+                    </DropdownMenuItem>}
+                    {!isDrawing && <DropdownMenuItem
                       onClick={() => onDuplicateBookmark(bookmark)}
                       className="flex items-center gap-2 text-xs"
                     >
                       <Copy className="size-3.5" />
                       <span>Duplicate</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
+                    </DropdownMenuItem>}
+                    {own && <DropdownMenuItem
                       onClick={() => onToggleArchive(bookmark)}
                       className="flex items-center gap-2 text-xs"
                     >
                       <Archive className="size-3.5" />
                       <span>{bookmark.isArchived ? "Unarchive" : "Archive"}</span>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem>}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       variant="destructive"
@@ -529,16 +534,25 @@ export function MoodboardCard({
         {isNote ? (
           <div
             onClick={activate}
-            className="relative flex min-h-36 w-full cursor-pointer flex-col bg-muted/40 p-4 text-foreground"
+            // Top padding keeps the hover checkbox and actions clear of the note's first line.
+            className={cn("relative flex min-h-36 w-full cursor-pointer flex-col bg-muted/40 p-4 text-foreground", showActions && "pt-11")}
           >
             <div className="space-y-1.5">
-              <div className="mb-3 flex items-center gap-1.5 pl-6 text-xs font-medium text-muted-foreground">
-                <FileText className="size-3.5" />
-                <span>Note</span>
-              </div>
               {/* The note body is the card's preview, like a link's image, so it ignores the Description toggle. */}
               <NoteContentPreview bookmark={bookmark} />
             </div>
+          </div>
+        ) : isDrawing ? (
+          <div
+            onClick={activate}
+            // Drawings are stored on white; dark mode inverts the whole preview the way Excalidraw's own dark theme does.
+            className={cn("relative flex aspect-[16/10] w-full cursor-pointer items-center justify-center overflow-hidden bg-white dark:hue-rotate-180 dark:invert", showActions && "pt-8")}
+          >
+            {bookmark.imageUrl ? (
+              <img src={bookmark.imageUrl} alt="" draggable={false} className="h-full w-full object-contain p-3" />
+            ) : (
+              <span className="text-xs text-neutral-500">Empty drawing</span>
+            )}
           </div>
         ) : preferences.showImage ? (
           <a
@@ -613,13 +627,16 @@ export function MoodboardCard({
           )}
 
           {preferences.showTitle &&
-            (isNote ? (
+            (inCabinet ? (
               <button
                 type="button"
                 onClick={activate}
-                className={cn("line-clamp-2 text-left leading-6 font-medium text-foreground hover:underline", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
+                className={cn("group/title flex items-start gap-1.5 text-left leading-6 font-medium text-foreground", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
               >
-                {bookmark.title || "Untitled note"}
+                {isDrawing
+                  ? <Scribble aria-label="Drawing" className="mt-1 size-4 shrink-0 text-muted-foreground" />
+                  : <FileText aria-label="Note" className="mt-1 size-4 shrink-0 text-muted-foreground" />}
+                <span className="line-clamp-2 group-hover/title:underline">{bookmark.title || (isDrawing ? "Untitled drawing" : "Untitled note")}</span>
               </button>
             ) : (
               <a
@@ -634,7 +651,7 @@ export function MoodboardCard({
                 {bookmark.title || bookmark.url}
               </a>
             ))}
-          {!isNote &&
+          {!inCabinet &&
             (bookmark.status === "BROKEN" ||
               bookmark.status === "REDIRECTED") && (
               <div className="flex flex-wrap items-center gap-1.5">
@@ -657,7 +674,7 @@ export function MoodboardCard({
                 )}
               </div>
             )}
-          {preferences.showDescription && !isNote && bookmark.description && (
+          {preferences.showDescription && !inCabinet && bookmark.description && (
             <p className={cn("line-clamp-2 leading-5 text-muted-foreground", preferences.density === "compact" ? "text-xs" : "text-sm")}>
               {bookmark.description}
             </p>
@@ -669,7 +686,7 @@ export function MoodboardCard({
           )}
         </div>
 
-        {bookmark.canEdit === false && <p className="text-xs text-muted-foreground">Shared bookmark · Read-only</p>}
+        {access === "viewer" && <p className="text-xs text-muted-foreground">Shared · View only</p>}
         {(preferences.showFolder || preferences.showDate || bookmark.isPinned || bookmark.isFavorite) && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs leading-5 text-muted-foreground">
             {bookmark.isPinned && <span className="flex items-center gap-1 text-library-olive"><PushPin className="size-3" weight="fill" />Pinned</span>}
@@ -692,7 +709,7 @@ export function MoodboardCard({
             )}
           </div>
         )}
-        {(bookmark.tags?.length > 0 || (showActions && onOpenActionSheet && bookmark.canEdit !== false)) && (
+        {(bookmark.tags?.length > 0 || (showActions && onOpenActionSheet && access !== "viewer")) && (
           <div className={cn("flex items-center justify-between gap-2", !bookmark.tags?.length && "md:hidden")}>
           <div className="flex flex-wrap items-center gap-1 pt-0.5">
             {bookmark.tags?.slice(0, 3).map((tag: any) => (
@@ -714,7 +731,7 @@ export function MoodboardCard({
               </span>
             )}
           </div>
-          {showActions && onOpenActionSheet && bookmark.canEdit !== false && <Button data-bookmark-actions type="button" variant="ghost" size="icon" className="size-11 shrink-0 md:hidden" aria-label="Bookmark actions" onClick={(event) => { event.stopPropagation(); onOpenActionSheet(bookmark) }}><DotsThreeVertical /></Button>}
+          {showActions && onOpenActionSheet && access !== "viewer" && <Button data-bookmark-actions type="button" variant="ghost" size="icon" className="size-11 shrink-0 md:hidden" aria-label="Bookmark actions" onClick={(event) => { event.stopPropagation(); onOpenActionSheet(bookmark) }}><DotsThreeVertical /></Button>}
           </div>
         )}
       </CardContent>
@@ -756,7 +773,6 @@ interface BookmarkMoodboardViewProps {
   onDeleteBookmark: (id: string) => void
   onDuplicateBookmark: (bookmark: any) => void
   getHostname: (url: string) => string
-  getPastelColor: (str: string) => { bg: string; text: string }
   onReorder?: (newOrder: any[]) => void
   isTrashView?: boolean
   onRestoreBookmark?: (id: string) => void
@@ -782,7 +798,6 @@ export function BookmarkMoodboardView({
   onDeleteBookmark,
   onDuplicateBookmark,
   getHostname,
-  getPastelColor,
   onReorder,
   isTrashView,
   onRestoreBookmark,
@@ -806,7 +821,6 @@ export function BookmarkMoodboardView({
       onDeleteBookmark={onDeleteBookmark}
       onDuplicateBookmark={onDuplicateBookmark}
       getHostname={getHostname}
-      getPastelColor={getPastelColor}
       isSelected={selectedBookmarkIds.includes(bookmark.id)}
       hasSelectedItems={selectedBookmarkIds.length > 0}
       selectedBookmarkIds={selectedBookmarkIds}
