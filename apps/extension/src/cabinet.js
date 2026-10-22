@@ -114,7 +114,64 @@ export async function findExisting(rawUrl, signal) {
   return null
 }
 
-export async function saveBookmark({ url, title, folderId, tags, description }) {
+/**
+ * Runs inside the page (via chrome.scripting), so it must not use anything from this module.
+ * Reads the same tags the API scrapes, for sites that block the API's own fetch.
+ */
+export function readPageMetadata() {
+  const meta = (...keys) => {
+    for (const key of keys) {
+      const value = document.querySelector(`meta[property="${key}"], meta[name="${key}"]`)?.getAttribute("content")?.trim()
+      if (value) return value
+    }
+    return undefined
+  }
+  const icon = document.querySelector('link[rel~="icon"], link[rel="apple-touch-icon"]')
+  return {
+    description: meta("og:description", "twitter:description", "description"),
+    imageUrl: meta("og:image", "og:image:url", "og:image:secure_url", "twitter:image"),
+    siteName: meta("og:site_name", "application-name"),
+    faviconUrl: icon?.href,
+    baseUrl: document.baseURI,
+  }
+}
+
+/** Keeps only usable values: http(s) addresses resolved against the page, text within the API's limits. */
+export function cleanMetadata(raw) {
+  const out = {}
+  if (!raw || typeof raw !== "object") return out
+  const text = (value, max) => (typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined)
+  const link = (value) => {
+    if (typeof value !== "string" || !value.trim()) return undefined
+    try {
+      const url = new URL(value.trim(), raw.baseUrl)
+      return (url.protocol === "http:" || url.protocol === "https:") && url.href.length <= 2048 ? url.href : undefined
+    } catch {
+      return undefined
+    }
+  }
+  const values = {
+    description: text(raw.description, 1000),
+    siteName: text(raw.siteName, 200),
+    imageUrl: link(raw.imageUrl),
+    faviconUrl: link(raw.faviconUrl),
+  }
+  for (const [key, value] of Object.entries(values)) if (value) out[key] = value
+  return out
+}
+
+/** The open tab's own metadata, or nothing where the page cannot be scripted. */
+export async function pageMetadata(tabId) {
+  if (!tabId) return {}
+  try {
+    const [result] = await chrome.scripting.executeScript({ target: { tabId }, func: readPageMetadata })
+    return cleanMetadata(result?.result)
+  } catch {
+    return {}
+  }
+}
+
+export async function saveBookmark({ url, title, folderId, tags, description, metadata = {} }) {
   const safe = saveableUrl(url)
   if (!safe) throw new Error("Only web pages (http or https) can be saved.")
   return api("/v1/bookmarks", {
@@ -123,9 +180,55 @@ export async function saveBookmark({ url, title, folderId, tags, description }) 
       type: "BOOKMARK",
       url: safe,
       title: title?.trim() || undefined,
-      description: description?.trim() || undefined,
+      description: description?.trim() || metadata.description || undefined,
+      imageUrl: metadata.imageUrl,
+      faviconUrl: metadata.faviconUrl,
+      siteName: metadata.siteName,
       folderId: folderId || undefined,
       tags: cleanTags(tags),
+    },
+  })
+}
+
+export const MAX_HIGHLIGHT_LENGTH = 10000
+
+/** Paragraph text with single line breaks kept as hard breaks. */
+function paragraph(text, marks) {
+  const content = text.split("\n").flatMap((line, index) => [
+    ...(index > 0 ? [{ type: "hardBreak" }] : []),
+    ...(line ? [{ type: "text", text: line, ...(marks ? { marks } : {}) }] : []),
+  ])
+  return { type: "paragraph", ...(content.length ? { content } : {}) }
+}
+
+/**
+ * A highlight is a Cabinet note: the selected text as a quote, then a link back to the page.
+ * Blank lines in the selection separate the quote's paragraphs.
+ */
+export function highlightDocument({ text, url, title }) {
+  const quote = String(text || "").replace(/\r\n?/g, "\n").replace(/[ \t]+\n/g, "\n").trim().slice(0, MAX_HIGHLIGHT_LENGTH)
+  if (!quote) throw new Error("Select some text on the page first.")
+  const source = title?.trim() || new URL(url).hostname.replace(/^www\./, "")
+  return {
+    type: "doc",
+    content: [
+      { type: "blockquote", content: quote.split(/\n{2,}/).map((part) => paragraph(part.trim())) },
+      paragraph(source, [{ type: "link", attrs: { href: url } }]),
+    ],
+  }
+}
+
+export async function saveHighlight({ text, url, title, folderId }) {
+  const safe = saveableUrl(url)
+  if (!safe) throw new Error("Only text on web pages (http or https) can be saved.")
+  return api("/v1/bookmarks", {
+    method: "POST",
+    body: {
+      type: "NOTE",
+      url: safe,
+      title: title?.trim() || new URL(safe).hostname.replace(/^www\./, ""),
+      noteDocument: highlightDocument({ text, url: safe, title }),
+      folderId: folderId || undefined,
     },
   })
 }

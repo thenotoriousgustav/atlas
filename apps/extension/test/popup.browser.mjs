@@ -24,7 +24,7 @@ const server = createServer(async (req, res) => {
   const json = (body, status = 200) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)) }
   if (url.pathname === "/notes") {
     res.writeHead(200, { "content-type": "text/html" })
-    return res.end("<title>Field notes on quiet interfaces</title><h1>Field notes</h1>")
+    return res.end("<title>Field notes on quiet interfaces</title><h1>Field notes</h1><p id=first>Quiet screens help.</p><p id=second>Fewer badges, too.</p>")
   }
   cookies.push(req.headers.cookie || "")
   if (url.pathname === "/v1/auth/get-session") return json(signedIn ? { user: { id: "me", name: "Gustav" }, session: { id: "s" } } : null)
@@ -119,7 +119,24 @@ try {
   await open(blankTabId)
   await expect(popup.getByText("This page can't be saved")).toBeVisible()
 
-  console.log("PASS signed-out prompt, session cookie sent, writable folders only, duplicate notice, tags, save payload, remembered folder, unsupported pages")
+  // Highlights: the worker reads the selection with its line breaks, then it is saved as a quote note.
+  await article.evaluate(() => {
+    const range = document.createRange()
+    range.setStartBefore(document.querySelector("#first"))
+    range.setEndAfter(document.querySelector("#second"))
+    getSelection().removeAllRanges()
+    getSelection().addRange(range)
+  })
+  const selected = await worker.evaluate(async (tabId) => (await chrome.scripting.executeScript({ target: { tabId }, func: () => String(getSelection()) }))[0].result, articleTabId)
+  assert.match(selected, /Quiet screens help\.\n+Fewer badges, too\./)
+  await open(articleTabId)
+  await popup.evaluate(async ({ text, url }) => (await import("./cabinet.js")).saveHighlight({ text, url, title: "Field notes", folderId: "f-mine" }), { text: selected, url: `${origin}/notes` })
+  const highlight = posts.at(-1)
+  assert.deepEqual({ type: highlight.type, url: highlight.url, title: highlight.title, folderId: highlight.folderId }, { type: "NOTE", url: `${origin}/notes`, title: "Field notes", folderId: "f-mine" })
+  assert.deepEqual(highlight.noteDocument.content[0].content.map((block) => block.content[0].text), ["Quiet screens help.", "Fewer badges, too."])
+  assert.equal(highlight.noteDocument.content[1].content[0].marks[0].attrs.href, `${origin}/notes`)
+
+  console.log("PASS signed-out prompt, session cookie sent, writable folders only, duplicate notice, tags, save payload, remembered folder, unsupported pages, highlight selection and save")
 } finally {
   await context.close()
   server.close()

@@ -1,6 +1,6 @@
 import {
   SignedOutError, cleanTags, findExisting, getLastFolderId, getSession, listFolders, listTags,
-  openCabinet, saveBookmark, saveableUrl, setLastFolderId,
+  openCabinet, pageMetadata, saveBookmark, saveableUrl, setLastFolderId,
 } from "./cabinet.js"
 
 const $ = (id) => document.getElementById(id)
@@ -10,6 +10,8 @@ const show = (id) => states.forEach((state) => { $(state).hidden = state !== id 
 let tab = null
 let tags = []
 let folders = []
+/** Read from the page while the form is shown, so saving does not wait on it. */
+let metadata = Promise.resolve({})
 
 function message(title, text, action) {
   $("message-title").textContent = title
@@ -115,6 +117,7 @@ async function init() {
   if (tab.favIconUrl && /^https?:/.test(tab.favIconUrl)) favicon.src = tab.favIconUrl
   else favicon.hidden = true
 
+  metadata = pageMetadata(tab.id)
   show("state-form")
   $("title").focus()
   $("title").select()
@@ -149,7 +152,7 @@ $("state-form").addEventListener("submit", async (event) => {
   save.textContent = "Saving…"
   const folderId = $("folder").value
   try {
-    await saveBookmark({ url: tab.url, title: $("title").value, folderId, tags })
+    await saveBookmark({ url: tab.url, title: $("title").value, folderId, tags, metadata: await metadata })
     await setLastFolderId(folderId)
     const folder = folders.find((item) => item.id === folderId)
     $("saved-text").textContent = `In ${folder ? folder.name : "Unfiled"}${tags.length ? ` · ${tags.map((t) => `#${t}`).join(" ")}` : ""}`

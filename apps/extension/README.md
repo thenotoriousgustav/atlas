@@ -19,8 +19,10 @@ are signed out, the popup offers **Sign in** and opens Cabinet.
 | Save with title, folder and tags | Click the toolbar button, or press `⌘⇧S` (`Ctrl+Shift+S`) |
 | Save to the last folder without the popup | Press `⌥⇧S` (`Alt+Shift+S`) |
 | Save the page or a link | Right-click → **Save page to Cabinet** / **Save link to Cabinet** |
+| Save a highlight | Select text, then right-click → **Save highlight to Cabinet**, or press `⌥⇧H` (`Alt+Shift+H`) |
 
-Quick saves mark the toolbar icon with ✓, or ! when saving failed. The popup remembers the folder you
+A highlight becomes a note in your last folder: the selected text as a quote, with a link back to
+the page. Quick saves mark the toolbar icon with ✓, or ! when saving failed. The popup remembers the folder you
 saved to last, lists only folders you can add to (your own, and folders shared with you as
 Contributor or Editor), and tells you when the page is already in your Cabinet.
 

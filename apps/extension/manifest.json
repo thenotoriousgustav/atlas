@@ -3,7 +3,7 @@
   "name": "Cabinet",
   "short_name": "Cabinet",
   "version": "0.1.0",
-  "description": "Save the page you are reading to your Cabinet library, with its folder and tags.",
+  "description": "Save the page you are reading, or text you highlight on it, to your Cabinet library.",
   "minimum_chrome_version": "116",
   "icons": {
     "16": "icons/icon-16.png",
@@ -27,7 +27,7 @@
     "page": "src/options.html",
     "open_in_tab": false
   },
-  "permissions": ["activeTab", "contextMenus", "storage"],
+  "permissions": ["activeTab", "contextMenus", "scripting", "storage"],
   "host_permissions": ["http://localhost:4000/*", "http://127.0.0.1:4000/*"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
   "commands": {
@@ -38,6 +38,10 @@
     "quick-save": {
       "suggested_key": { "default": "Alt+Shift+S", "mac": "Alt+Shift+S" },
       "description": "Save this page to your last folder without opening the popup"
+    },
+    "save-highlight": {
+      "suggested_key": { "default": "Alt+Shift+H", "mac": "Alt+Shift+H" },
+      "description": "Save the selected text as a highlight in your last folder"
     }
   }
 }
