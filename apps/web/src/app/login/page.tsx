@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { GithubLogo, GoogleLogo } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import { Rocket } from "@/components/icons/rocket"
 import { authClient } from "@/lib/auth-client"
 import { loginReturnPath } from "@/lib/login-redirect"
 
@@ -102,7 +103,8 @@ export default function LoginPage() {
             Cabinet
           </p>
           <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-semibold tracking-tight">
+            <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+              <Rocket size={28} aria-hidden />
               Sign in to Cabinet
             </h2>
             <p className="text-sm leading-relaxed text-brand-muted">
