@@ -4,12 +4,13 @@
  */
 export function getProxiedPageUrl(pageUrl: string): string {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
-  return `${apiBase}/v1/bookmarks/proxy-page?url=${encodeURIComponent(pageUrl)}`
+  return `${apiBase}/v1/bookmarks/proxy-page?url=${encodeURIComponent(pageUrl)}&v=2`
 }
 
 /** The proxied page asks the app to load a clicked link; the proxy reports failures. */
 export const PREVIEW_NAVIGATE_MESSAGE = "cabinet-preview-navigate"
 export const PREVIEW_ERROR_MESSAGE = "cabinet-preview-error"
+export const PREVIEW_READY_MESSAGE = "cabinet-preview-ready"
 
 /** Sandbox for the proxied frame. Never allow-same-origin: the document sits on the API origin. */
 export const PROXIED_FRAME_SANDBOX = "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"

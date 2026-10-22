@@ -62,23 +62,26 @@ test("webview embeds websites that allow framing, with sandbox and an external f
   assert.match(html, /Open original/)
   assert.match(html, /Loading website/)
   assert.match(html, /Bookmark navigation/)
+  assert.match(html, /Show saved details instead/)
 })
 
-test("webview loads sites that forbid framing through the API proxy in a tighter sandbox", () => {
-  const html = render("https://skills.sh/mattpocock/skills/grill-me", false)
-  assert.match(html, /<iframe[^>]+src="http:\/\/localhost:4000\/v1\/bookmarks\/proxy-page\?url=https%3A%2F%2Fskills.sh%2Fmattpocock%2Fskills%2Fgrill-me"/)
-  assert.match(html, /sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"/)
-  assert.doesNotMatch(html, /allow-same-origin/)
-  assert.match(html, /Loading website through Cabinet/)
-  assert.doesNotMatch(html, /does not allow previews inside other apps/)
-  assert.match(html, /Open original/)
+test("webview still tries the sandboxed proxy when direct framing is blocked", () => {
+  for (const host of ["skills.sh", "www.skills.sh", "www.reddit.com", "shopee.co.id"]) {
+    const html = render(`https://${host}/article`, false)
+    assert.match(html, /<iframe[^>]+src="http:\/\/localhost:4000\/v1\/bookmarks\/proxy-page\?url=/)
+    assert.match(html, /sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"/)
+    assert.doesNotMatch(html, /allow-same-origin/)
+    assert.doesNotMatch(html, /aria-label="Saved details"/)
+    assert.match(html, /Show saved details instead/)
+    assert.match(html, /Open original/)
+  }
 })
 
 test("saved details and proxied pages go through the API", async () => {
   const { getProxiedImageUrl } = await import("../src/lib/bookmark-image.ts")
   const { getProxiedPageUrl } = await import("../src/lib/bookmark-page.ts")
   assert.equal(getProxiedImageUrl("https://cdn.example.com/a.jpg"), "http://localhost:4000/v1/bookmarks/proxy-image?v=2&url=https%3A%2F%2Fcdn.example.com%2Fa.jpg")
-  assert.equal(getProxiedPageUrl("https://skills.sh/a?b=1&c=2"), "http://localhost:4000/v1/bookmarks/proxy-page?url=https%3A%2F%2Fskills.sh%2Fa%3Fb%3D1%26c%3D2")
+  assert.equal(getProxiedPageUrl("https://skills.sh/a?b=1&c=2"), "http://localhost:4000/v1/bookmarks/proxy-page?url=https%3A%2F%2Fskills.sh%2Fa%3Fb%3D1%26c%3D2&v=2")
 })
 
 test("webview waits for the framing check before loading the site", () => {

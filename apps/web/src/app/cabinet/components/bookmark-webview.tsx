@@ -5,13 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { ArrowClockwise, ArrowSquareOut, CaretLeft, CaretRight, SidebarSimple, X } from "@phosphor-icons/react"
 import { getProxiedImageUrl } from "@/lib/bookmark-image"
-import {
-  DIRECT_FRAME_SANDBOX,
-  PREVIEW_ERROR_MESSAGE,
-  PREVIEW_NAVIGATE_MESSAGE,
-  PROXIED_FRAME_SANDBOX,
-  getProxiedPageUrl,
-} from "@/lib/bookmark-page"
+import { DIRECT_FRAME_SANDBOX, PROXIED_FRAME_SANDBOX, PREVIEW_ERROR_MESSAGE, PREVIEW_READY_MESSAGE, PREVIEW_NAVIGATE_MESSAGE, getProxiedPageUrl } from "@/lib/bookmark-page"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,7 +38,8 @@ export function BookmarkWebview({
   onToggleDetails?: () => void
 }) {
   const [reload, setReload] = useState(0)
-  const [status, setStatus] = useState<"loading" | "loaded" | "slow" | "error">("loading")
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading")
+  const [contentConfirmed, setContentConfirmed] = useState(false)
   const website = safeHttpUrl(bookmark.url)
   // Browsers report a normal load even when a site forbids framing, so ask the server first.
   const embedCheck = useQuery({
@@ -58,42 +53,43 @@ export function BookmarkWebview({
     retry: false,
   })
   const blocked = embedCheck.data === false
-  // Sites that forbid framing load through the API proxy instead; it reports when it cannot.
-  const [proxyFailed, setProxyFailed] = useState(false)
-  const [frameUrl, setFrameUrl] = useState<string | null>(null)
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const [frameUrl, setFrameUrl] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
   const thumbnail = getProxiedImageUrl(bookmark.imageUrl)
   const [thumbnailFailed, setThumbnailFailed] = useState(false)
-  const unavailable = blocked && proxyFailed
-  const proxied = blocked && !proxyFailed
+  const unavailable = status === "error"
   const showReference = unavailable || showSummary
-  const showFrame = !!website && !unavailable && !embedCheck.isPending
+  const showFrame = !!website && !showReference && !embedCheck.isPending
 
   useEffect(() => {
-    if (!showFrame || status !== "loading") return
-    const timeout = window.setTimeout(() => setStatus("slow"), 6000)
+    // A frame load clears the spinner, but only the proxy can confirm rendered content.
+    if (!showFrame || (blocked ? contentConfirmed : status !== "loading")) return
+    const timeout = window.setTimeout(() => setStatus("error"), 15000)
     return () => window.clearTimeout(timeout)
-  }, [showFrame, status, reload])
+  }, [showFrame, blocked, contentConfirmed, status, reload, frameUrl])
 
   useEffect(() => {
-    if (!proxied) return
+    if (!blocked || !showFrame) return
     const onMessage = (event: MessageEvent) => {
       if (!frameRef.current || event.source !== frameRef.current.contentWindow) return
       const data = event.data as { type?: unknown; url?: unknown } | null
-      if (data?.type === PREVIEW_ERROR_MESSAGE) {
-        setProxyFailed(true)
-      } else if (data?.type === PREVIEW_NAVIGATE_MESSAGE && typeof data.url === "string") {
-        // The frame cannot navigate itself: it would hit the framing headers again and lose the session cookie.
+      if (data?.type === PREVIEW_ERROR_MESSAGE) setStatus("error")
+      if (data?.type === PREVIEW_READY_MESSAGE) {
+        setContentConfirmed(true)
+        setStatus("loaded")
+      }
+      if (data?.type === PREVIEW_NAVIGATE_MESSAGE && typeof data.url === "string") {
         const next = safeHttpUrl(data.url)
         if (!next) return
         setStatus("loading")
+        setContentConfirmed(false)
         setFrameUrl(next.href)
       }
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
-  }, [proxied])
+  }, [blocked, showFrame])
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
@@ -124,7 +120,7 @@ export function BookmarkWebview({
             </Button>
           </div>
           {showFrame && !showSummary && (
-            <Button variant="ghost" size="icon-sm" aria-label="Reload website" title="Reload" onClick={() => { setStatus("loading"); setReload((value) => value + 1) }}>
+            <Button variant="ghost" size="icon-sm" aria-label="Reload website" title="Reload" onClick={() => { setStatus("loading"); setContentConfirmed(false); setReload((value) => value + 1) }}>
               <ArrowClockwise />
             </Button>
           )}
@@ -164,10 +160,11 @@ export function BookmarkWebview({
                 <Spinner aria-hidden="true" /> Preparing preview…
               </div>
             )}
-            {showFrame && !showSummary && status !== "loaded" && (
-              <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 text-xs text-muted-foreground" role="status">
-                {status === "loading" ? <><Spinner aria-hidden="true" /> {proxied ? "Loading website through Cabinet…" : "Loading website…"}</> : "This website is slow to load, or it may not allow previews."}
-                {status !== "loading" && <Button variant="link" size="xs" onClick={() => setShowSummary(true)}>Show saved details instead</Button>}
+            {showFrame && (
+              <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 text-xs text-muted-foreground">
+                {status === "loading" && <span role="status" className="flex items-center gap-2"><Spinner aria-hidden="true" /> Loading website…</span>}
+                {/* Cross-origin frames can report a load even when their content is blank. */}
+                <Button variant="link" size="xs" onClick={() => setShowSummary(true)}>Show saved details instead</Button>
               </div>
             )}
             {website && showReference && (
@@ -186,11 +183,11 @@ export function BookmarkWebview({
                     <CardDescription>{website.hostname}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col items-start gap-3 px-4 pb-4">
-                    {unavailable && <p className="text-sm text-muted-foreground">{website.hostname.replace(/^www\./, "")} does not allow previews inside other apps. Open the original to read it.</p>}
+                    {unavailable && <p className="text-sm text-muted-foreground">This preview could not be loaded. Open the original to read it.</p>}
                     <p className="line-clamp-4 text-sm">{bookmark.description || "No description saved for this link."}</p>
                     <div className="flex flex-wrap gap-2">
                       <Button asChild><a href={website.href} target="_blank" rel="noopener noreferrer"><ArrowSquareOut data-icon="inline-start" />Open original</a></Button>
-                      {!unavailable && <Button variant="outline" onClick={() => { setShowSummary(false); setStatus("loading"); setReload((value) => value + 1) }}>Try the live preview</Button>}
+                      <Button variant="outline" onClick={() => { setShowSummary(false); setStatus("loading"); setContentConfirmed(false); setReload((value) => value + 1) }}>Try the live preview</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -200,11 +197,10 @@ export function BookmarkWebview({
               <iframe
                 key={reload}
                 ref={frameRef}
-                hidden={showSummary}
-                src={proxied ? getProxiedPageUrl(frameUrl ?? website.href) : website.href}
+                src={blocked ? getProxiedPageUrl(frameUrl ?? website.href) : website.href}
                 title={bookmark.title || website.hostname}
                 className="min-h-0 w-full flex-1 border-0 bg-white"
-                sandbox={proxied ? PROXIED_FRAME_SANDBOX : DIRECT_FRAME_SANDBOX}
+                sandbox={blocked ? PROXIED_FRAME_SANDBOX : DIRECT_FRAME_SANDBOX}
                 referrerPolicy="no-referrer"
                 onLoad={() => setStatus("loaded")}
                 onError={() => { setStatus("error"); setShowSummary(true) }}

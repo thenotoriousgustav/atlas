@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm"
 import {
   decodeHtml,
   isHtmlContentType,
@@ -5,6 +6,7 @@ import {
   proxyErrorPage,
   rewriteProxiedPage,
   PREVIEW_ERROR_MESSAGE,
+  PREVIEW_READY_MESSAGE,
   PREVIEW_NAVIGATE_MESSAGE,
 } from "./page-proxy"
 
@@ -39,6 +41,39 @@ describe("rewriteProxiedPage", () => {
   it("escapes the page URL inside the base tag", () => {
     const html = rewriteProxiedPage("<head></head>", 'https://example.com/?q="><script>x</script>')
     expect(html).toContain('href="https://example.com/?q=&quot;&gt;&lt;script&gt;x&lt;/script&gt;"')
+  })
+})
+
+describe("proxied page readiness", () => {
+  function probe(text: string, images: unknown[] = []) {
+    const html = rewriteProxiedPage("<head></head><body></body>", "https://example.com/")
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+    const messages: { type: string }[] = []
+    let tick = () => {}
+    let stopped = false
+    runInNewContext(scripts[1][1], {
+      window: { parent: { postMessage: (message: { type: string }) => messages.push(message) } },
+      document: { body: { innerText: text }, images },
+      setInterval: (callback: () => void) => { tick = callback; return 1 },
+      clearInterval: () => { stopped = true },
+    })
+    for (let i = 0; i < 32 && !stopped; i++) tick()
+    return messages.map((message) => message.type)
+  }
+
+  it("reports ready for rendered content such as a skill page", () => {
+    expect(probe("A relentless interview to sharpen a plan or design. Read the complete skill here.")).toEqual([PREVIEW_READY_MESSAGE])
+  })
+
+  it("reports failure for blank or skeleton-only pages", () => {
+    expect(probe("")).toEqual([PREVIEW_ERROR_MESSAGE])
+    expect(probe("Loading…")).toEqual([PREVIEW_ERROR_MESSAGE])
+  })
+
+  it("accepts a loaded visible image but not an unloaded image", () => {
+    const image = { complete: true, naturalWidth: 600, getBoundingClientRect: () => ({ height: 300 }) }
+    expect(probe("", [image])).toEqual([PREVIEW_READY_MESSAGE])
+    expect(probe("", [{ ...image, complete: false }])).toEqual([PREVIEW_ERROR_MESSAGE])
   })
 })
 

@@ -9,6 +9,7 @@
 
 export const PREVIEW_NAVIGATE_MESSAGE = "cabinet-preview-navigate"
 export const PREVIEW_ERROR_MESSAGE = "cabinet-preview-error"
+export const PREVIEW_READY_MESSAGE = "cabinet-preview-ready"
 
 export const MAX_PROXIED_PAGE_BYTES = 5 * 1024 * 1024
 
@@ -62,6 +63,26 @@ const escapeHtml = (value: string) =>
  */
 const navigationScript = `(function(){\n  if (window.parent === window) return;\n  document.addEventListener("click", function (event) {\n    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;\n    var link = event.target && event.target.closest ? event.target.closest("a[href]") : null;\n    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;\n    var href = link.href;\n    if (!/^https?:/i.test(href)) return;\n    if (href.split("#")[0] === location.href.split("#")[0] && href.indexOf("#") !== -1) return;\n    event.preventDefault();\n    window.parent.postMessage({ type: ${JSON.stringify(PREVIEW_NAVIGATE_MESSAGE)}, url: href }, "*");\n  }, true);\n})();`
 
+// shortcut: visible text or a loaded large image signals content, not full app functionality.
+const readinessScript = `(function () {
+  if (window.parent === window) return;
+  var attempts = 0;
+  var timer = setInterval(function () {
+    var body = document.body;
+    var text = body ? body.innerText.trim() : "";
+    var image = Array.from(document.images).some(function (img) {
+      return img.complete && img.naturalWidth >= 200 && img.getBoundingClientRect().height >= 100;
+    });
+    if (text.length >= 40 || image) {
+      clearInterval(timer);
+      window.parent.postMessage({ type: ${JSON.stringify(PREVIEW_READY_MESSAGE)} }, "*");
+    } else if (++attempts >= 32) {
+      clearInterval(timer);
+      window.parent.postMessage({ type: ${JSON.stringify(PREVIEW_ERROR_MESSAGE)} }, "*");
+    }
+  }, 250);
+})();`
+
 /**
  * Prepares fetched HTML for the proxy response: drops in-page CSP rules and any
  * author <base>, then points relative URLs back at the original site and installs
@@ -73,7 +94,7 @@ export function rewriteProxiedPage(html: string, pageUrl: string): string {
     .replace(/<base\b[^>]*>/gi, "")
   const injection =
     `<base href="${escapeHtml(pageUrl)}" target="_self">` +
-    `<script>${navigationScript}</script>`
+    `<script>${navigationScript}</script><script>${readinessScript}</script>`
   const headMatch = /<head\b[^>]*>/i.exec(stripped)
   if (headMatch) {
     const at = headMatch.index + headMatch[0].length
