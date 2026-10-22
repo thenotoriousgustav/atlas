@@ -65,6 +65,8 @@ describe("Better Auth configuration and session guard", () => {
     expect(options.account?.accountLinking?.disableImplicitLinking).not.toBe(
       true
     )
+    expect(options.user?.deleteUser).toEqual({ enabled: true })
+    expect(options.session?.freshAge).toBeUndefined()
     expect(options.plugins).toBeUndefined()
     expect(options.trustedOrigins).toEqual([
       "https://app.cabinet.com",

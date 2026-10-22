@@ -40,6 +40,9 @@ export class AuthService implements OnModuleInit {
       database: prismaAdapter(prisma, { provider: "postgresql" }),
       user: {
         fields: { image: "avatar" },
+        // Removes the user row; folders, bookmarks, tags, sessions and linked accounts cascade.
+        // Better Auth asks for a sign-in from the last 24 hours before it deletes anything.
+        deleteUser: { enabled: true },
         validateUserInfo: ({ user, source }) => {
           if (source.method === "oauth" && user.emailVerified !== true) {
             return {
