@@ -22,6 +22,7 @@ import {
   CheckSquare,
 } from "@phosphor-icons/react"
 import { toast } from "@/components/ui/sonner"
+import { cn } from "@/lib/utils"
 import { canDownloadMedia, isDrawingBookmark, isNoteBookmark, itemAccess } from "@/lib/bookmark-kind"
 
 interface BookmarkActionSheetProps {
@@ -181,7 +182,7 @@ export function BookmarkActionSheet({
           ) : (
             <>
               {onToggleFavorite && own && <button type="button" onClick={() => { onToggleFavorite(bookmark); onOpenChange(false) }} className="flex h-12 items-center gap-3 px-5 text-left text-sm font-medium hover:bg-muted">
-                <Star className="size-4" weight={bookmark.isFavorite ? "fill" : "regular"} />
+                <Star className={cn("size-4", bookmark.isFavorite ? "text-amber-500 dark:text-amber-400" : undefined)} weight={bookmark.isFavorite ? "fill" : "regular"} />
                 <span>{bookmark.isFavorite ? "Remove from favorites" : "Add to favorites"}</span>
               </button>}
               {/* Edit Details */}

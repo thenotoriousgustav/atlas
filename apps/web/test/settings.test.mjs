@@ -80,5 +80,6 @@ test("SettingsPage renders with all major configuration sections", () => {
   assert.match(html, /Preview image/)
   assert.match(html, /Comfortable/)
   assert.match(html, /Compact/)
+  assert.match(html, />Visual</)
   assert.match(html, /Display preview/)
 })

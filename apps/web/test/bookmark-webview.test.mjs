@@ -84,6 +84,23 @@ test("saved details and proxied pages go through the API", async () => {
   assert.equal(getProxiedPageUrl("https://skills.sh/a?b=1&c=2"), "http://localhost:4000/v1/bookmarks/proxy-page?url=https%3A%2F%2Fskills.sh%2Fa%3Fb%3D1%26c%3D2&v=2")
 })
 
+test("webview embeds YouTube videos directly with the official player without waiting for the framing check", () => {
+  for (const url of [
+    "https://www.youtube.com/watch?v=dVFiXhUKXmI",
+    "https://youtu.be/dVFiXhUKXmI?t=30",
+    "https://www.youtube.com/shorts/dVFiXhUKXmI",
+    "https://www.youtube.com/live/dVFiXhUKXmI",
+    "https://www.youtube.com/embed/dVFiXhUKXmI",
+  ]) {
+    const html = render(url)
+    assert.match(html, /<iframe[^>]+src="https:\/\/www\.youtube\.com\/embed\/dVFiXhUKXmI"/)
+    assert.match(html, /referrerPolicy="strict-origin-when-cross-origin"/)
+    assert.match(html, /allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"/)
+    assert.doesNotMatch(html, /proxy-page|Preparing preview/)
+    assert.match(html, /Open original/)
+  }
+})
+
 test("webview waits for the framing check before loading the site", () => {
   const html = render("https://example.com/article")
   assert.doesNotMatch(html, /<iframe/)

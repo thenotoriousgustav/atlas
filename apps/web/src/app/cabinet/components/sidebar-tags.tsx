@@ -2,7 +2,7 @@
 
 import React from "react"
 import Link from "next/link"
-import { CaretRight, Gear, MagnifyingGlass, PencilSimple, Plus, Hash as TagIcon, Trash } from "@phosphor-icons/react"
+import { Gear, MagnifyingGlass, PencilSimple, Plus, Hash as TagIcon, Trash } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/use-confirm"
 import {
@@ -19,8 +19,6 @@ import { RenameTagDialog } from "./rename-tag-dialog"
 import { SidebarItemActionsButton } from "./sidebar-item-actions"
 import { SIDEBAR_TAG_LIMIT, visibleSidebarTags } from "@/lib/tag-list"
 
-const COLLAPSED_KEY = "cabinet_tags_collapsed"
-
 interface SidebarTagsProps {
   tags: any[]
   selectedTag?: string
@@ -33,19 +31,8 @@ interface SidebarTagsProps {
 export function SidebarTags({ tags, selectedTag, onSelectTag, onCreateTag, onDeleteTag, onItemSelect }: SidebarTagsProps) {
   const confirm = useConfirm()
   const { isMobile } = useSidebar()
-  const [collapsed, setCollapsed] = React.useState(false)
   const [tagToRename, setTagToRename] = React.useState<any | null>(null)
   const [allOpen, setAllOpen] = React.useState(false)
-
-  React.useEffect(() => {
-    try { setCollapsed(localStorage.getItem(COLLAPSED_KEY) === "true") } catch {}
-  }, [])
-  const toggleCollapsed = () => {
-    setCollapsed((value) => {
-      try { localStorage.setItem(COLLAPSED_KEY, String(!value)) } catch {}
-      return !value
-    })
-  }
 
   const select = (name: string) => {
     onSelectTag(selectedTag === name ? undefined : name)
@@ -70,22 +57,14 @@ export function SidebarTags({ tags, selectedTag, onSelectTag, onCreateTag, onDel
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel asChild>
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-expanded={!collapsed}
-          className="flex w-full items-center gap-1 hover:text-foreground"
-        >
-          <CaretRight className={cn("size-3 transition-transform motion-reduce:transition-none", !collapsed && "rotate-90")} />
-          Tags
-          {tags.length > 0 && <span className="ml-1 tabular-nums">{tags.length}</span>}
-        </button>
+      <SidebarGroupLabel>
+        Tags
+        {tags.length > 0 && <span className="ml-1 tabular-nums">{tags.length}</span>}
       </SidebarGroupLabel>
       <SidebarGroupAction title="Create tag" aria-label="Create tag" onClick={onCreateTag}>
         <Plus />
       </SidebarGroupAction>
-      <SidebarGroupContent hidden={collapsed}>
+      <SidebarGroupContent>
         <SidebarMenu>
           {tags.length === 0 ? (
             <span className="px-2 text-xs text-muted-foreground">No tags yet</span>

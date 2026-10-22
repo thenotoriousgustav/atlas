@@ -46,3 +46,19 @@ test("item access falls back to the older canEdit flag", async () => {
   assert.equal(itemAccess({ canEdit: false }), "viewer")
   assert.equal(itemAccess({}), "owner")
 })
+
+test("highlights are notes on a page that open with a quote", async () => {
+  const { highlightQuote } = await import("../src/lib/bookmark-kind.ts")
+  const doc = (first) => ({ type: "doc", content: [first, { type: "paragraph", content: [{ type: "text", text: "Source" }] }] })
+  const quote = { type: "blockquote", content: [
+    { type: "paragraph", content: [{ type: "text", text: "Line one" }, { type: "hardBreak" }, { type: "text", text: "line two" }] },
+    { type: "paragraph", content: [{ type: "text", text: " Second " }] },
+  ] }
+  assert.equal(highlightQuote({ type: "NOTE", url: "https://example.com/a", noteDocument: doc(quote) }), "Line one\nline two\n\nSecond")
+  assert.equal(highlightQuote({ type: "NOTE", url: "https://example.com/a", noteDocument: JSON.stringify(doc(quote)) }), "Line one\nline two\n\nSecond")
+  // A note without a page, a note that opens with text, and links are not highlights.
+  assert.equal(highlightQuote({ type: "NOTE", url: null, noteDocument: doc(quote) }), null)
+  assert.equal(highlightQuote({ type: "NOTE", url: "https://example.com/a", noteDocument: doc({ type: "paragraph", content: [{ type: "text", text: "x" }] }) }), null)
+  assert.equal(highlightQuote({ type: "BOOKMARK", url: "https://example.com/a", noteDocument: doc(quote) }), null)
+  assert.equal(highlightQuote({ type: "NOTE", url: "https://example.com/a", noteDocument: "{broken" }), null)
+})

@@ -44,7 +44,7 @@ export function useCabinetFilters(folders: any[]) {
   const [searchDebounced, setSearchDebounced] = useState<string>(
     initialUrl.searchQuery || ""
   )
-  const [viewMode, setViewMode] = useState<"list" | "moodboard">("list")
+  const viewMode = "moodboard" as const
   const [sort, setSortState] = useState<BookmarkSort>(
     initialUrl.sort || "custom"
   )
@@ -172,10 +172,6 @@ export function useCabinetFilters(folders: any[]) {
     if (isBookmarkSort(savedSort) && !initialUrl.sort) {
       setSortState(savedSort)
     }
-    const savedMode = localStorage.getItem("cabinet_view_mode")
-    if (savedMode === "list" || savedMode === "moodboard") {
-      setViewMode(savedMode)
-    }
 
     const savedPreferences = localStorage.getItem("cabinet_display_preferences")
     if (savedPreferences) {
@@ -296,13 +292,6 @@ export function useCabinetFilters(folders: any[]) {
     []
   )
 
-  const handleViewModeChange = useCallback((mode: "list" | "moodboard") => {
-    setViewMode(mode)
-    try {
-      localStorage.setItem("cabinet_view_mode", mode)
-    } catch {}
-  }, [])
-
   const activeMobileTab = useMemo<MobileTab>(() => {
     if (filterFavorite) return "favorites"
     if (selectedFolderId) return "folders"
@@ -402,8 +391,6 @@ export function useCabinetFilters(folders: any[]) {
     setSearchQuery,
     searchDebounced,
     viewMode,
-    setViewMode,
-    handleViewModeChange,
     sort,
     handleSortChange,
     filterBroken,

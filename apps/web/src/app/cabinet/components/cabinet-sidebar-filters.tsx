@@ -19,11 +19,13 @@ import {
   ArrowClockwise,
   Trash,
   Gear,
+  PlugsConnected,
   CaretUpDown,
   Sun,
   Moon,
   Desktop,
   SignOut,
+  Shuffle,
 } from "@phosphor-icons/react"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { toast } from "@/components/ui/sonner"
@@ -80,6 +82,8 @@ interface SidebarFiltersProps {
   onSelectTrash?: (trash: boolean | undefined) => void
   onSelectType?: (type: "BOOKMARK" | "NOTE" | "DRAWING" | undefined) => void
   onSelectContentType?: (type: string | undefined) => void
+  /** Opens Rediscover, a one-at-a-time look back at older saves. */
+  onOpenRediscover?: () => void
   healthSummary?: any
   onScan: () => void
   resetFolderForm: () => void
@@ -140,6 +144,7 @@ export function CabinetSidebarFilters({
   onSelectTrash,
   onSelectType,
   onSelectContentType,
+  onOpenRediscover,
   healthSummary,
   onScan,
   resetFolderForm,
@@ -256,6 +261,15 @@ export function CabinetSidebarFilters({
                 onItemSelect?.()
               }}
             />
+
+            {onOpenRediscover && <WorkspaceSidebarItem
+              icon={<Shuffle className="size-4" />}
+              label="Rediscover"
+              onClick={() => {
+                onOpenRediscover()
+                onItemSelect?.()
+              }}
+            />}
 
             <WorkspaceSidebarItem
               icon={<Archive className="h-3.5 w-3.5" />}
@@ -475,6 +489,16 @@ export function CabinetSidebarFilters({
                 >
                   <Gear className="size-3.5" />
                   <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/cabinet/integrations"
+                  className="flex cursor-pointer items-center gap-2 text-xs"
+                >
+                  <PlugsConnected className="size-3.5" />
+                  <span>Integrations &amp; Import</span>
                 </Link>
               </DropdownMenuItem>
 

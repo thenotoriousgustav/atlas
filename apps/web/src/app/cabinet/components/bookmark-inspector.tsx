@@ -164,7 +164,7 @@ export const BookmarkInspector = React.forwardRef<BookmarkInspectorHandle, Bookm
             aria-pressed={!!bookmark.isFavorite}
           >
             <Star
-              className={cn("size-3.5", bookmark.isFavorite ? "text-library-olive" : "text-muted-foreground")}
+              className={cn("size-3.5", bookmark.isFavorite ? "text-amber-500 dark:text-amber-400" : "text-muted-foreground")}
               weight={bookmark.isFavorite ? "fill" : "regular"}
             />
           </Button>

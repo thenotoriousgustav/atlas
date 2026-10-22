@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { ArrowClockwise, ArrowSquareOut, CaretLeft, CaretRight, SidebarSimple, X } from "@phosphor-icons/react"
 import { getProxiedImageUrl } from "@/lib/bookmark-image"
-import { DIRECT_FRAME_SANDBOX, PROXIED_FRAME_SANDBOX, PREVIEW_ERROR_MESSAGE, PREVIEW_READY_MESSAGE, PREVIEW_NAVIGATE_MESSAGE, getProxiedPageUrl } from "@/lib/bookmark-page"
+import { DIRECT_FRAME_SANDBOX, PROXIED_FRAME_SANDBOX, PREVIEW_ERROR_MESSAGE, PREVIEW_READY_MESSAGE, PREVIEW_NAVIGATE_MESSAGE, getProxiedPageUrl, getYouTubeEmbedUrl } from "@/lib/bookmark-page"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { safeHttpUrl } from "@/lib/shared-collection"
+import { cn } from "@/lib/utils"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 type PreviewBookmark = { id: string; url: string; title?: string; description?: string | null; imageUrl?: string | null }
@@ -40,7 +41,10 @@ export function BookmarkWebview({
   const [reload, setReload] = useState(0)
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading")
   const [contentConfirmed, setContentConfirmed] = useState(false)
+  // The site refused the proxy (bot protection), so retrying the live preview cannot help.
+  const [siteBlocked, setSiteBlocked] = useState(false)
   const website = safeHttpUrl(bookmark.url)
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(website?.href)
   // Browsers report a normal load even when a site forbids framing, so ask the server first.
   const embedCheck = useQuery({
     queryKey: ["/v1/bookmarks/embeddable", website?.href],
@@ -48,11 +52,11 @@ export function BookmarkWebview({
       const response = await AXIOS_INSTANCE.get("/v1/bookmarks/embeddable", { params: { url: website?.href } })
       return Boolean(response.data?.data?.embeddable ?? response.data?.embeddable ?? true)
     },
-    enabled: !!website,
+    enabled: !!website && !youtubeEmbedUrl,
     staleTime: 24 * 60 * 60 * 1000,
     retry: false,
   })
-  const blocked = embedCheck.data === false
+  const blocked = !youtubeEmbedUrl && embedCheck.data === false
   const frameRef = useRef<HTMLIFrameElement>(null)
   const [frameUrl, setFrameUrl] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
@@ -60,10 +64,10 @@ export function BookmarkWebview({
   const [thumbnailFailed, setThumbnailFailed] = useState(false)
   const unavailable = status === "error"
   const showReference = unavailable || showSummary
-  const showFrame = !!website && !showReference && !embedCheck.isPending
+  const showFrame = !!website && !showReference && (!!youtubeEmbedUrl || !embedCheck.isPending)
 
   useEffect(() => {
-    // A frame load clears the spinner, but only the proxy can confirm rendered content.
+    // A direct frame load clears the spinner; a proxied frame waits for the proxy to confirm rendered content.
     if (!showFrame || (blocked ? contentConfirmed : status !== "loading")) return
     const timeout = window.setTimeout(() => setStatus("error"), 15000)
     return () => window.clearTimeout(timeout)
@@ -73,8 +77,11 @@ export function BookmarkWebview({
     if (!blocked || !showFrame) return
     const onMessage = (event: MessageEvent) => {
       if (!frameRef.current || event.source !== frameRef.current.contentWindow) return
-      const data = event.data as { type?: unknown; url?: unknown } | null
-      if (data?.type === PREVIEW_ERROR_MESSAGE) setStatus("error")
+      const data = event.data as { type?: unknown; url?: unknown; reason?: unknown } | null
+      if (data?.type === PREVIEW_ERROR_MESSAGE) {
+        setSiteBlocked(data.reason === "blocked")
+        setStatus("error")
+      }
       if (data?.type === PREVIEW_READY_MESSAGE) {
         setContentConfirmed(true)
         setStatus("loaded")
@@ -155,7 +162,7 @@ export function BookmarkWebview({
         </header>
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {website && embedCheck.isPending && (
+            {website && !youtubeEmbedUrl && embedCheck.isPending && (
               <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground" role="status">
                 <Spinner aria-hidden="true" /> Preparing preview…
               </div>
@@ -183,29 +190,47 @@ export function BookmarkWebview({
                     <CardDescription>{website.hostname}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col items-start gap-3 px-4 pb-4">
-                    {unavailable && <p className="text-sm text-muted-foreground">This preview could not be loaded. Open the original to read it.</p>}
+                    {unavailable && (
+                      <p className="text-sm text-muted-foreground">
+                        {siteBlocked
+                          ? `${website.hostname} blocks previews from other apps, so it can only be read on the original site.`
+                          : "This preview could not be loaded. Open the original to read it."}
+                      </p>
+                    )}
                     <p className="line-clamp-4 text-sm">{bookmark.description || "No description saved for this link."}</p>
+                    {siteBlocked && !bookmark.description && (
+                      <p className="text-xs text-muted-foreground">Saving this page with the Cabinet browser extension keeps its title, description, and image.</p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       <Button asChild><a href={website.href} target="_blank" rel="noopener noreferrer"><ArrowSquareOut data-icon="inline-start" />Open original</a></Button>
-                      <Button variant="outline" onClick={() => { setShowSummary(false); setStatus("loading"); setContentConfirmed(false); setReload((value) => value + 1) }}>Try the live preview</Button>
+                      {!siteBlocked && <Button variant="outline" onClick={() => { setShowSummary(false); setStatus("loading"); setContentConfirmed(false); setReload((value) => value + 1) }}>Try the live preview</Button>}
                     </div>
                   </CardContent>
                 </Card>
               </div>
             )}
             {showFrame && (
-              <iframe
-                key={reload}
-                ref={frameRef}
-                src={blocked ? getProxiedPageUrl(frameUrl ?? website.href) : website.href}
-                title={bookmark.title || website.hostname}
-                className="min-h-0 w-full flex-1 border-0 bg-white"
-                sandbox={blocked ? PROXIED_FRAME_SANDBOX : DIRECT_FRAME_SANDBOX}
-                referrerPolicy="no-referrer"
-                onLoad={() => setStatus("loaded")}
-                onError={() => { setStatus("error"); setShowSummary(true) }}
-                allowFullScreen
-              />
+              <div className="relative flex min-h-0 flex-1 flex-col">
+                <iframe
+                  key={reload}
+                  ref={frameRef}
+                  src={youtubeEmbedUrl ?? (blocked ? getProxiedPageUrl(frameUrl ?? website.href) : website.href)}
+                  title={bookmark.title || website.hostname}
+                  // A proxied page can render and then break while its scripts start, so keep it hidden until the proxy confirms it.
+                  className={cn("min-h-0 w-full flex-1 border-0 bg-white", blocked && !contentConfirmed && "invisible")}
+                  sandbox={blocked ? PROXIED_FRAME_SANDBOX : DIRECT_FRAME_SANDBOX}
+                  referrerPolicy={youtubeEmbedUrl ? "strict-origin-when-cross-origin" : "no-referrer"}
+                  allow={youtubeEmbedUrl ? "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" : undefined}
+                  onLoad={() => { if (!blocked) setStatus("loaded") }}
+                  onError={() => { setStatus("error"); setShowSummary(true) }}
+                  allowFullScreen
+                />
+                {blocked && !contentConfirmed && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground" aria-hidden="true">
+                    <Spinner />
+                  </div>
+                )}
+              </div>
             )}
             {!website && <p role="alert" className="p-6">Only valid HTTP and HTTPS websites can be previewed.</p>}
           </section>

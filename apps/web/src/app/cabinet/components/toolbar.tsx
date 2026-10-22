@@ -9,25 +9,22 @@ import {
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup, DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { SortAscending, MagnifyingGlass, Plus, SquaresFour, List, CaretDown, BookmarkSimple, FileText, Scribble, X, Sliders, Command } from "@phosphor-icons/react"
+import { SortAscending, MagnifyingGlass, Plus, CaretDown, BookmarkSimple, FileText, Scribble, X, Sliders, Command } from "@phosphor-icons/react"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { bookmarkSortOptions, isBookmarkSort, type BookmarkSort } from "@/lib/bookmark-order"
-import { defaultDisplayPreferences, type DisplayPreferences } from "./display-preferences"
+import { defaultDisplayPreferences, densityOptions, isDensity, type DisplayPreferences } from "./display-preferences"
 import { BookmarkDialog } from "./bookmark-dialog"
 
 interface ViewControlsProps {
   sort?: BookmarkSort
   onSortChange?: (sort: BookmarkSort) => void
   sortDisabled?: boolean
-  viewMode: "list" | "moodboard"
-  onViewModeChange: (mode: "list" | "moodboard") => void
   displayPreferences?: DisplayPreferences
   onDisplayPreferencesChange?: (preferences: DisplayPreferences) => void
 }
 
 export function BookmarkViewControls({
-  sort = "custom", onSortChange, sortDisabled = false, viewMode, onViewModeChange,
+  sort = "custom", onSortChange, sortDisabled = false,
   displayPreferences = defaultDisplayPreferences, onDisplayPreferencesChange,
 }: ViewControlsProps) {
   return (
@@ -47,10 +44,6 @@ export function BookmarkViewControls({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ToggleGroup type="single" spacing={0} className="overflow-hidden rounded-md border border-border" value={viewMode} onValueChange={(value) => { if (value === "list" || value === "moodboard") onViewModeChange(value) }} aria-label="Bookmark view">
-        <ToggleGroupItem value="moodboard" aria-label="Moodboard View" title="Moodboard View (2)" className="size-11 sm:size-9"><SquaresFour /></ToggleGroupItem>
-        <ToggleGroupItem value="list" aria-label="List View" title="List View (1)" className="size-11 sm:size-9"><List /></ToggleGroupItem>
-      </ToggleGroup>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -59,9 +52,8 @@ export function BookmarkViewControls({
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Density</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={displayPreferences.density} onValueChange={(value) => { if (value === "comfortable" || value === "compact") onDisplayPreferencesChange?.({ ...displayPreferences, density: value }) }}>
-              <DropdownMenuRadioItem value="comfortable">Comfortable</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
+            <DropdownMenuRadioGroup value={displayPreferences.density} onValueChange={(value) => { if (isDensity(value)) onDisplayPreferencesChange?.({ ...displayPreferences, density: value }) }}>
+              {densityOptions.map((option) => <DropdownMenuRadioItem key={option.value} value={option.value}>{option.label}</DropdownMenuRadioItem>)}
             </DropdownMenuRadioGroup>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

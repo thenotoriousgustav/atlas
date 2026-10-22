@@ -58,3 +58,28 @@ export type ItemAccess = "owner" | "editor" | "viewer"
 export function itemAccess(bookmark: { access?: ItemAccess; canEdit?: boolean }): ItemAccess {
   return bookmark.access ?? (bookmark.canEdit === false ? "viewer" : "owner")
 }
+
+type NoteNode = { type?: string; text?: string; content?: NoteNode[] }
+
+const nodeText = (node: NoteNode): string =>
+  node.type === "hardBreak" ? "\n" : typeof node.text === "string" ? node.text : (node.content ?? []).map(nodeText).join("")
+
+/**
+ * The quoted text of a highlight saved from a web page: a note that keeps its page's address and
+ * opens with a quote. Other notes, including ones that merely start with a quote, return null.
+ */
+export function highlightQuote(bookmark: BookmarkLike & { noteDocument?: unknown }): string | null {
+  if (!isNoteBookmark(bookmark) || !parsedUrl(bookmark.url)) return null
+  let document = bookmark.noteDocument
+  if (typeof document === "string") {
+    try {
+      document = JSON.parse(document)
+    } catch {
+      return null
+    }
+  }
+  const first = (document as NoteNode | null)?.content?.[0]
+  if (first?.type !== "blockquote") return null
+  const quote = (first.content ?? []).map(nodeText).map((part) => part.trim()).filter(Boolean).join("\n\n")
+  return quote || null
+}

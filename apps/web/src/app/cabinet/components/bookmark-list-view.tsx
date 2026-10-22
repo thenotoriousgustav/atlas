@@ -100,7 +100,7 @@ export function BookmarkListView({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {preferences.showWebsite && hostname && <span className="max-w-full truncate">{hostname}</span>}
                     {preferences.showFolder && bookmark.folder && <span className="flex min-w-0 items-center gap-1"><FolderSimple className="size-3" /><span className="truncate">{bookmark.folder.name}</span></span>}
-                    {bookmark.isFavorite && <span className="flex items-center gap-1 text-library-olive" title="Favorite"><Star className="size-3 text-library-olive" weight="fill" /></span>}
+                    {bookmark.isFavorite && <span className="flex items-center gap-1 text-amber-500 dark:text-amber-400" title="Favorite"><Star className="size-3" weight="fill" /></span>}
                     {preferences.showDate && date && <time dateTime={bookmark.createdAt} title="Date added" className="tabular-nums md:hidden">{date}</time>}
                     {(inCabinet || isVideo) && <Badge variant="secondary">{isDrawing ? "Drawing" : isNote ? "Note" : "Video"}</Badge>}
                     {bookmark.tags?.slice(0, 2).map((tag: any) => <button type="button" key={tag.id || tag.name} onClick={(event) => { event.stopPropagation(); onSelectTag(tag.name) }} className="hover:text-library-olive focus-visible:outline-2 focus-visible:outline-ring">#{tag.name}</button>)}
@@ -114,7 +114,7 @@ export function BookmarkListView({
                     <Button onClick={() => onRestoreBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Restore" aria-label="Restore"><ArrowCounterClockwise /></Button>
                     <Button onClick={() => onPermanentDeleteBookmark?.(bookmark.id)} variant="ghost" size="icon" title="Delete permanently" aria-label="Delete permanently"><Trash /></Button>
                   </> : <>
-                    {own && <Button onClick={() => onToggleFavorite(bookmark)} variant="ghost" size="icon" className={cn("hidden sm:inline-flex", bookmark.isFavorite ? "opacity-100" : "sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus-within:opacity-100")} title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}><Star className={cn(bookmark.isFavorite && "text-library-olive")} weight={bookmark.isFavorite ? "fill" : "regular"} /></Button>}
+                    {own && <Button onClick={() => onToggleFavorite(bookmark)} variant="ghost" size="icon" className={cn("hidden sm:inline-flex", bookmark.isFavorite ? "opacity-100" : "sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus-within:opacity-100")} title={bookmark.isFavorite ? "Unfavorite" : "Favorite"}><Star className={cn(bookmark.isFavorite && "text-amber-500 dark:text-amber-400")} weight={bookmark.isFavorite ? "fill" : "regular"} /></Button>}
                     <Button type="button" onClick={() => onOpenActionSheet?.(bookmark)} variant="ghost" size="icon" className="size-11 md:hidden" title="More actions"><DotsThreeVertical /></Button>
                     <div className="hidden md:inline-flex">
                       <DropdownMenu>

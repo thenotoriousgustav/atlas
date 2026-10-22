@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, PaintBrush, User, Database, Wrench, Keyboard, Sun, Moon, Desktop, DownloadSimple, UploadSimple, GithubLogo, GoogleLogo, SignOut, Trash, ArrowCounterClockwise, SquaresFour, List, Hash as Tag } from "@phosphor-icons/react"
+import { ArrowLeft, PaintBrush, User, Database, Wrench, Keyboard, Sun, Moon, Desktop, DownloadSimple, UploadSimple, SignOut, Trash, ArrowCounterClockwise, Hash as Tag } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -16,9 +16,10 @@ import { toast } from "@/components/ui/sonner"
 import { useConfirm } from "@/hooks/use-confirm"
 import { authClient } from "@/lib/auth-client"
 import { AXIOS_INSTANCE, useBookmarksControllerGetHealthSummary, useBookmarksControllerFindAll, useBookmarksControllerGetDuplicates, useBookmarksControllerCleanDuplicates, useBookmarksControllerTriggerHealthCheck, useBookmarksControllerImport } from "@/lib/api-client"
-import { defaultDisplayPreferences, type DisplayPreferences } from "../components/display-preferences"
+import { defaultDisplayPreferences, densityOptions, isDensity, type DisplayPreferences } from "../components/display-preferences"
 import { MoodboardCard } from "../components/bookmark-moodboard-view"
 import { TagsSettings } from "./tags-settings"
+import { DeleteAccount, SignInMethods } from "./account-settings"
 
 const settingsTabs = ["appearance", "account", "data", "tags", "maintenance", "shortcuts"] as const
 type SettingsTab = (typeof settingsTabs)[number]
@@ -56,7 +57,6 @@ export default function SettingsPage() {
     window.history.replaceState(window.history.state, "", url)
   }
   const [displayPrefs, setDisplayPrefs] = useState<DisplayPreferences>(defaultDisplayPreferences)
-  const [defaultViewMode, setDefaultViewMode] = useState<"list" | "moodboard">("list")
   const [preferenceStatus, setPreferenceStatus] = useState("")
   const { data: previewData, isLoading: isPreviewLoading, isError: isPreviewError } = useBookmarksControllerFindAll({ limit: 1, sort: "newest", isArchived: false, isTrash: false }, { query: { staleTime: 60000 } })
   const previewBookmark = (previewData as any)?.data?.data?.[0]
@@ -74,8 +74,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true)
-    const savedMode = localStorage.getItem("cabinet_view_mode")
-    if (savedMode === "list" || savedMode === "moodboard") setDefaultViewMode(savedMode)
     try {
       const parsed = JSON.parse(localStorage.getItem("cabinet_display_preferences") || "null")
       if (typeof parsed === "object" && parsed !== null) setDisplayPrefs({ ...defaultDisplayPreferences, ...parsed })
@@ -90,10 +88,6 @@ export default function SettingsPage() {
     const updated = { ...displayPrefs, [key]: value }
     setDisplayPrefs(updated)
     savePreference("cabinet_display_preferences", JSON.stringify(updated))
-  }
-  const handleViewModeToggle = (mode: "list" | "moodboard") => {
-    setDefaultViewMode(mode)
-    savePreference("cabinet_view_mode", mode)
   }
   const handleExport = async () => {
     setIsExporting(true)
@@ -151,12 +145,6 @@ export default function SettingsPage() {
     } catch { toast.error("Failed to empty trash") }
     finally { setIsEmptyingTrash(false) }
   }
-  const handleLinkSocial = async (provider: "github" | "google") => {
-    try {
-      const { error } = await authClient.linkSocial({ provider, callbackURL: `${window.location.origin}/cabinet/settings`, errorCallbackURL: `${window.location.origin}/cabinet/settings?error=link_failed` })
-      if (error) throw new Error(error.message || "Failed to link account")
-    } catch (error: any) { toast.error(error.message || "Failed to link account") }
-  }
   const handleLogout = async () => {
     try {
       const { error } = await authClient.signOut()
@@ -189,15 +177,11 @@ export default function SettingsPage() {
             </ToggleGroup>
           </SettingsSection>
           <SettingsSection title="Layout & density" description="Choose how much of your collection fits on screen. These preferences are saved in this browser.">
-            <div className="flex flex-col gap-2"><p className="text-sm font-medium">Default view</p>
-              <ToggleGroup type="single" variant="outline" value={defaultViewMode} onValueChange={(value) => { if (value === "list" || value === "moodboard") handleViewModeToggle(value) }} aria-label="Default view">
-                <ToggleGroupItem value="list" className="min-h-11 gap-2"><List />List</ToggleGroupItem><ToggleGroupItem value="moodboard" className="min-h-11 gap-2"><SquaresFour />Moodboard</ToggleGroupItem>
-              </ToggleGroup>
-            </div>
             <div className="flex flex-col gap-2"><p className="text-sm font-medium">Density</p>
-              <ToggleGroup type="single" variant="outline" value={displayPrefs.density} onValueChange={(value) => { if (value === "comfortable" || value === "compact") handlePrefToggle("density", value) }} aria-label="Density">
-                <ToggleGroupItem value="comfortable" className="min-h-11">Comfortable</ToggleGroupItem><ToggleGroupItem value="compact" className="min-h-11">Compact</ToggleGroupItem>
+              <ToggleGroup type="single" variant="outline" value={displayPrefs.density} onValueChange={(value) => { if (isDensity(value)) handlePrefToggle("density", value) }} aria-label="Density">
+                {densityOptions.map((option) => <ToggleGroupItem key={option.value} value={option.value} className="min-h-11">{option.label}</ToggleGroupItem>)}
               </ToggleGroup>
+              <p className="text-xs text-muted-foreground">Visual shows previews edge to edge with just the title, like a gallery.</p>
             </div>
           </SettingsSection>
           <SettingsSection title="Visible details" description="Keep the details you use and hide the rest. Your saved content is never changed.">
@@ -222,15 +206,24 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3"><span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-secondary text-lg">{user?.name?.[0]?.toUpperCase() || "C"}</span><div className="min-w-0"><p className="truncate text-base font-medium">{user?.name || "Cabinet User"}</p><p className="truncate text-sm text-muted-foreground">{user?.email || "No email available"}</p></div></div>
             {user?.id && <p className="text-xs text-muted-foreground">Account ID: <code>{user.id.slice(0, 8)}</code></p>}
           </SettingsSection>
-          <SettingsSection title="Sign-in methods" description="Link GitHub or Google to use another way to sign in.">
-            {([ ["github", "GitHub", GithubLogo], ["google", "Google", GoogleLogo] ] as const).map(([provider, label, Icon]) => <div key={provider} className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm"><Icon />{label}</span><Button variant="outline" onClick={() => handleLinkSocial(provider)}>Link {label}</Button></div>)}
+          <SettingsSection title="Sign-in methods" description="The accounts you can sign in with. Connect both so you always have a way back in.">
+            <SignInMethods />
           </SettingsSection>
           <SettingsSection title="Session" description="Sign out of Cabinet on this browser. Your saved library stays in your account."><Button variant="outline" className="w-fit" onClick={handleLogout}><SignOut data-icon="inline-start" />Sign Out</Button></SettingsSection>
+          <SettingsSection title="Delete account" description="Close your Cabinet account and erase your library.">
+            <DeleteAccount />
+          </SettingsSection>
         </TabsContent>
         <TabsContent value="data" className="flex flex-col gap-8">
           <SettingsSection title="Export your bookmarks" description="Download a standard HTML bookmarks file to keep a backup or move to another browser."><Button className="w-fit" disabled={isExporting} onClick={handleExport}>{isExporting ? <Spinner /> : <DownloadSimple data-icon="inline-start" />}{isExporting ? "Generating export…" : "Download HTML export"}</Button><p className="text-xs text-muted-foreground">Compatible with Chrome, Safari, Firefox, Arc, Brave, and Raindrop.io.</p></SettingsSection>
           <SettingsSection title="Import bookmarks" description="Bring an HTML bookmarks export into Cabinet. Folders are preserved and previews are fetched in the background.">
             <label className="relative w-fit rounded-md has-focus-visible:outline-2 has-focus-visible:outline-ring"><span className="flex min-h-11 items-center gap-2 rounded-md border border-input px-4 text-sm">{isImporting ? <Spinner /> : <UploadSimple />}{isImporting ? "Importing…" : "Choose HTML file"}</span><input type="file" accept=".html" aria-label="Choose HTML file to import" onChange={handleImportFile} disabled={isImporting} className="absolute inset-0 size-full cursor-pointer opacity-0" /></label>
+            <p className="text-xs text-muted-foreground">
+              Butuh panduan ekspor langkah demi langkah dari Chrome, Safari, atau Raindrop?{" "}
+              <Link href="/cabinet/integrations" className="text-foreground underline underline-offset-4 hover:text-primary">
+                Buka panduan integrasi lengkap &amp; alur visual →
+              </Link>
+            </p>
           </SettingsSection>
         </TabsContent>
         <TabsContent value="tags" className="flex flex-col gap-8">
@@ -249,7 +242,7 @@ export default function SettingsPage() {
         <TabsContent value="shortcuts" className="flex flex-col gap-8">
           <SettingsSection title="Keyboard shortcuts" description="Move through your library without leaving the keyboard.">
             <dl className="flex flex-col divide-y divide-border/70">{[
-              ["/", "Focus search"], ["N", "Create note"], ["D", "New drawing"], ["B", "Add bookmark"], ["1", "List view"], ["2", "Moodboard view"], ["⌘B", "Toggle sidebar"], ["⌘K", "Command menu"], ["Space / Enter", "Pick up or drop an item"], ["Arrow keys", "Move a sortable item"], ["Esc", "Clear selection, cancel drag, or close dialog"], ["Click", "Open an item in Cabinet"], ["Shift + Click", "Select items"], ["⌘ / Ctrl + Click", "Open the original in a new tab"], ["← / →", "Previous or next item in preview"],
+              ["/", "Focus search"], ["N", "Create note"], ["D", "New drawing"], ["B", "Add bookmark"], ["⌘B", "Toggle sidebar"], ["⌘K", "Command menu"], ["Space / Enter", "Pick up or drop an item"], ["Arrow keys", "Move a sortable item"], ["Esc", "Clear selection, cancel drag, or close dialog"], ["Click", "Open an item in Cabinet"], ["Shift + Click", "Select items"], ["⌘ / Ctrl + Click", "Open the original in a new tab"], ["← / →", "Previous or next item in preview"],
             ].map(([keys, label]) => <div key={keys} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"><dt className="text-sm">{label}</dt><dd className="shrink-0"><kbd className="rounded-sm border border-border bg-muted px-2 py-1 text-xs">{keys}</kbd></dd></div>)}</dl>
           </SettingsSection>
         </TabsContent>

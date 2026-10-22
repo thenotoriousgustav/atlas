@@ -60,6 +60,7 @@ import { MobileBottomNav, type MobileTab } from "./components/mobile-bottom-nav"
 import { MobileAddBookmarkDrawer } from "./components/mobile-add-bookmark-drawer"
 import { DownloadMediaDialog } from "./components/download-media-dialog"
 import { CommandMenu } from "./components/command-menu"
+import { RediscoverDialog } from "./components/rediscover-dialog"
 import { BulkActionsSheet, BulkTagForm } from "./components/bulk-actions-sheet"
 import { useCabinetFilters } from "./hooks/use-cabinet-filters"
 import { useBookmarkMutations } from "./hooks/use-bookmark-mutations"
@@ -131,7 +132,6 @@ function CabinetWorkspace() {
     setSearchQuery,
     searchDebounced,
     viewMode,
-    handleViewModeChange,
     sort,
     handleSortChange,
     filterBroken,
@@ -169,6 +169,12 @@ function CabinetWorkspace() {
   const [isMobileAddOpen, setIsMobileAddOpen] = useState(false)
   const [downloadBookmark, setDownloadBookmark] = useState<any | null>(null)
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false)
+  const [isRediscoverOpen, setIsRediscoverOpen] = useState(false)
+  const [rediscoverSession, setRediscoverSession] = useState(0)
+  const openRediscover = () => {
+    setRediscoverSession((value) => value + 1)
+    setIsRediscoverOpen(true)
+  }
   const [isBulkSheetOpen, setIsBulkSheetOpen] = useState(false)
   const [previewBookmark, setPreviewBookmark] = useState<any | null>(null)
 
@@ -714,19 +720,6 @@ function CabinetWorkspace() {
         return
       }
 
-      // 1: Switch to List View
-      if (e.key === "1") {
-        e.preventDefault()
-        handleViewModeChange("list")
-        return
-      }
-
-      // 2: Switch to Moodboard (Grid) View
-      if (e.key === "2") {
-        e.preventDefault()
-        handleViewModeChange("moodboard")
-        return
-      }
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -736,7 +729,6 @@ function CabinetWorkspace() {
     selectedFolderId,
     resetBookmarkForm,
     setIsBookmarkModalOpen,
-    handleViewModeChange,
     isBookmarkModalOpen,
     isFolderModalOpen,
     isMobileAddOpen,
@@ -851,6 +843,7 @@ function CabinetWorkspace() {
     >
       <Sidebar variant="floating" collapsible="offcanvas">
               <CabinetSidebarFilters
+                onOpenRediscover={openRediscover}
                 user={user}
                 onLogout={handleLogout}
                 selectedFolderId={selectedFolderId}
@@ -981,8 +974,6 @@ function CabinetWorkspace() {
                     handleSortChange(value)
                   }}
                   sortDisabled={!!filterDuplicates}
-                  viewMode={viewMode}
-                  onViewModeChange={handleViewModeChange}
                   displayPreferences={displayPreferences}
                   onDisplayPreferencesChange={handleDisplayPreferencesChange}
                 />}
@@ -1067,6 +1058,16 @@ function CabinetWorkspace() {
       </SidebarInset>
 
       {/* Global Command Menu ⌘K */}
+      <RediscoverDialog
+        key={rediscoverSession}
+        session={rediscoverSession}
+        open={isRediscoverOpen}
+        onOpenChange={setIsRediscoverOpen}
+        onOpenItem={handleOpenFromCommandMenu}
+        onToggleFavorite={toggleFavorite}
+        onArchive={toggleArchive}
+        onTrash={handleDeleteBookmark}
+      />
       <CommandMenu
         open={isCommandMenuOpen}
         onOpenChange={setIsCommandMenuOpen}
@@ -1093,7 +1094,7 @@ function CabinetWorkspace() {
         onScanHealth={handleScan}
         onCreateNote={handleCreateNote}
         onCreateDrawing={handleCreateDrawing}
-        onViewModeChange={handleViewModeChange}
+        onOpenRediscover={openRediscover}
       />
 
       <ActionBar
