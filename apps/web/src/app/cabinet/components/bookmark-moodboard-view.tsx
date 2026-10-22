@@ -831,7 +831,7 @@ export function MoodboardCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 draggable={false}
-                onClick={activate}
+                onClick={(event) => event.stopPropagation()}
                 className={cn("group/link line-clamp-2 leading-6 font-medium text-foreground decoration-foreground/30 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring", preferences.density === "compact" ? "text-sm" : "text-[15px]")}
               >
                 {bookmark.title || bookmark.url}
