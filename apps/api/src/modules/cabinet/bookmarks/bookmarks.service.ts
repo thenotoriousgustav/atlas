@@ -31,6 +31,14 @@ import { validatePublicUrl } from "@/common/utils/ssrf"
 import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from "./bookmark-order"
 import { accessibleFolder, editableBookmark, editableFolder, folderSummary, shareableNoteFields, viewableBookmark, writableFolder } from "../folders/folder-access"
 import { frameBlockedByHeaders } from "./embed-policy"
+import {
+  MAX_PROXIED_PAGE_BYTES,
+  decodeHtml,
+  isHtmlContentType,
+  proxiedPageHeaders,
+  proxyErrorPage,
+  rewriteProxiedPage,
+} from "./page-proxy"
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -958,6 +966,64 @@ export class BookmarksService implements OnModuleInit {
     return { embeddable: true }
   }
 
+  /**
+   * Serves a page the browser refuses to frame directly. The response drops the site's
+   * framing headers and runs under a CSP sandbox with an opaque origin; see page-proxy.ts.
+   * Failures answer with a small page that tells the parent app to fall back.
+   */
+  async proxyPage(url: string, res: Response) {
+    const fail = (status: number, message: string) =>
+      res.status(status).set(proxiedPageHeaders()).send(proxyErrorPage(message))
+
+    let target = url
+    for (let hop = 0; hop < 4; hop++) {
+      try {
+        await validatePublicUrl(target)
+      } catch (err: any) {
+        return fail(400, `This address cannot be previewed: ${err.message}`)
+      }
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      try {
+        const response = await fetch(target, {
+          redirect: "manual",
+          signal: controller.signal,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.8",
+          },
+        })
+        const location = response.headers.get("location")
+        if (response.status >= 300 && response.status < 400 && location) {
+          target = new URL(location, target).toString()
+          continue
+        }
+        if (!response.ok) {
+          return fail(502, `The website answered with status ${response.status}.`)
+        }
+        const contentType = response.headers.get("content-type")
+        if (!isHtmlContentType(contentType)) {
+          // Files such as PDFs and images are not subject to framing headers; load them directly.
+          return res.redirect(302, target)
+        }
+        const body = await readBodyWithLimit(response, MAX_PROXIED_PAGE_BYTES)
+        if (!body) return fail(502, "The page is too large to preview.")
+        return res
+          .status(200)
+          .set(proxiedPageHeaders())
+          .send(rewriteProxiedPage(decodeHtml(body, contentType), target))
+      } catch (err: any) {
+        const reason = err?.name === "AbortError" ? "The website took too long to respond." : "The website could not be reached."
+        return fail(502, reason)
+      } finally {
+        clearTimeout(timeout)
+      }
+    }
+    return fail(502, "The website redirected too many times.")
+  }
+
   async getHealthSummary(userId: string) {
     const total = await this.prisma.bookmark.count({
       where: { userId, deletedAt: null },
@@ -1218,4 +1284,29 @@ export class BookmarksService implements OnModuleInit {
   async downloadMedia(dto: DownloadMediaDto, res: Response) {
     return this.cabinetMediaService.download(dto, res)
   }
+}
+
+/** Collects a response body, or returns null once it exceeds the byte limit. */
+async function readBodyWithLimit(response: globalThis.Response, limit: number): Promise<Uint8Array | null> {
+  if (!response.body) return new Uint8Array()
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > limit) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const body = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    body.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return body
 }

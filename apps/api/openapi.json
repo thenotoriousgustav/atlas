@@ -211,6 +211,35 @@
         ]
       }
     },
+    "/v1/bookmarks/proxy-page": {
+      "get": {
+        "operationId": "BookmarksController_proxyPage",
+        "parameters": [
+          {
+            "name": "url",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Serve a page that forbids framing, rewritten for a sandboxed preview iframe",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/media/extract": {
       "get": {
         "operationId": "BookmarksController_extractMedia",

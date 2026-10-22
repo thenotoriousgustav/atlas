@@ -1,10 +1,17 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { AXIOS_INSTANCE } from "@/lib/api-client"
 import { ArrowClockwise, ArrowSquareOut, CaretLeft, CaretRight, SidebarSimple, X } from "@phosphor-icons/react"
 import { getProxiedImageUrl } from "@/lib/bookmark-image"
+import {
+  DIRECT_FRAME_SANDBOX,
+  PREVIEW_ERROR_MESSAGE,
+  PREVIEW_NAVIGATE_MESSAGE,
+  PROXIED_FRAME_SANDBOX,
+  getProxiedPageUrl,
+} from "@/lib/bookmark-page"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import {
@@ -51,17 +58,42 @@ export function BookmarkWebview({
     retry: false,
   })
   const blocked = embedCheck.data === false
+  // Sites that forbid framing load through the API proxy instead; it reports when it cannot.
+  const [proxyFailed, setProxyFailed] = useState(false)
+  const [frameUrl, setFrameUrl] = useState<string | null>(null)
+  const frameRef = useRef<HTMLIFrameElement>(null)
   const [showSummary, setShowSummary] = useState(false)
   const thumbnail = getProxiedImageUrl(bookmark.imageUrl)
   const [thumbnailFailed, setThumbnailFailed] = useState(false)
-  const showReference = blocked || showSummary
-  const showFrame = !!website && !blocked && !embedCheck.isPending
+  const unavailable = blocked && proxyFailed
+  const proxied = blocked && !proxyFailed
+  const showReference = unavailable || showSummary
+  const showFrame = !!website && !unavailable && !embedCheck.isPending
 
   useEffect(() => {
     if (!showFrame || status !== "loading") return
     const timeout = window.setTimeout(() => setStatus("slow"), 6000)
     return () => window.clearTimeout(timeout)
   }, [showFrame, status, reload])
+
+  useEffect(() => {
+    if (!proxied) return
+    const onMessage = (event: MessageEvent) => {
+      if (!frameRef.current || event.source !== frameRef.current.contentWindow) return
+      const data = event.data as { type?: unknown; url?: unknown } | null
+      if (data?.type === PREVIEW_ERROR_MESSAGE) {
+        setProxyFailed(true)
+      } else if (data?.type === PREVIEW_NAVIGATE_MESSAGE && typeof data.url === "string") {
+        // The frame cannot navigate itself: it would hit the framing headers again and lose the session cookie.
+        const next = safeHttpUrl(data.url)
+        if (!next) return
+        setStatus("loading")
+        setFrameUrl(next.href)
+      }
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  }, [proxied])
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
@@ -134,7 +166,7 @@ export function BookmarkWebview({
             )}
             {showFrame && !showSummary && status !== "loaded" && (
               <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 text-xs text-muted-foreground" role="status">
-                {status === "loading" ? <><Spinner aria-hidden="true" /> Loading website…</> : "This website is slow to load, or it may not allow previews."}
+                {status === "loading" ? <><Spinner aria-hidden="true" /> {proxied ? "Loading website through Cabinet…" : "Loading website…"}</> : "This website is slow to load, or it may not allow previews."}
                 {status !== "loading" && <Button variant="link" size="xs" onClick={() => setShowSummary(true)}>Show saved details instead</Button>}
               </div>
             )}
@@ -154,11 +186,11 @@ export function BookmarkWebview({
                     <CardDescription>{website.hostname}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col items-start gap-3 px-4 pb-4">
-                    {blocked && <p className="text-sm text-muted-foreground">{website.hostname.replace(/^www\./, "")} does not allow previews inside other apps. Open the original to read it.</p>}
+                    {unavailable && <p className="text-sm text-muted-foreground">{website.hostname.replace(/^www\./, "")} does not allow previews inside other apps. Open the original to read it.</p>}
                     <p className="line-clamp-4 text-sm">{bookmark.description || "No description saved for this link."}</p>
                     <div className="flex flex-wrap gap-2">
                       <Button asChild><a href={website.href} target="_blank" rel="noopener noreferrer"><ArrowSquareOut data-icon="inline-start" />Open original</a></Button>
-                      {!blocked && <Button variant="outline" onClick={() => { setShowSummary(false); setStatus("loading"); setReload((value) => value + 1) }}>Try the live preview</Button>}
+                      {!unavailable && <Button variant="outline" onClick={() => { setShowSummary(false); setStatus("loading"); setReload((value) => value + 1) }}>Try the live preview</Button>}
                     </div>
                   </CardContent>
                 </Card>
@@ -167,11 +199,12 @@ export function BookmarkWebview({
             {showFrame && (
               <iframe
                 key={reload}
+                ref={frameRef}
                 hidden={showSummary}
-                src={website.href}
+                src={proxied ? getProxiedPageUrl(frameUrl ?? website.href) : website.href}
                 title={bookmark.title || website.hostname}
                 className="min-h-0 w-full flex-1 border-0 bg-white"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                sandbox={proxied ? PROXIED_FRAME_SANDBOX : DIRECT_FRAME_SANDBOX}
                 referrerPolicy="no-referrer"
                 onLoad={() => setStatus("loaded")}
                 onError={() => { setStatus("error"); setShowSummary(true) }}

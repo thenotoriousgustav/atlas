@@ -84,6 +84,13 @@ export class BookmarksController {
     return this.bookmarksService.checkEmbeddable(url);
   }
 
+  @Get('proxy-page')
+  @ApiOperation({ summary: 'Serve a page that forbids framing, rewritten for a sandboxed preview iframe' })
+  @ApiQuery({ name: 'url', required: true })
+  async proxyPage(@Query('url') url: string, @Res() res: Response) {
+    return this.bookmarksService.proxyPage(url, res);
+  }
+
   @Get('media/extract')
   @ApiOperation({ summary: 'Extract downloadable video/audio formats using yt-dlp' })
   @ApiQuery({ name: 'url', required: true })
