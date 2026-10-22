@@ -526,6 +526,35 @@
         ]
       }
     },
+    "/v1/bookmarks/rediscover": {
+      "get": {
+        "operationId": "BookmarksController_rediscover",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get a shuffled selection of older saved items to revisit",
+        "tags": [
+          "bookmarks"
+        ]
+      }
+    },
     "/v1/bookmarks/duplicates": {
       "get": {
         "operationId": "BookmarksController_getDuplicates",
@@ -1855,6 +1884,21 @@
             "type": "string",
             "example": "Quick summary or excerpt",
             "description": "Short description"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://example.com/cover.png",
+            "description": "Preview image read from the page by the client, used when the server cannot fetch the page"
+          },
+          "faviconUrl": {
+            "type": "string",
+            "example": "https://example.com/favicon.ico",
+            "description": "Favicon read from the page by the client"
+          },
+          "siteName": {
+            "type": "string",
+            "example": "Medium",
+            "description": "Site name read from the page by the client"
           },
           "noteDocument": {
             "type": "object",

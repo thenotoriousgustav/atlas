@@ -44,6 +44,21 @@ export class EnrichmentProcessor extends WorkerHost {
       this.logger.log(`Extracting generic OpenGraph metadata for ${url} via MetadataService`);
       const extracted = await this.metadataService.extract(url);
 
+      if (extracted.unavailable) {
+        // Sites behind bot protection (e.g. Medium) refuse server fetches. Keep what the
+        // bookmark already has, such as metadata the browser extension read from the page.
+        await this.prisma.bookmark.update({
+          where: { id: bookmarkId },
+          data: {
+            metadataStatus: MetadataStatus.FAILED,
+            metadataError: 'The website blocked or did not answer the metadata request',
+            lastEnrichedAt: new Date(),
+          },
+        });
+        this.logger.warn(`Website unavailable for bookmark ${bookmarkId}; kept existing metadata`);
+        return;
+      }
+
       await this.prisma.bookmark.update({
         where: { id: bookmarkId },
         data: {
@@ -53,6 +68,7 @@ export class EnrichmentProcessor extends WorkerHost {
           imageUrl: extracted.imageUrl || bookmark.imageUrl,
           faviconUrl: extracted.faviconUrl || bookmark.faviconUrl,
           siteName: extracted.siteName || bookmark.siteName,
+          contentType: extracted.contentType ?? bookmark.contentType,
           metadataStatus: MetadataStatus.COMPLETED,
           metadataError: null,
           lastEnrichedAt: new Date(),

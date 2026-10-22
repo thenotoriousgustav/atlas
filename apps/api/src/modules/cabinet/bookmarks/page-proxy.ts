@@ -63,22 +63,41 @@ const escapeHtml = (value: string) =>
  */
 const navigationScript = `(function(){\n  if (window.parent === window) return;\n  document.addEventListener("click", function (event) {\n    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;\n    var link = event.target && event.target.closest ? event.target.closest("a[href]") : null;\n    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;\n    var href = link.href;\n    if (!/^https?:/i.test(href)) return;\n    if (href.split("#")[0] === location.href.split("#")[0] && href.indexOf("#") !== -1) return;\n    event.preventDefault();\n    window.parent.postMessage({ type: ${JSON.stringify(PREVIEW_NAVIGATE_MESSAGE)}, url: href }, "*");\n  }, true);\n})();`
 
+/**
+ * Server-rendered apps often show their content and then crash while hydrating on the
+ * proxy origin (e.g. Next.js "Application error"). Ready is only reported once content has
+ * held steady after the page loaded, and the page keeps being watched afterwards so a late
+ * crash still sends the app back to the saved details.
+ */
 // shortcut: visible text or a loaded large image signals content, not full app functionality.
 const readinessScript = `(function () {
   if (window.parent === window) return;
-  var attempts = 0;
+  var post = function (type) { window.parent.postMessage({ type: type }, "*"); };
+  var ticks = 0, peak = 0, steady = 0, ready = false;
   var timer = setInterval(function () {
+    ticks++;
     var body = document.body;
     var text = body ? body.innerText.trim() : "";
     var image = Array.from(document.images).some(function (img) {
       return img.complete && img.naturalWidth >= 200 && img.getBoundingClientRect().height >= 100;
     });
-    if (text.length >= 40 || image) {
+    peak = Math.max(peak, text.length);
+    var crashed = peak >= 40 && (text.length < peak / 4 || /client-side exception has occurred/i.test(text));
+    if (crashed) {
       clearInterval(timer);
-      window.parent.postMessage({ type: ${JSON.stringify(PREVIEW_READY_MESSAGE)} }, "*");
-    } else if (++attempts >= 32) {
+      post(${JSON.stringify(PREVIEW_ERROR_MESSAGE)});
+    } else if (!ready) {
+      var settled = document.readyState === "complete" || ticks >= 24;
+      steady = (text.length >= 40 || image) && settled ? steady + 1 : 0;
+      if (steady >= 6) {
+        ready = true;
+        post(${JSON.stringify(PREVIEW_READY_MESSAGE)});
+      } else if (ticks >= 40) {
+        clearInterval(timer);
+        post(${JSON.stringify(PREVIEW_ERROR_MESSAGE)});
+      }
+    } else if (ticks >= 80) {
       clearInterval(timer);
-      window.parent.postMessage({ type: ${JSON.stringify(PREVIEW_ERROR_MESSAGE)} }, "*");
     }
   }, 250);
 })();`
@@ -108,9 +127,22 @@ export function rewriteProxiedPage(html: string, pageUrl: string): string {
   return `<head>${injection}</head>` + stripped
 }
 
+/** Why a preview failed, so the app can say more than "could not be loaded". */
+export type PreviewErrorReason = "blocked"
+
+/**
+ * Bot protection (Cloudflare and the like) answers server requests with a refusal or a
+ * challenge page, whatever the user agent. Medium is one such site.
+ */
+export function isBlockedResponse(status: number, headers: Headers): boolean {
+  if (status === 401 || status === 403 || status === 429) return true
+  if (status !== 503) return false
+  return headers.has("cf-mitigated") || /cloudflare/i.test(headers.get("server") ?? "")
+}
+
 /** A page that tells the parent app the proxy could not render the site. */
-export function proxyErrorPage(message: string): string {
-  const payload = JSON.stringify({ type: PREVIEW_ERROR_MESSAGE, message }).replace(/</g, "\\u003c")
+export function proxyErrorPage(message: string, reason?: PreviewErrorReason): string {
+  const payload = JSON.stringify({ type: PREVIEW_ERROR_MESSAGE, message, reason }).replace(/</g, "\\u003c")
   return `<!doctype html><html><head><meta charset="utf-8"><title>Preview unavailable</title>` +
     `<script>if(window.parent!==window)window.parent.postMessage(${payload},"*");</script>` +
     `</head><body style="font:14px system-ui,sans-serif;color:#555;padding:24px">` +

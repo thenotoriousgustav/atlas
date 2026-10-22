@@ -41,7 +41,7 @@ describe('BookmarksService - Trash Functionality', () => {
       providers: [
         BookmarksService,
         { provide: PrismaService, useValue: prisma },
-        { provide: MetadataService, useValue: { extract: jest.fn() } },
+        { provide: MetadataService, useValue: { extract: jest.fn().mockResolvedValue({}) } },
         {
           provide: CabinetMediaService,
           useValue: {
@@ -840,6 +840,63 @@ describe('BookmarksService - Trash Functionality', () => {
         bookmarkId: 'bm-2',
         url: 'https://test.com',
       });
+    });
+  });
+
+  describe('highlights from the browser extension', () => {
+    const highlight = {
+      type: 'doc',
+      content: [
+        { type: 'blockquote', content: [
+          { type: 'paragraph', content: [{ type: 'text', text: 'The next note you play' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'determines if it is good.' }] },
+        ] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'Miles', marks: [{ type: 'link', attrs: { href: 'https://example.com/a' } }] }] },
+      ],
+    };
+
+    it('saves a highlight as a note on its page, searchable by its text, without fetching the page', async () => {
+      prisma.bookmark.create.mockResolvedValue({ id: 'h1', type: 'NOTE', url: 'https://example.com/a' });
+      await service.create('user-1', { type: 'NOTE' as any, url: 'https://example.com/a', title: 'Jazz', noteDocument: highlight });
+      const data = prisma.bookmark.create.mock.calls[0][0].data;
+      expect(data).toMatchObject({ type: 'NOTE', url: 'https://example.com/a', notes: 'The next note you play\ndetermines if it is good.\nMiles', metadataStatus: 'COMPLETED' });
+      expect((service as any).metadataService.extract).not.toHaveBeenCalled();
+      expect((service as any).enrichmentQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('does not count highlights sharing a page address as duplicate links', async () => {
+      await service.getDuplicates('user-1');
+      expect(prisma.bookmark.groupBy.mock.calls[0][0].where).toEqual({ userId: 'user-1', deletedAt: null, type: 'BOOKMARK' });
+    });
+  });
+
+  describe('rediscover', () => {
+    beforeEach(() => {
+      prisma.$queryRaw = jest.fn().mockResolvedValue([{ id: 'b' }, { id: 'a' }]);
+      prisma.bookmark.findMany.mockResolvedValue([
+        { id: 'a', userId: 'user-1', title: 'A' },
+        { id: 'b', userId: 'user-1', title: 'B' },
+      ]);
+    });
+
+    it('returns the shuffled own active items in the picked order', async () => {
+      const items = await service.rediscover('user-1', 2);
+      expect(items.map((item: any) => item.id)).toEqual(['b', 'a']);
+      expect(items[0]).toMatchObject({ canEdit: true, access: 'owner' });
+      const [sql, ...values] = prisma.$queryRaw.mock.calls[0];
+      const query = sql.join('?');
+      expect(query).toContain('"deletedAt" IS NULL AND "isArchived" = false');
+      expect(query).toMatch(/ORDER BY \("createdAt" < now\(\) - interval '7 days'\) DESC, random\(\)/);
+      expect(values).toEqual(['user-1', 2]);
+      expect(prisma.bookmark.findMany.mock.calls[0][0].where).toEqual({ id: { in: ['b', 'a'] }, userId: 'user-1', deletedAt: null });
+    });
+
+    it('rejects out-of-range limits and returns nothing for an empty library', async () => {
+      await expect(service.rediscover('user-1', 0)).rejects.toThrow('Limit');
+      await expect(service.rediscover('user-1', 51)).rejects.toThrow('Limit');
+      prisma.$queryRaw.mockResolvedValue([]);
+      expect(await service.rediscover('user-1')).toEqual([]);
+      expect(prisma.bookmark.findMany).not.toHaveBeenCalled();
     });
   });
 });

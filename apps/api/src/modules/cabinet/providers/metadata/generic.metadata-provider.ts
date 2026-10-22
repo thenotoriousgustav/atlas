@@ -3,6 +3,8 @@ import {
   ExtractedMetadata,
   MetadataProvider,
   CRAWLER_USER_AGENTS,
+  DetectedContentType,
+  contentTypeFromMime,
   decodeHtmlEntities,
 } from "./metadata-provider.interface"
 import { validatePublicUrl } from "@/common/utils/ssrf"
@@ -17,15 +19,17 @@ export class GenericMetadataProvider implements MetadataProvider {
     CRAWLER_USER_AGENTS.CHROME_DESKTOP,
   ]
 
-  supports(_url: URL): boolean {
+  supports(): boolean {
     return true
   }
 
-  async extract(url: string, _urlObj?: URL): Promise<ExtractedMetadata | null> {
+  async extract(url: string): Promise<ExtractedMetadata | null> {
     try {
       await validatePublicUrl(url)
-      const html = await this.fetchHtml(url)
-      if (!html) return { title: this.getDomain(url) }
+      const fetched = await this.fetchHtml(url)
+      if (!fetched) return { title: this.getDomain(url), unavailable: true }
+      if ("file" in fetched) return this.describeFile(url, fetched.file)
+      const html = fetched.html
 
       const rawTitle =
         this.getMetaContent(html, "property", "og:title") ||
@@ -70,6 +74,7 @@ export class GenericMetadataProvider implements MetadataProvider {
         )?.[1]
 
       return {
+        contentType: this.detectContentType(html, url),
         title: decodeHtmlEntities(rawTitle.trim() || this.getDomain(url)),
         description: rawDescription
           ? decodeHtmlEntities(rawDescription.trim())
@@ -84,11 +89,66 @@ export class GenericMetadataProvider implements MetadataProvider {
       this.logger.warn(
         `Failed to extract generic metadata for ${url}: ${(error as Error).message}`
       )
-      return { title: this.getDomain(url) }
+      return { title: this.getDomain(url), unavailable: true }
     }
   }
 
-  private async fetchHtml(url: string): Promise<string | null> {
+  /**
+   * What the page says it is. Only clear signs count: a site that merely hosts video, like a
+   * Pinterest photo pin, says nothing here and stays unclassified.
+   */
+  private detectContentType(html: string, url: string): DetectedContentType | undefined {
+    const ogType = this.getMetaContent(html, "property", "og:type")?.toLowerCase()
+    if (
+      ogType?.startsWith("video") ||
+      this.getMetaContent(html, "property", "og:video") ||
+      this.getMetaContent(html, "property", "og:video:url") ||
+      this.getMetaContent(html, "property", "og:video:secure_url")
+    ) {
+      return "VIDEO"
+    }
+    if (ogType === "article") return "ARTICLE"
+    return this.detectPin(html, url, ogType)
+  }
+
+  /**
+   * Pinterest sends no og:video. A video pin carries its streams in the page's embedded data
+   * ("videos":{...,"video_list":...}); a photo pin has "videos":null. Checked on real pins.
+   */
+  private detectPin(html: string, url: string, ogType: string | undefined): DetectedContentType | undefined {
+    if (ogType !== "pinterestapp:pin" || !/^\/(?:[^/]+\/)?pin\//.test(this.pathOf(url))) {
+      return undefined
+    }
+    return /"videos":\{[^}]{0,200}"video_list"/.test(html) ? "VIDEO" : undefined
+  }
+
+  private pathOf(url: string): string {
+    try {
+      return new URL(url).pathname
+    } catch {
+      return ""
+    }
+  }
+
+  /** A link straight to a video file has no page to read; describe it by its file name. */
+  private describeFile(url: string, file: DetectedContentType): ExtractedMetadata {
+    let name = this.getDomain(url)
+    try {
+      const last = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).pop() ?? "")
+      if (last) name = last
+    } catch {
+      // Keep the domain.
+    }
+    return {
+      title: name,
+      contentType: file,
+      siteName: this.getDomain(url),
+    }
+  }
+
+  private async fetchHtml(
+    url: string
+  ): Promise<{ html: string } | { file: DetectedContentType } | null> {
     for (const userAgent of this.userAgents) {
       try {
         const response = await fetch(url, {
@@ -103,13 +163,20 @@ export class GenericMetadataProvider implements MetadataProvider {
         })
         if (!response.ok) continue
 
+        const file = contentTypeFromMime(response.headers.get("content-type"))
+        if (file) {
+          // Not a page: skip the body rather than download the whole file.
+          await response.body?.cancel().catch(() => undefined)
+          return { file }
+        }
+
         const html = await response.text()
         if (
           html &&
           (/<(?:meta|title)\b/i.test(html) ||
             userAgent === this.userAgents[this.userAgents.length - 1])
         ) {
-          return html
+          return { html }
         }
       } catch {
         // Retry the same URL with the next user agent.

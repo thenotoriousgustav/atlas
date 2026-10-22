@@ -3,6 +3,7 @@ import {
   decodeHtml,
   isHtmlContentType,
   proxiedPageHeaders,
+  isBlockedResponse,
   proxyErrorPage,
   rewriteProxiedPage,
   PREVIEW_ERROR_MESSAGE,
@@ -45,35 +46,63 @@ describe("rewriteProxiedPage", () => {
 })
 
 describe("proxied page readiness", () => {
-  function probe(text: string, images: unknown[] = []) {
+  const skillPage = "A relentless interview to sharpen a plan or design. Read the complete skill here."
+
+  /** Runs the readiness script tick by tick; `text` can change per tick (0-based). */
+  function probe(text: string | ((tick: number) => string), images: unknown[] = [], readyState = "complete") {
     const html = rewriteProxiedPage("<head></head><body></body>", "https://example.com/")
     const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
-    const messages: { type: string }[] = []
+    const messages: { type: string; tick: number }[] = []
+    const body = { innerText: "" }
     let tick = () => {}
     let stopped = false
+    let current = 0
     runInNewContext(scripts[1][1], {
-      window: { parent: { postMessage: (message: { type: string }) => messages.push(message) } },
-      document: { body: { innerText: text }, images },
+      window: { parent: { postMessage: (message: { type: string }) => messages.push({ ...message, tick: current }) } },
+      document: { body, images, readyState },
       setInterval: (callback: () => void) => { tick = callback; return 1 },
       clearInterval: () => { stopped = true },
     })
-    for (let i = 0; i < 32 && !stopped; i++) tick()
-    return messages.map((message) => message.type)
+    for (current = 0; current < 200 && !stopped; current++) {
+      body.innerText = typeof text === "function" ? text(current) : text
+      tick()
+    }
+    return messages
   }
+  const types = (messages: { type: string }[]) => messages.map((message) => message.type)
 
   it("reports ready for rendered content such as a skill page", () => {
-    expect(probe("A relentless interview to sharpen a plan or design. Read the complete skill here.")).toEqual([PREVIEW_READY_MESSAGE])
+    expect(types(probe(skillPage))).toEqual([PREVIEW_READY_MESSAGE])
+  })
+
+  it("waits for content to hold steady before reporting ready", () => {
+    const [ready] = probe(skillPage)
+    expect(ready.tick).toBeGreaterThanOrEqual(5)
+    // Still loading subresources: wait, but not forever.
+    expect(types(probe(skillPage, [], "interactive"))).toEqual([PREVIEW_READY_MESSAGE])
+  })
+
+  it("reports failure when a rendered page crashes while its scripts start", () => {
+    const rendered = skillPage.repeat(20)
+    const nextError = "Application error: a client-side exception has occurred while loading localhost (see the browser console for more information)."
+    expect(types(probe((tick) => (tick < 3 ? rendered : nextError)))).toEqual([PREVIEW_ERROR_MESSAGE])
+    expect(types(probe((tick) => (tick < 3 ? rendered : "")))).toEqual([PREVIEW_ERROR_MESSAGE])
+  })
+
+  it("keeps watching after ready and reports a late crash", () => {
+    const rendered = skillPage.repeat(20)
+    expect(types(probe((tick) => (tick < 30 ? rendered : "")))).toEqual([PREVIEW_READY_MESSAGE, PREVIEW_ERROR_MESSAGE])
   })
 
   it("reports failure for blank or skeleton-only pages", () => {
-    expect(probe("")).toEqual([PREVIEW_ERROR_MESSAGE])
-    expect(probe("Loading…")).toEqual([PREVIEW_ERROR_MESSAGE])
+    expect(types(probe(""))).toEqual([PREVIEW_ERROR_MESSAGE])
+    expect(types(probe("Loading…"))).toEqual([PREVIEW_ERROR_MESSAGE])
   })
 
   it("accepts a loaded visible image but not an unloaded image", () => {
     const image = { complete: true, naturalWidth: 600, getBoundingClientRect: () => ({ height: 300 }) }
-    expect(probe("", [image])).toEqual([PREVIEW_READY_MESSAGE])
-    expect(probe("", [{ ...image, complete: false }])).toEqual([PREVIEW_ERROR_MESSAGE])
+    expect(types(probe("", [image]))).toEqual([PREVIEW_READY_MESSAGE])
+    expect(types(probe("", [{ ...image, complete: false }]))).toEqual([PREVIEW_ERROR_MESSAGE])
   })
 })
 
@@ -90,6 +119,20 @@ describe("proxied page response", () => {
     const html = proxyErrorPage("Site <unreachable>")
     expect(html).toContain(`"type":"${PREVIEW_ERROR_MESSAGE}"`)
     expect(html).toContain("<p>Site &lt;unreachable&gt;</p>")
+  })
+
+  it("tells the app when the site blocked the request", () => {
+    expect(proxyErrorPage("Blocked", "blocked")).toContain(`"reason":"blocked"`)
+    expect(proxyErrorPage("Down")).not.toContain("reason")
+  })
+
+  it("recognizes bot-protection refusals", () => {
+    const none = new Headers()
+    expect(isBlockedResponse(403, none)).toBe(true)
+    expect(isBlockedResponse(429, none)).toBe(true)
+    expect(isBlockedResponse(503, new Headers({ server: "cloudflare" }))).toBe(true)
+    expect(isBlockedResponse(503, none)).toBe(false)
+    expect(isBlockedResponse(404, none)).toBe(false)
   })
 })
 

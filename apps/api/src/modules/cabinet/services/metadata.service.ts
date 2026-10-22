@@ -16,17 +16,17 @@ export class MetadataService {
 
   async extract(url: string): Promise<ExtractedMetadata> {
     try {
-      const urlObj = new URL(url)
-      const result = await this.genericProvider.extract(url, urlObj)
+      new URL(url) // Rejects a malformed address before any request is made.
+      const result = await this.genericProvider.extract(url)
       if (result) {
         return result
       }
-      return { title: this.getDomain(url) }
+      return { title: this.getDomain(url), unavailable: true }
     } catch (error) {
       this.logger.warn(
         `Failed to extract metadata for ${url}: ${(error as any).message}`
       )
-      return { title: this.getDomain(url) }
+      return { title: this.getDomain(url), unavailable: true }
     }
   }
 

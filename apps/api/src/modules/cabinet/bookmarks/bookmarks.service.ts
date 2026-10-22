@@ -31,14 +31,20 @@ import { validatePublicUrl } from "@/common/utils/ssrf"
 import { BookmarkSort, bookmarkOrderBy, bookmarkSortFields } from "./bookmark-order"
 import { accessibleFolder, editableBookmark, editableFolder, folderSummary, shareableNoteFields, viewableBookmark, writableFolder } from "../folders/folder-access"
 import { frameBlockedByHeaders } from "./embed-policy"
+import { noteDocumentText } from "./note-text"
 import {
   MAX_PROXIED_PAGE_BYTES,
   decodeHtml,
+  isBlockedResponse,
   isHtmlContentType,
   proxiedPageHeaders,
   proxyErrorPage,
   rewriteProxiedPage,
+  type PreviewErrorReason,
 } from "./page-proxy"
+
+/** Only saved links can duplicate each other; several highlights may share their page's address. */
+const duplicateCandidates = (userId: string) => ({ userId, deletedAt: null, type: BookmarkType.BOOKMARK })
 
 @Injectable()
 export class BookmarksService implements OnModuleInit {
@@ -82,8 +88,11 @@ export class BookmarksService implements OnModuleInit {
     if (!isNote && createBookmarkDto.url) {
       extracted = await this.metadataService.extract(createBookmarkDto.url)
 
+      // A known video link wins; otherwise trust what the page or file itself declared.
       if (this.cabinetMediaService.isVideoUrl(createBookmarkDto.url)) {
         contentType = BookmarkContentType.VIDEO
+      } else if (extracted.contentType) {
+        contentType = BookmarkContentType[extracted.contentType as keyof typeof BookmarkContentType]
       }
     }
 
@@ -121,11 +130,12 @@ export class BookmarksService implements OnModuleInit {
         }),
         description:
           createBookmarkDto.description || extracted.description || null,
-        notes: null,
+        // Search reads a note's plain text, e.g. a highlight saved from the browser extension.
+        notes: createBookmarkDto.noteDocument ? noteDocumentText(createBookmarkDto.noteDocument) : null,
         noteDocument: createBookmarkDto.noteDocument,
-        imageUrl: extracted.imageUrl || null,
-        faviconUrl: extracted.faviconUrl || null,
-        siteName: extracted.siteName || null,
+        imageUrl: extracted.imageUrl || createBookmarkDto.imageUrl || null,
+        faviconUrl: extracted.faviconUrl || createBookmarkDto.faviconUrl || null,
+        siteName: extracted.siteName || createBookmarkDto.siteName || null,
         folderId: createBookmarkDto.folderId || null,
         userId,
         contentType: contentType || (isNote ? null : undefined),
@@ -972,8 +982,8 @@ export class BookmarksService implements OnModuleInit {
    * Failures answer with a small page that tells the parent app to fall back.
    */
   async proxyPage(url: string, res: Response) {
-    const fail = (status: number, message: string) =>
-      res.status(status).set(proxiedPageHeaders()).send(proxyErrorPage(message))
+    const fail = (status: number, message: string, reason?: PreviewErrorReason) =>
+      res.status(status).set(proxiedPageHeaders()).send(proxyErrorPage(message, reason))
 
     let target = url
     for (let hop = 0; hop < 4; hop++) {
@@ -999,6 +1009,9 @@ export class BookmarksService implements OnModuleInit {
         if (response.status >= 300 && response.status < 400 && location) {
           target = new URL(location, target).toString()
           continue
+        }
+        if (isBlockedResponse(response.status, response.headers)) {
+          return fail(502, "This website blocks previews from other apps.", "blocked")
         }
         if (!response.ok) {
           return fail(502, `The website answered with status ${response.status}.`)
@@ -1052,7 +1065,7 @@ export class BookmarksService implements OnModuleInit {
 
     const duplicatesGrouped = await this.prisma.bookmark.groupBy({
       by: ["url"],
-      where: { userId, deletedAt: null },
+      where: duplicateCandidates(userId),
       _count: { url: true },
       having: {
         url: {
@@ -1070,7 +1083,7 @@ export class BookmarksService implements OnModuleInit {
   async getDuplicates(userId: string) {
     const duplicatesGrouped = await this.prisma.bookmark.groupBy({
       by: ["url"],
-      where: { userId, deletedAt: null },
+      where: duplicateCandidates(userId),
       _count: { url: true },
       having: {
         url: {
@@ -1082,8 +1095,7 @@ export class BookmarksService implements OnModuleInit {
     const urls = duplicatesGrouped.map((g) => g.url)
     const bookmarks = await this.prisma.bookmark.findMany({
       where: {
-        userId,
-        deletedAt: null,
+        ...duplicateCandidates(userId),
         url: { in: urls },
       },
       include: {
@@ -1097,6 +1109,33 @@ export class BookmarksService implements OnModuleInit {
       url,
       bookmarks: bookmarks.filter((b) => b.url === url),
     }))
+  }
+
+  /**
+   * A shuffled handful of the user's own active items for Rediscover. Saves older than a week come
+   * first, since recent ones are still remembered; a young library falls back to whatever it has.
+   */
+  async rediscover(userId: string, limit = 12) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+      throw new BadRequestException("Limit must be an integer between 1 and 50")
+    }
+    const picked = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM bookmarks
+      WHERE "userId" = ${userId}::uuid AND "deletedAt" IS NULL AND "isArchived" = false
+      ORDER BY ("createdAt" < now() - interval '7 days') DESC, random()
+      LIMIT ${limit}`
+    const ids = picked.map((row) => row.id)
+    if (!ids.length) return []
+    const items = await this.prisma.bookmark.findMany({
+      where: { id: { in: ids }, userId, deletedAt: null },
+      omit: { drawing: true },
+      include: { tags: true, folder: { select: folderSummary } },
+    })
+    const byId = new Map(items.map((item) => [item.id, item]))
+    return ids
+      .map((id) => byId.get(id))
+      .filter((item) => item !== undefined)
+      .map((item) => ({ ...item, canEdit: true, access: "owner" }))
   }
 
   async cleanDuplicates(userId: string) {

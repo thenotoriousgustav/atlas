@@ -5,7 +5,9 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
+  MaxLength,
 } from "class-validator"
 import { BookmarkType } from "@prisma/client"
 
@@ -42,6 +44,33 @@ export class CreateBookmarkDto {
   @IsString()
   @IsOptional()
   description?: string
+
+  @ApiPropertyOptional({
+    example: "https://example.com/cover.png",
+    description: "Preview image read from the page by the client, used when the server cannot fetch the page",
+  })
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true })
+  @MaxLength(2048)
+  @IsOptional()
+  imageUrl?: string
+
+  @ApiPropertyOptional({
+    example: "https://example.com/favicon.ico",
+    description: "Favicon read from the page by the client",
+  })
+  @IsUrl({ protocols: ["http", "https"], require_protocol: true })
+  @MaxLength(2048)
+  @IsOptional()
+  faviconUrl?: string
+
+  @ApiPropertyOptional({
+    example: "Medium",
+    description: "Site name read from the page by the client",
+  })
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  siteName?: string
 
   @ApiPropertyOptional({
     type: "object",

@@ -47,4 +47,34 @@ describe('EnrichmentProcessor', () => {
       },
     });
   });
+
+  it('keeps existing metadata when the website blocks the request', async () => {
+    const prisma = {
+      bookmark: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'bm-2', title: 'Tiptap vs Lexical' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const metadataService = {
+      extract: jest.fn().mockResolvedValue({ title: 'medium.com', unavailable: true }),
+    };
+    const processor = new EnrichmentProcessor(
+      prisma as unknown as PrismaService,
+      metadataService as unknown as MetadataService,
+    );
+
+    await processor.process({
+      id: 'job-2',
+      data: { bookmarkId: 'bm-2', url: 'https://medium.com/@a/post' },
+    } as Job<EnrichmentJobData>);
+
+    expect(prisma.bookmark.update).toHaveBeenLastCalledWith({
+      where: { id: 'bm-2' },
+      data: {
+        metadataStatus: MetadataStatus.FAILED,
+        metadataError: expect.any(String),
+        lastEnrichedAt: expect.any(Date),
+      },
+    });
+  });
 });

@@ -75,10 +75,27 @@ export class CabinetMediaService {
     }
   }
 
+  /**
+   * Whether the link itself is a video. A site that hosts video is not enough: a Pinterest pin,
+   * a Reddit thread or an Instagram photo post lives on such a site too. Keep in step with
+   * isVideoBookmark in the web app.
+   */
   isVideoUrl(url?: string | null): boolean {
     if (!url) return false
-    const platform = this.detectPlatform(url)
-    return platform !== "Other"
+    try {
+      const { hostname, pathname } = new URL(url)
+      const host = hostname.toLowerCase()
+      const on = (domain: string) => host === domain || host.endsWith(`.${domain}`)
+      if (on("youtube.com")) return /^\/(watch|shorts|live|embed)\b/.test(pathname)
+      if (on("youtu.be") || on("vimeo.com")) return pathname.length > 1
+      if (on("tiktok.com")) return pathname.includes("/video/")
+      if (on("instagram.com")) return /^\/(reel|reels|tv)\//.test(pathname)
+      if (on("fb.watch")) return pathname.length > 1
+      if (on("facebook.com")) return /^\/(watch|reel)\b|\/videos\//.test(pathname)
+      return false
+    } catch {
+      return false
+    }
   }
 
   async extract(url: string): Promise<ExtractedMediaInfo> {

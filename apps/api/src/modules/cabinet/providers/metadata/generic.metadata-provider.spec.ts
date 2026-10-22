@@ -57,6 +57,7 @@ describe("GenericMetadataProvider", () => {
     fetchMock.mockResolvedValue(new Response("Blocked", { status: 403 }))
     expect(await provider.extract("https://www.example.com/page")).toEqual({
       title: "example.com",
+      unavailable: true,
     })
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
@@ -90,5 +91,61 @@ describe("GenericMetadataProvider", () => {
       title: "example.com",
     })
     expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  describe("content type", () => {
+    const page = (head: string) =>
+      new Response(`<html><head><title>T</title>${head}</head></html>`, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      })
+
+    it.each([
+      ['<meta property="og:type" content="video.other">', "VIDEO"],
+      ['<meta property="og:video" content="https://cdn.example.com/a.mp4">', "VIDEO"],
+      ['<meta property="og:type" content="article">', "ARTICLE"],
+    ])("reads %s as %s", async (head, expected) => {
+      fetchMock.mockResolvedValue(page(head))
+      expect(await provider.extract("https://example.com/p")).toMatchObject({ contentType: expected })
+    })
+
+    it("leaves a plain page unclassified", async () => {
+      fetchMock.mockResolvedValue(page('<meta property="og:image" content="/a.jpg">'))
+      expect((await provider.extract("https://example.com/p"))?.contentType).toBeUndefined()
+    })
+
+    describe("Pinterest pins", () => {
+      const pin = '<meta property="og:type" content="pinterestapp:pin"><meta property="og:image" content="https://i.pinimg.com/a.jpg">'
+
+      it("leaves a photo pin, whose embedded data has no videos, unclassified", async () => {
+        fetchMock.mockResolvedValue(page(`${pin}<script>{"link":null,"videos":null,"is_video":false}</script>`))
+        const result = await provider.extract("https://id.pinterest.com/pin/843721311485677788/")
+        expect(result?.contentType).toBeUndefined()
+      })
+
+      it("reads a pin with embedded video streams as a video, even though og:video is missing", async () => {
+        fetchMock.mockResolvedValue(
+          page(`${pin}<script>{"link":null,"videos":{"node_id":"abc","video_list":{"V_720P":{"url":"https://v1.pinimg.com/a.mp4"}}}}</script>`)
+        )
+        expect(await provider.extract("https://in.pinterest.com/pin/video--68747367050/")).toMatchObject({ contentType: "VIDEO" })
+      })
+
+      it("does not classify other Pinterest pages", async () => {
+        fetchMock.mockResolvedValue(page(pin))
+        expect((await provider.extract("https://www.pinterest.com/someone/board/"))?.contentType).toBeUndefined()
+      })
+    })
+
+    it("describes a direct video file by its name without reading the body", async () => {
+      fetchMock.mockResolvedValue(new Response("BINARY", { headers: { "content-type": "video/mp4" } }))
+      const result = await provider.extract("https://example.com/clip.mp4")
+      expect(result).toMatchObject({ contentType: "VIDEO", title: "clip.mp4" })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it("does not classify direct images or PDFs", async () => {
+      fetchMock.mockResolvedValue(new Response("BINARY", { headers: { "content-type": "image/png" } }))
+      const result = await provider.extract("https://example.com/a.png")
+      expect(result?.contentType).toBeUndefined()
+    })
   })
 })

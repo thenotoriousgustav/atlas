@@ -1,9 +1,20 @@
+/** What a link is, as far as the page itself says. Omitted when it gives no clear sign. */
+export type DetectedContentType = "VIDEO" | "ARTICLE"
+
+/** Whether a response is a video file, from its Content-Type header. */
+export function contentTypeFromMime(mime?: string | null): "VIDEO" | null {
+  return mime?.split(";")[0].trim().toLowerCase().startsWith("video/") ? "VIDEO" : null
+}
+
 export interface ExtractedMetadata {
   title: string
   description?: string
   imageUrl?: string
   faviconUrl?: string
   siteName?: string
+  contentType?: DetectedContentType
+  /** The page could not be fetched (blocked or unreachable); the title is only the domain. */
+  unavailable?: true
 }
 
 export interface MetadataProvider {
