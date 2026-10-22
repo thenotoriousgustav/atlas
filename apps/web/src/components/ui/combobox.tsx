@@ -30,7 +30,6 @@ function Combobox({
   inputValue,
   onInputValueChange,
   children,
-  ...props
 }: {
   value: string[];
   onValueChange: (value: string[]) => void;

@@ -446,7 +446,7 @@ function onDeepMemo<T extends unknown[], U>(
     if (typeof obj === "function") {
       try {
         cache = new (obj as new () => Cache)();
-      } catch (_err) {
+      } catch {
         cache = new Map<CacheKey, unknown>();
       }
     } else {
