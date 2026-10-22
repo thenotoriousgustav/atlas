@@ -873,15 +873,9 @@ export function MoodboardCard({
         </div>
 
         {access === "viewer" && <p className="text-xs text-muted-foreground">Shared · View only</p>}
-        {(preferences.showFolder || preferences.showDate || bookmark.isPinned || bookmark.isFavorite) && (
+        {(preferences.showFolder || preferences.showDate || bookmark.isPinned) && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs leading-5 text-muted-foreground">
             {bookmark.isPinned && <span className="flex items-center gap-1 text-library-olive"><PushPin className="size-3" weight="fill" />Pinned</span>}
-            {bookmark.isFavorite && (
-              <span className="flex items-center gap-1 text-amber-500 dark:text-amber-400" title="Favorite">
-                <Star className="size-3" weight="fill" />
-                <span>Favorite</span>
-              </span>
-            )}
             {preferences.showFolder && (
               <span className="flex min-w-0 max-w-full items-center gap-1" title={folderName || "Unfiled"}>
                 <FolderSimple className="size-3 shrink-0" aria-hidden="true" />
